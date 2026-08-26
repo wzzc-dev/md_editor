@@ -37,7 +37,7 @@ class FixtureTests(unittest.TestCase):
         ).stdout
         self.assertIn("Drop rate", report)
 
-    def test_adapter_matrix_name_overrides_payload(self):
+    def test_adapter_emitted_name_is_authoritative(self):
         fixture = ROOT / "data" / "small.md"
         command = (
             "python3 -c 'import json; print(json.dumps({{\"adapter\":\"generic\","
@@ -46,8 +46,30 @@ class FixtureTests(unittest.TestCase):
             "\"dropped_frames\":0}}))'"
         )
         result = run_command(command, fixture, "open", "flutter-impeller")
-        self.assertEqual(result["status"], "measured")
-        self.assertEqual(result["adapter"], "flutter-impeller")
+        # run_command returns a list of records; the adapter-emitted `adapter`
+        # field is authoritative so a single command can back multiple scopes.
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["status"], "measured")
+        self.assertEqual(result[0]["adapter"], "generic")
+
+    def test_adapter_multi_scope_output(self):
+        fixture = ROOT / "data" / "small.md"
+        command = (
+            "python3 -c 'import json; print(json.dumps({{\"adapter\":\"moui-skia-raster\","
+            "\"measurement_scope\":\"headless-render\",\"scenario\":\"{scenario}\","
+            "\"samples_ms\":[1],\"mean_ms\":1,\"p95_ms\":1,\"p99_ms\":1,"
+            "\"dropped_frames\":0}})); "
+            "print(json.dumps({{\"adapter\":\"moui-skia-raster-full\","
+            "\"measurement_scope\":\"richtext-full\",\"scenario\":\"{scenario}\","
+            "\"samples_ms\":[2],\"mean_ms\":2,\"p95_ms\":2,\"p99_ms\":2,"
+            "\"dropped_frames\":0}}))'"
+        )
+        result = run_command(command, fixture, "open", "moui-skia-raster")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["measurement_scope"], "headless-render")
+        self.assertEqual(result[1]["measurement_scope"], "richtext-full")
+        self.assertEqual(result[0]["adapter"], "moui-skia-raster")
+        self.assertEqual(result[1]["adapter"], "moui-skia-raster-full")
 
 
 if __name__ == "__main__":

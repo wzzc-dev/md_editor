@@ -31,6 +31,7 @@ python3 scripts/generate_fixtures.py
 moon check moui/app --target native
 cargo check --manifest-path gpui/Cargo.toml
 python3 bench/run_benchmark.py \
+  --adapter moui-skia-raster='env MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native -- {fixture} {scenario}' \
   --adapter gpui='cargo run --release --manifest-path gpui/Cargo.toml -- --benchmark {fixture} {scenario}' \
   --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \
   --fixture small --repetitions 1 --warmups 0 --out results/local.json
@@ -55,4 +56,5 @@ same MoUI binary for Skia Raster and Skia GPU, selecting
 `MOUI_SKIA_RENDERER=skia-raster|skia-gpu`. Flutter renderer selection is
 controlled by `--enable-impeller` (or `--no-enable-impeller`). See
 [`docs/benchmark-protocol.md`](docs/benchmark-protocol.md) for the exact
-command line and metric definitions.
+command line and metric definitions. Windows amd64 reproduction is documented
+in [`docs/windows.md`](docs/windows.md).
