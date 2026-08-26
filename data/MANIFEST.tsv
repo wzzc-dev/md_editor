@@ -1,0 +1,5 @@
+name	bytes	blocks	file
+small	5120	100	small.md
+medium	51200	1000	medium.md
+large	512000	10000	large.md
+stress	5242880	100000	stress.md

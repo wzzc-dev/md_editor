@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "cross_framework/md_editor_moui/app"
+
+import {
+  "wzzc-dev/moui/core",
+  "wzzc-dev/moui/services",
+}
+
+// Values
+pub fn program(environment? : @services.AppEnvironment) -> @core.Program[Model, Msg]
+
+pub fn update(Model, Msg) -> Model
+
+pub fn view(Model) -> @core.View[Msg]
+
+// Errors
+
+// Types and methods
+pub struct Model {
+  mut source : String
+  mut saved_source : String
+  mut path : String
+}
+pub fn Model::new() -> Self
+
+pub(all) enum Msg {
+  Input(String)
+  NewDocument
+  OpenDocument
+  SaveDocument
+  OpenPicked(@services.ServiceTaskResult[String])
+  OpenLoaded(String, @services.ServiceTaskResult[String])
+  SavePicked(@services.ServiceTaskResult[String])
+  SaveWritten(@services.ServiceTaskResult[Unit])
+}
+
+pub struct Update {
+  model : Model
+  effect : @core.Effect[Msg]
+}
+
+// Type aliases
+
+// Traits

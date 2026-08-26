@@ -1,0 +1,17 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+  "Milky2018/windowing",
+  "wzzc-dev/window/core",
+  "wzzc-dev/window/dpi",
+}
+
+supported_targets = "native"
+
+options(
+  "native-stub": [
+    "native_wayland.c",
+    "xdg_shell_protocol_native.c",
+    "xdg_decoration_protocol_native.c",
+  ],
+  targets: { "ffi.mbt": [ "native" ] },
+)

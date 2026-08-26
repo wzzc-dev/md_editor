@@ -1,0 +1,60 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/makefile"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_makefile(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_makefile_to_html(String) -> String
+
+pub fn makefile_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct MakefileToken {
+  token_type : MakefileTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for MakefileToken
+pub impl Show for MakefileToken
+
+pub(all) enum MakefileTokenType {
+  Target
+  Prerequisite
+  Variable
+  VariableRef
+  Function
+  String
+  Operator
+  Assignment
+  Colon
+  Semicolon
+  Pipe
+  Recipe
+  Comment
+  Directive
+  Whitespace
+  Newline
+  Tab
+  Unknown
+}
+pub impl Eq for MakefileTokenType
+pub impl Show for MakefileTokenType
+
+pub(all) struct MakefileTokenizer {
+  input : String
+  // private fields
+}
+pub fn MakefileTokenizer::new(String) -> Self
+pub fn MakefileTokenizer::next_token(Self) -> MakefileToken?
+pub fn MakefileTokenizer::tokenize_all(Self) -> Array[MakefileToken]
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,172 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/tui"
+
+import {
+  "mizchi/signals",
+  "mizchi/signals/ui",
+  "mizchi/tui/core",
+  "mizchi/tui/events",
+  "mizchi/tui/headless",
+  "mizchi/tui/io",
+  "mizchi/tui/render",
+  "mizchi/tui/vnode",
+}
+
+// Values
+pub fn ansi_full_reset() -> String
+
+pub fn cleanup_stdin() -> Unit
+
+pub fn column(id? : String, gap? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, min_width? : Double, min_height? : Double, flex_grow? : Double, justify? : String, align? : String, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, on_click? : ((@vnode.TuiEvent) -> Unit)?, Array[@ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn disable_mouse() -> String
+
+pub fn disable_mouse_all() -> String
+
+pub fn dump_a11y_tree(Array[@vnode.A11yNode]) -> String
+
+pub fn enable_mouse() -> String
+
+pub fn enable_mouse_all() -> String
+
+pub fn enable_raw_mode() -> Unit
+
+pub fn form_edit_config(String, @signals.Signal[String], on_edit_start? : (() -> Unit)?, on_edit_end? : (() -> Unit)?, on_force_quit? : (() -> Unit)?) -> @vnode.EditConfig
+
+pub fn fragment(Array[@ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn get_terminal_size() -> (Int, Int)
+
+pub fn grid(columns? : Array[Double], rows? : Array[Double], areas? : Array[String], auto_flow? : String, id? : String, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, Array[@ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn grid_area(String, @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn grid_item(column? : Int, row? : Int, column_span? : Int, row_span? : Int, tab_index? : Int, child~ : @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn hspace(Double) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn init_vnode_terminal(Int, Int, (String) -> Unit, mouse? : Bool, raw_mode? : Bool) -> (@vnode.VNodeApp, () -> Unit)
+
+pub fn input(String, id? : String, placeholder? : String, state? : @vnode.InputState, fg? : String, bg? : String, placeholder_fg? : String, focus_border_color? : String, edit_border_color? : String, disabled_fg? : String, disabled_bg? : String, width? : Double, min_width? : Double, padding_x? : Double, padding_y? : Double) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn input_plain(String, placeholder? : String, state? : @vnode.InputState, fg? : String, placeholder_fg? : String) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn is_printable_char(Char) -> Bool
+
+pub fn is_printable_string(String) -> Bool
+
+pub fn parse_input(String) -> @events.InputEvent
+
+pub fn print_raw(String) -> Unit
+
+pub async fn read_key() -> String
+
+pub fn render_once(Int, Int, @core.Component) -> String
+
+pub fn render_vnode_once(Int, Int, @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]) -> String
+
+pub fn resolve_button_state(String, String, focus? : @headless.FocusNav?, disabled? : Bool) -> @headless.ButtonState
+
+pub fn row(id? : String, gap? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, min_width? : Double, min_height? : Double, flex_grow? : Double, justify? : String, align? : String, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, on_click? : ((@vnode.TuiEvent) -> Unit)?, Array[@ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn run(() -> @core.Component, (@events.InputEvent) -> Bool, mouse? : Bool, on_hover? : ((String) -> Unit)?) -> Unit
+
+pub fn run_vnode_app(Int, Int, () -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue], (String) -> Unit) -> () -> Unit
+
+pub fn spacer() -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn start_edit(@vnode.EditConfig, String, () -> Unit, confirm_on_shift_enter? : Bool, esc_cancels? : Bool) -> Unit
+
+pub fn start_edit_inplace(@vnode.EditConfig, String, Int, Int, Int, Int, Bool, () -> Unit, confirm_on_shift_enter? : Bool, esc_cancels? : Bool, on_lines_change? : ((Int) -> Int)?, on_completion? : ((String, Int) -> String?)?) -> Unit
+
+pub fn start_edit_inplace_in_bounds(@vnode.EditConfig, String, @events.HitTestResult, Bool, () -> Unit, confirm_on_shift_enter? : Bool, esc_cancels? : Bool, border? : Int, on_lines_change? : ((Int) -> Int)?, on_completion? : ((String, Int) -> String?)?) -> Unit
+
+pub fn start_keypress_listener((String) -> Unit) -> Unit
+
+pub fn stop_keypress_listener() -> Unit
+
+pub fn text(String, fg? : String, bold? : Bool, underline? : Bool, role? : String) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn text_dyn(() -> String, fg? : String, bold? : Bool, underline? : Bool, role? : String) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn textarea(String, id? : String, placeholder? : String, state? : @vnode.InputState, rows? : Int, fg? : String, bg? : String, placeholder_fg? : String, focus_border_color? : String, edit_border_color? : String, min_width? : Double, padding_x? : Double, padding_y? : Double) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn view(direction? : String, id? : String, gap? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, min_width? : Double, min_height? : Double, flex_grow? : Double, justify? : String, align? : String, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, on_click? : ((@vnode.TuiEvent) -> Unit)?, Array[@ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]]) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub fn vspace(Double) -> @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @vnode {type A11yNode}
+
+pub using @headless {type AccordionState}
+
+pub using @render {type App}
+
+pub using @core {type BorderChars}
+
+pub using @headless {type ButtonState}
+
+pub using @render {type CharBuffer}
+
+pub using @render {type CharCell}
+
+pub using @core {type Color}
+
+pub using @core {type Component}
+
+pub using @vnode {type DisplayValue}
+
+pub using @vnode {type EditConfig}
+
+pub using @vnode {type FocusContext}
+
+pub using @headless {type FocusNav}
+
+pub using @vnode {type GridAutoFlowValue}
+
+pub using @events {type HitTestResult}
+
+pub using @events {type InputEvent}
+
+pub using @io {type InputResult}
+
+pub using @vnode {type InputState}
+
+pub using @events {type KeyEvent}
+
+pub using @events {type KeyModifier}
+
+pub using @headless {type ModalState}
+
+pub using @events {type MouseButton}
+
+pub using @events {type MouseEvent}
+
+pub using @events {type MouseEventType}
+
+pub using @core {type RenderStyleMap}
+
+pub using @core {type Role}
+
+pub using @headless {type SelectionState}
+
+pub using @events {type SpecialKey}
+
+pub using @core {type TextContentMap}
+
+pub using @render {type TextStyle}
+
+pub using @headless {type ToggleState}
+
+pub using @vnode {type TuiEvent}
+
+pub type TuiNode = @ui.Node[@vnode.TuiEvent, @vnode.TuiAttrValue]
+
+pub using @vnode {type VNodeApp}
+
+// Traits
+

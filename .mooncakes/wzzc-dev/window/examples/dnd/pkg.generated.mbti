@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wzzc-dev/window/examples/dnd"
+
+import {
+  "wzzc-dev/window/core",
+  "wzzc-dev/window/macos",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+type Application
+pub impl @macos.ApplicationHandler for Application
+
+// Type aliases
+
+// Traits
+

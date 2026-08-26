@@ -1,0 +1,73 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/python"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_python(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_python_to_html(String) -> String
+
+pub fn python_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct PythonToken {
+  token_type : PythonTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for PythonToken
+pub impl Show for PythonToken
+
+pub(all) enum PythonTokenType {
+  Keyword
+  String
+  FString
+  Number
+  Identifier
+  Decorator
+  BuiltinFunc
+  BuiltinType
+  ClassName
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Bitwise
+  Walrus
+  Arrow
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Colon
+  Semicolon
+  Dot
+  Ellipsis
+  Comment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for PythonTokenType
+pub impl Show for PythonTokenType
+
+pub(all) struct PythonTokenizer {
+  input : String
+  // private fields
+}
+pub fn PythonTokenizer::new(String) -> Self
+pub fn PythonTokenizer::next_token(Self) -> PythonToken?
+pub fn PythonTokenizer::tokenize_all(Self) -> Array[PythonToken]
+
+// Type aliases
+
+// Traits
+

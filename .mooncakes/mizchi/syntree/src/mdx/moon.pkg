@@ -1,0 +1,4 @@
+import {
+  "mizchi/syntree",
+  "moonbitlang/core/bench",
+}

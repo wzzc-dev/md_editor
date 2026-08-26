@@ -1,0 +1,81 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/dart"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn dart_highlighter() -> @syntree.Highlighter
+
+pub fn highlight_dart(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_dart_to_html(String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct DartToken {
+  token_type : DartTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for DartToken
+pub impl Show for DartToken
+
+pub(all) enum DartTokenType {
+  Keyword
+  DeclKeyword
+  Modifier
+  BuiltinType
+  String
+  MultilineString
+  RawString
+  Number
+  Bool
+  Null
+  Identifier
+  TypeName
+  Annotation
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Bitwise
+  Increment
+  NullAware
+  Cascade
+  Arrow
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Semicolon
+  Colon
+  Dot
+  Question
+  LineComment
+  BlockComment
+  DocComment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for DartTokenType
+pub impl Show for DartTokenType
+
+pub(all) struct DartTokenizer {
+  input : String
+  // private fields
+}
+pub fn DartTokenizer::new(String) -> Self
+pub fn DartTokenizer::next_token(Self) -> DartToken?
+pub fn DartTokenizer::tokenize_all(Self) -> Array[DartToken]
+
+// Type aliases
+
+// Traits
+

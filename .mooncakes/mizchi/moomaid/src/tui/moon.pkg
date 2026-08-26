@@ -1,0 +1,12 @@
+supported_targets = "js"
+
+import {
+  "mizchi/moomaid",
+  "mizchi/moomaid/kitty",
+  "mizchi/tui" @mtui,
+  "mizchi/tui/vnode",
+  "mizchi/signals",
+  "moonbitlang/async",
+}
+
+pkgtype(kind: "executable")

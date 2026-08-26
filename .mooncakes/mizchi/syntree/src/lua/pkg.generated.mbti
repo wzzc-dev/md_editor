@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/lua"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_lua(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_lua_to_html(String) -> String
+
+pub fn lua_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct LuaToken {
+  token_type : LuaTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for LuaToken
+pub impl Show for LuaToken
+
+pub(all) enum LuaTokenType {
+  Keyword
+  String
+  LongString
+  Number
+  Bool
+  Nil
+  Identifier
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Concat
+  Length
+  Vararg
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Semicolon
+  Colon
+  DoubleColon
+  Dot
+  LineComment
+  BlockComment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for LuaTokenType
+pub impl Show for LuaTokenType
+
+pub(all) struct LuaTokenizer {
+  input : String
+  // private fields
+}
+pub fn LuaTokenizer::new(String) -> Self
+pub fn LuaTokenizer::next_token(Self) -> LuaToken?
+pub fn LuaTokenizer::tokenize_all(Self) -> Array[LuaToken]
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,12 @@
+name: cross_framework_markdown_flutter
+description: Minimal Markdown editor used in the cross-framework benchmark.
+publish_to: none
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  file_selector: ^1.0.3
+  markdown: ^7.2.2
+flutter:
+  uses-material-design: true

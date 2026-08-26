@@ -1,0 +1,99 @@
+///|
+extern "C" fn native_fill_window_with_color(
+  raw_view_handle : UInt64,
+  color : UInt64,
+) -> Unit = "mbw_examples_fill_window_with_color"
+
+///|
+extern "C" fn native_fill_window_with_safe_area(
+  raw_view_handle : UInt64,
+  inner_color : UInt64,
+  outer_color : UInt64,
+  left : Int,
+  top : Int,
+  right : Int,
+  bottom : Int,
+  width : Int,
+  height : Int,
+  scale_factor : Double,
+) -> Unit = "mbw_examples_fill_window_with_safe_area"
+
+///|
+extern "C" fn native_now_millis() -> Int64 = "mbw_examples_now_millis"
+
+///|
+pub fn now_millis() -> Int64 {
+  native_now_millis()
+}
+
+///|
+fn appkit_view_handle(window : @macos.Window) -> UInt64 {
+  let handle = window.window_handle()
+  let raw = try! handle.as_raw()
+  match raw {
+    AppKit(handle) => handle.ns_view()
+    _ => abort("example renderer requires an AppKit window handle")
+  }
+}
+
+///|
+fn fill_window_with_argb(window : @macos.Window, color : UInt64) -> Unit {
+  native_fill_window_with_color(appkit_view_handle(window), color)
+}
+
+///|
+pub fn fill_window(window : @macos.Window) -> Unit {
+  fill_window_with_argb(window, 0xFF181818L.reinterpret_as_uint64())
+}
+
+///|
+// Port target: winit-reference/winit/examples/util/fill.rs::fill_window_with_color
+pub fn fill_window_with_color(window : @macos.Window, color : Int) -> Unit {
+  fill_window_with_argb(window, color.to_int64().reinterpret_as_uint64())
+}
+
+///|
+pub fn fill_window_with_safe_area_colors(
+  window : @macos.Window,
+  inner_color : Int,
+  outer_color : Int,
+) -> Unit {
+  let insets = window.safe_area()
+  let size = window.surface_size()
+  native_fill_window_with_safe_area(
+    appkit_view_handle(window),
+    inner_color.to_int64().reinterpret_as_uint64(),
+    outer_color.to_int64().reinterpret_as_uint64(),
+    insets.left(),
+    insets.top(),
+    insets.right(),
+    insets.bottom(),
+    size.width(),
+    size.height(),
+    window.scale_factor(),
+  )
+}
+
+///|
+// Port target: winit-reference/winit/examples/util/fill.rs::fill_window_with_animated_color
+pub fn fill_window_with_animated_color(
+  window : @macos.Window,
+  start_time_ms : Int64,
+) -> Unit {
+  let elapsed_seconds = (now_millis() - start_time_ms).to_double() / 1000.0
+  let time = elapsed_seconds * 1.5
+  let blue = (@math.sin(time) * 255.0).to_int()
+  let green = (@math.cos(time) * 255.0).to_int() << 8
+  let red = ((1.0 - @math.sin(time)) * 255.0).to_int() << 16
+  let alpha = 0xFF << 24
+  fill_window_with_color(window, alpha | red | green | blue)
+}
+
+///|
+// Port target: winit-reference/winit/examples/util/fill.rs::cleanup_window
+pub fn cleanup_window(window : @macos.Window) -> Unit {
+  native_fill_window_with_color(
+    appkit_view_handle(window),
+    0L.reinterpret_as_uint64(),
+  )
+}

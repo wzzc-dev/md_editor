@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "wzzc-dev/window/examples/ime"
+
+import {
+  "wzzc-dev/window/core",
+  "wzzc-dev/window/macos",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+type App
+pub impl @macos.ApplicationHandler for App
+
+type TextInputState
+
+// Type aliases
+
+// Traits
+

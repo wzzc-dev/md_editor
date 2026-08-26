@@ -1,0 +1,6 @@
+import {
+}
+
+import {
+  "moonbitlang/core/debug" @debug,
+} for "test"

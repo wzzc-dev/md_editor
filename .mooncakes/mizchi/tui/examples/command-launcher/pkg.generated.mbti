@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "example-command-launcher"
+
+// Values
+
+// Errors
+
+// Types and methods
+type Command
+
+// Type aliases
+
+// Traits
+

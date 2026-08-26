@@ -1,0 +1,74 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/crater-core"
+
+import {
+  "mizchi/css/values",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct IntrinsicSize {
+  min_width : Double
+  max_width : Double
+  min_height : Double
+  max_height : Double
+}
+pub fn IntrinsicSize::default() -> Self
+
+pub(all) struct Layout {
+  id : String
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  margin : @values.Rect[Double]
+  padding : @values.Rect[Double]
+  border : @values.Rect[Double]
+  overflow_x : @values.Overflow
+  overflow_y : @values.Overflow
+  scroll_width : Double
+  scroll_height : Double
+  children : Array[Layout]
+  text : String?
+}
+pub fn Layout::to_bounding_rect(Self) -> @values.BoundingRect
+
+pub(all) struct LayoutContext {
+  available_width : Double
+  available_height : Double?
+  sizing_mode : SizingMode
+  viewport_width : Double
+  viewport_height : Double
+  stretch_width : Bool
+  stretch_height : Bool
+}
+
+pub(all) struct LayoutResult {
+  layout : Layout
+  warnings : Array[LayoutWarning]
+}
+
+pub(all) enum LayoutWarning {
+  UnsupportedFloat(String)
+  UnsupportedPosition(String)
+  UnsupportedDisplay(String)
+} derive(@debug.Debug)
+pub impl Show for LayoutWarning
+
+pub(all) struct MeasureFunc {
+  func : (Double, Double) -> IntrinsicSize
+}
+
+pub(all) enum SizingMode {
+  Definite
+  MaxContent
+} derive(Eq)
+
+// Type aliases
+
+// Traits
+

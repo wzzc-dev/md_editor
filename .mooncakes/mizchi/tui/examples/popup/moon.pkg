@@ -1,0 +1,13 @@
+import {
+  "mizchi/tui",
+  "mizchi/tui/components",
+  "mizchi/tui/vnode",
+  "mizchi/tui/io",
+  "mizchi/signals",
+}
+
+supported_targets = "js"
+
+options(
+  "is-main": true,
+)

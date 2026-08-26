@@ -1,0 +1,332 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Milky2018/moon_accesskit/consumer"
+
+import {
+  "Milky2018/moon_accesskit",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn common_filter(Node) -> FilterResult
+
+pub fn common_filter_with_root_exception(Node) -> FilterResult
+
+// Errors
+
+// Types and methods
+pub(all) enum FilterResult {
+  Include
+  ExcludeNode
+  ExcludeSubtree
+} derive(Eq, @debug.Debug)
+pub impl Show for FilterResult
+
+type InnerTextPosition
+
+pub struct Node {
+  // private fields
+}
+pub fn Node::active_descendant(Self) -> Self?
+pub fn Node::aria_current(Self) -> @moon_accesskit.AriaCurrent?
+pub fn Node::author_id(Self) -> String?
+pub fn Node::background_color(Self) -> @moon_accesskit.Color?
+pub fn Node::bounding_box(Self) -> @moon_accesskit.Rect?
+pub fn Node::braille_label(Self) -> String?
+pub fn Node::braille_role_description(Self) -> String?
+pub fn Node::child_ids(Self) -> Array[NodeId]
+pub fn Node::children(Self) -> Array[Self]
+pub fn Node::class_name(Self) -> String?
+pub fn Node::clips_children(Self) -> Bool
+pub fn Node::column_index_text(Self) -> String?
+pub fn Node::controls(Self) -> Array[Self]
+pub fn Node::data(Self) -> @moon_accesskit.Node
+pub fn Node::deepest_first_child(Self) -> Self?
+pub fn Node::deepest_first_filtered_child(Self, (Self) -> FilterResult) -> Self?
+pub fn Node::deepest_last_child(Self) -> Self?
+pub fn Node::deepest_last_filtered_child(Self, (Self) -> FilterResult) -> Self?
+pub fn Node::description(Self) -> String?
+pub fn Node::direct_transform(Self) -> @moon_accesskit.Affine
+pub fn Node::document_end(Self) -> TextPosition
+pub fn Node::document_range(Self) -> TextRange
+pub fn Node::document_start(Self) -> TextPosition
+pub fn Node::filtered_children(Self, (Self) -> FilterResult) -> Array[Self]
+pub fn Node::filtered_parent(Self, (Self) -> FilterResult) -> Self?
+pub fn Node::first_filtered_child(Self, (Self) -> FilterResult) -> Self?
+pub fn Node::following_filtered_siblings(Self, (Self) -> FilterResult) -> Array[Self]
+pub fn Node::following_sibling_ids(Self) -> Array[NodeId]
+pub fn Node::following_siblings(Self) -> Array[Self]
+pub fn Node::font_family(Self) -> String?
+pub fn Node::font_size(Self) -> Float?
+pub fn Node::font_weight(Self) -> Float?
+pub fn Node::foreground_color(Self) -> @moon_accesskit.Color?
+pub fn Node::has_bounds(Self) -> Bool
+pub fn Node::has_braille_label(Self) -> Bool
+pub fn Node::has_braille_role_description(Self) -> Bool
+pub fn Node::has_popup(Self) -> @moon_accesskit.HasPopup?
+pub fn Node::has_role_description(Self) -> Bool
+pub fn Node::has_text_selection(Self) -> Bool
+pub fn Node::has_value(Self) -> Bool
+pub fn Node::id(Self) -> NodeId
+pub fn Node::index_path(Self) -> Array[Int]
+pub fn Node::is_busy(Self) -> Bool
+pub fn Node::is_clickable(Self, (Self) -> FilterResult) -> Bool
+pub fn Node::is_container_with_selectable_children(Self) -> Bool
+pub fn Node::is_descendant_of(Self, Self) -> Bool
+pub fn Node::is_dialog(Self) -> Bool
+pub fn Node::is_disabled(Self) -> Bool
+pub fn Node::is_focusable(Self, (Self) -> FilterResult) -> Bool
+pub fn Node::is_focused(Self) -> Bool
+pub fn Node::is_focused_in_tree(Self) -> Bool
+pub fn Node::is_graft(Self) -> Bool
+pub fn Node::is_hidden(Self) -> Bool
+pub fn Node::is_invocable(Self, (Self) -> FilterResult) -> Bool
+pub fn Node::is_italic(Self) -> Bool
+pub fn Node::is_item_like(Self) -> Bool
+pub fn Node::is_live_atomic(Self) -> Bool
+pub fn Node::is_modal(Self) -> Bool
+pub fn Node::is_multiline(Self) -> Bool
+pub fn Node::is_multiselectable(Self) -> Bool
+pub fn Node::is_read_only(Self) -> Bool
+pub fn Node::is_read_only_or_disabled(Self) -> Bool
+pub fn Node::is_read_only_supported(Self) -> Bool
+pub fn Node::is_required(Self) -> Bool
+pub fn Node::is_root(Self) -> Bool
+pub fn Node::is_selectable(Self) -> Bool
+pub fn Node::is_selected(Self) -> Bool?
+pub fn Node::is_text_input(Self) -> Bool
+pub fn Node::items(Self, (Self) -> FilterResult) -> Array[Self]
+pub fn Node::label(Self) -> String?
+pub fn Node::label_comes_from_value(Self) -> Bool
+pub fn Node::labelled_by(Self) -> Array[Self]
+pub fn Node::language(Self) -> String?
+pub fn Node::last_filtered_child(Self, (Self) -> FilterResult) -> Self?
+pub fn Node::level(Self) -> Int?
+pub fn Node::line_range_from_index(Self, Int) -> TextRange?
+pub fn Node::live(Self) -> @moon_accesskit.Live
+pub fn Node::max_numeric_value(Self) -> Double?
+pub fn Node::min_numeric_value(Self) -> Double?
+pub fn Node::node_at_point(Self, @moon_accesskit.Point, (Self) -> FilterResult) -> Self?
+pub fn Node::numeric_value(Self) -> Double?
+pub fn Node::numeric_value_jump(Self) -> Double?
+pub fn Node::numeric_value_step(Self) -> Double?
+pub fn Node::orientation(Self) -> @moon_accesskit.Orientation?
+pub fn Node::overline(Self) -> @moon_accesskit.TextDecoration?
+pub fn Node::parent(Self) -> Self?
+pub fn Node::parent_and_index(Self) -> (Self, Int)?
+pub fn Node::parent_id(Self) -> NodeId?
+pub fn Node::placeholder(Self) -> String?
+pub fn Node::position_in_set(Self) -> Int?
+pub fn Node::preceding_filtered_siblings(Self, (Self) -> FilterResult) -> Array[Self]
+pub fn Node::preceding_sibling_ids(Self) -> Array[NodeId]
+pub fn Node::preceding_siblings(Self) -> Array[Self]
+pub fn Node::raw_bounds(Self) -> @moon_accesskit.Rect?
+pub fn Node::raw_text_selection(Self) -> @moon_accesskit.TextSelection?
+pub fn Node::raw_value(Self) -> String?
+pub fn Node::relative_index_path(Self, NodeId) -> Array[Int]
+pub fn Node::role(Self) -> @moon_accesskit.Role
+pub fn Node::role_description(Self) -> String?
+pub fn Node::row_index_text(Self) -> String?
+pub fn Node::scroll_x(Self) -> Double?
+pub fn Node::scroll_x_max(Self) -> Double?
+pub fn Node::scroll_x_min(Self) -> Double?
+pub fn Node::scroll_y(Self) -> Double?
+pub fn Node::scroll_y_max(Self) -> Double?
+pub fn Node::scroll_y_min(Self) -> Double?
+pub fn Node::selection_container(Self, (Self) -> FilterResult) -> Self?
+pub fn Node::should_have_read_only_state_by_default(Self) -> Bool
+pub fn Node::size_of_set(Self) -> Int?
+pub fn Node::size_of_set_from_container(Self, (Self) -> FilterResult) -> Int?
+pub fn Node::sort_direction(Self) -> @moon_accesskit.SortDirection?
+pub fn Node::strikethrough(Self) -> @moon_accesskit.TextDecoration?
+pub fn Node::supports_action(Self, @moon_accesskit.Action, (Self) -> FilterResult) -> Bool
+pub fn Node::supports_decrement(Self, (Self) -> FilterResult) -> Bool
+pub fn Node::supports_expand_collapse(Self) -> Bool
+pub fn Node::supports_increment(Self, (Self) -> FilterResult) -> Bool
+pub fn Node::supports_text_ranges(Self) -> Bool
+pub fn Node::supports_toggle(Self) -> Bool
+pub fn Node::supports_url(Self) -> Bool
+pub fn Node::text_align(Self) -> @moon_accesskit.TextAlign?
+pub fn Node::text_direction(Self) -> @moon_accesskit.TextDirection?
+pub fn Node::text_position_at_point(Self, @moon_accesskit.Point) -> TextPosition
+pub fn Node::text_position_from_global_usv_index(Self, Int) -> TextPosition?
+pub fn Node::text_position_from_global_utf16_index(Self, Int) -> TextPosition?
+pub fn Node::text_runs(Self) -> Array[Self]
+pub fn Node::text_selection(Self) -> TextRange?
+pub fn Node::text_selection_anchor(Self) -> TextPosition?
+pub fn Node::text_selection_focus(Self) -> TextPosition?
+pub fn Node::toggled(Self) -> @moon_accesskit.Toggled?
+pub fn Node::transform(Self) -> @moon_accesskit.Affine
+pub fn Node::underline(Self) -> @moon_accesskit.TextDecoration?
+pub fn Node::url(Self) -> String?
+pub fn Node::value(Self) -> String?
+pub fn Node::vertical_offset(Self) -> @moon_accesskit.VerticalOffset?
+pub fn Node::write_label(Self, StringBuilder) -> Bool
+pub fn Node::write_value(Self, StringBuilder) -> Bool
+
+pub struct NodeId(TreeIndex, @moon_accesskit.NodeId) derive(Eq, Hash, @debug.Debug)
+pub fn NodeId::to_components(Self) -> (@moon_accesskit.NodeId, TreeIndex)
+pub impl Show for NodeId
+
+pub(all) struct NodeState {
+  mut parent_and_index : ParentAndIndex?
+  data : @moon_accesskit.Node
+}
+
+pub(all) struct ParentAndIndex(NodeId, Int) derive(Eq, @debug.Debug)
+pub impl Show for ParentAndIndex
+
+pub enum RangePropertyValue[T] {
+  Single(T)
+  Mixed
+} derive(Eq, @debug.Debug)
+pub fn[T, U] RangePropertyValue::map(Self[T?], (T) -> U) -> Self[U?]
+pub impl[T : @debug.Debug] Show for RangePropertyValue[T]
+
+pub struct State {
+  // private fields
+}
+pub fn State::active_dialog(Self) -> Node?
+pub fn State::focus(Self) -> Node?
+pub fn State::focus_id(Self) -> NodeId?
+pub fn State::focus_id_in_tree(Self) -> NodeId
+pub fn State::focus_in_tree(Self) -> Node
+pub fn State::graft_parent(Self, @moon_accesskit.TreeId) -> NodeId?
+pub fn State::has_node(Self, NodeId) -> Bool
+pub fn State::is_host_focused(Self) -> Bool
+pub fn State::node_by_id(Self, NodeId) -> Node?
+pub fn State::root(Self) -> Node
+pub fn State::root_id(Self) -> NodeId
+pub fn State::subtree_root(Self, @moon_accesskit.TreeId) -> NodeId?
+pub fn State::subtree_state(Self, @moon_accesskit.TreeId) -> SubtreeState?
+pub fn State::toolkit_name(Self) -> String?
+pub fn State::toolkit_version(Self) -> String?
+
+pub(all) struct SubtreeState {
+  root : NodeId
+  focus : NodeId
+} derive(@debug.Debug)
+pub impl Show for SubtreeState
+
+pub struct TextPosition {
+  root_node : Node
+  inner : InnerTextPosition
+}
+pub fn TextPosition::background_color(Self) -> @moon_accesskit.Color?
+pub fn TextPosition::backward_to_character_start(Self) -> Self
+pub fn TextPosition::backward_to_format_start(Self) -> Self
+pub fn TextPosition::backward_to_line_start(Self) -> Self
+pub fn TextPosition::backward_to_page_start(Self) -> Self
+pub fn TextPosition::backward_to_paragraph_start(Self) -> Self
+pub fn TextPosition::backward_to_word_start(Self) -> Self
+pub fn TextPosition::biased_to_end(Self) -> Self
+pub fn TextPosition::biased_to_start(Self) -> Self
+pub fn TextPosition::compare(Self, Self) -> Int?
+pub fn TextPosition::document_end(Self) -> Self
+pub fn TextPosition::document_start(Self) -> Self
+pub fn TextPosition::font_family(Self) -> String?
+pub fn TextPosition::font_size(Self) -> Float?
+pub fn TextPosition::font_weight(Self) -> Float?
+pub fn TextPosition::foreground_color(Self) -> @moon_accesskit.Color?
+pub fn TextPosition::forward_to_character_end(Self) -> Self
+pub fn TextPosition::forward_to_character_start(Self) -> Self
+pub fn TextPosition::forward_to_format_end(Self) -> Self
+pub fn TextPosition::forward_to_format_start(Self) -> Self
+pub fn TextPosition::forward_to_line_end(Self) -> Self
+pub fn TextPosition::forward_to_line_start(Self) -> Self
+pub fn TextPosition::forward_to_page_end(Self) -> Self
+pub fn TextPosition::forward_to_page_start(Self) -> Self
+pub fn TextPosition::forward_to_paragraph_end(Self) -> Self
+pub fn TextPosition::forward_to_paragraph_start(Self) -> Self
+pub fn TextPosition::forward_to_word_end(Self) -> Self
+pub fn TextPosition::forward_to_word_start(Self) -> Self
+pub fn TextPosition::inner_node(Self) -> Node
+pub fn TextPosition::is_document_end(Self) -> Bool
+pub fn TextPosition::is_document_start(Self) -> Bool
+pub fn TextPosition::is_format_start(Self) -> Bool
+pub fn TextPosition::is_italic(Self) -> Bool
+pub fn TextPosition::is_line_end(Self) -> Bool
+pub fn TextPosition::is_line_start(Self) -> Bool
+pub fn TextPosition::is_page_start(Self) -> Bool
+pub fn TextPosition::is_paragraph_end(Self) -> Bool
+pub fn TextPosition::is_paragraph_separator(Self) -> Bool
+pub fn TextPosition::is_paragraph_start(Self) -> Bool
+pub fn TextPosition::is_word_start(Self) -> Bool
+pub fn TextPosition::language(Self) -> String?
+pub fn TextPosition::overline(Self) -> @moon_accesskit.TextDecoration?
+pub fn TextPosition::strikethrough(Self) -> @moon_accesskit.TextDecoration?
+pub fn TextPosition::text_align(Self) -> @moon_accesskit.TextAlign?
+pub fn TextPosition::text_direction(Self) -> @moon_accesskit.TextDirection?
+pub fn TextPosition::to_degenerate_range(Self) -> TextRange
+pub fn TextPosition::to_global_usv_index(Self) -> Int
+pub fn TextPosition::to_global_utf16_index(Self) -> Int
+pub fn TextPosition::to_line_index(Self) -> Int
+pub fn TextPosition::to_raw(Self) -> @moon_accesskit.TextPosition
+pub fn TextPosition::underline(Self) -> @moon_accesskit.TextDecoration?
+pub fn TextPosition::vertical_offset(Self) -> @moon_accesskit.VerticalOffset?
+
+pub struct TextRange {
+  node : Node
+  mut start : InnerTextPosition
+  mut end : InnerTextPosition
+}
+pub fn TextRange::background_color(Self) -> RangePropertyValue[@moon_accesskit.Color?]
+pub fn TextRange::bounding_boxes(Self) -> Array[@moon_accesskit.Rect]
+pub fn TextRange::downgrade(Self) -> WeakTextRange
+pub fn TextRange::end(Self) -> TextPosition
+pub fn TextRange::font_family(Self) -> RangePropertyValue[String?]
+pub fn TextRange::font_size(Self) -> RangePropertyValue[Float?]
+pub fn TextRange::font_weight(Self) -> RangePropertyValue[Float?]
+pub fn TextRange::foreground_color(Self) -> RangePropertyValue[@moon_accesskit.Color?]
+pub fn TextRange::is_degenerate(Self) -> Bool
+pub fn TextRange::is_italic(Self) -> RangePropertyValue[Bool]
+pub fn TextRange::language(Self) -> RangePropertyValue[String?]
+pub fn TextRange::node(Self) -> Node
+pub fn TextRange::overline(Self) -> RangePropertyValue[@moon_accesskit.TextDecoration?]
+pub fn TextRange::set_end(Self, TextPosition) -> Unit raise
+pub fn TextRange::set_start(Self, TextPosition) -> Unit raise
+pub fn TextRange::start(Self) -> TextPosition
+pub fn TextRange::strikethrough(Self) -> RangePropertyValue[@moon_accesskit.TextDecoration?]
+pub fn TextRange::text(Self) -> String
+pub fn TextRange::text_align(Self) -> RangePropertyValue[@moon_accesskit.TextAlign?]
+pub fn TextRange::text_direction(Self) -> RangePropertyValue[@moon_accesskit.TextDirection?]
+pub fn TextRange::to_text_selection(Self) -> @moon_accesskit.TextSelection
+pub fn TextRange::underline(Self) -> RangePropertyValue[@moon_accesskit.TextDecoration?]
+pub fn TextRange::vertical_offset(Self) -> RangePropertyValue[@moon_accesskit.VerticalOffset?]
+pub fn TextRange::write_text(Self, StringBuilder) -> Unit
+
+pub(all) struct Tree {
+  // private fields
+}
+pub fn Tree::Tree(@moon_accesskit.TreeUpdate, Bool) -> Self
+pub fn Tree::locate_node(Self, NodeId) -> (@moon_accesskit.NodeId, @moon_accesskit.TreeId)?
+pub fn Tree::state(Self) -> State
+pub fn[H : ChangeHandler] Tree::update_and_process_changes(Self, @moon_accesskit.TreeUpdate, H) -> Unit
+pub fn[H : ChangeHandler] Tree::update_host_focus_state_and_process_changes(Self, Bool, H) -> Unit
+
+pub struct TreeIndex(Int) derive(Eq, Hash, @debug.Debug)
+pub impl Show for TreeIndex
+
+pub struct WeakTextRange {
+  node_id : NodeId
+  start : @moon_accesskit.TextPosition
+  end : @moon_accesskit.TextPosition
+  start_comparable : (Array[Int], Int)
+  end_comparable : (Array[Int], Int)
+} derive(Eq, @debug.Debug)
+pub fn WeakTextRange::end_comparable(Self) -> (Array[Int], Int)
+pub fn WeakTextRange::node_id(Self) -> NodeId
+pub fn WeakTextRange::start_comparable(Self) -> (Array[Int], Int)
+pub fn WeakTextRange::upgrade(Self, State) -> TextRange?
+pub fn WeakTextRange::upgrade_node(Self, State) -> Node?
+pub impl Show for WeakTextRange
+
+// Type aliases
+
+// Traits
+pub(open) trait ChangeHandler {
+  node_added(Self, Node) -> Unit
+  node_updated(Self, Node, Node) -> Unit
+  focus_moved(Self, Node?, Node?) -> Unit
+  node_removed(Self, Node) -> Unit
+}
+

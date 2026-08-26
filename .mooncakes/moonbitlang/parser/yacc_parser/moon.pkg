@@ -1,0 +1,21 @@
+import {
+  "moonbitlang/parser/syntax",
+  "moonbitlang/parser/syntax/util",
+  "moonbitlang/lexer/tokens",
+  "moonbitlang/lexer/basic",
+  "moonbitlang/parser/attribute",
+  "moonbitlang/core/list",
+}
+
+// Warning 73 is emitted by moonyacc's generated semantic-value wrappers.
+
+warnings = "-6-text_segment_excceed"
+
+formatter(ignore: [ "parser.mbt" ])
+
+rule(
+  name: "moonyacc",
+  command: "moon runwasm moonbitlang/yacc@0.7.17 --no-comments --external-tokens $input -o $output",
+)
+
+dev_build(rule: "moonyacc", input: "parser.mbty", output: "parser.mbt")

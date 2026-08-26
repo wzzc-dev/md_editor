@@ -1,0 +1,188 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/tui/core"
+
+import {
+  "mizchi/crater-core",
+  "mizchi/crater-core/node",
+  "mizchi/css/values",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn box(Array[Component], id? : String, width? : @values.Dimension, height? : @values.Dimension, min_width? : @values.Dimension, min_height? : @values.Dimension, max_width? : @values.Dimension, max_height? : @values.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @values.Dimension, flex_direction? : @values.FlexDirection, flex_wrap? : @values.FlexWrap, justify_content? : @values.Alignment, align_items? : @values.Alignment, align_content? : @values.Alignment, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, position? : @values.Position, inset_top? : @values.Dimension, inset_right? : @values.Dimension, inset_bottom? : @values.Dimension, inset_left? : @values.Dimension, border? : BorderChars?, border_color? : Color, bg? : Color, fg? : Color, on_click? : (() -> Unit)?, role? : Role?) -> Component
+
+pub fn char_display_width(Char) -> Int
+
+pub fn normalize_grid_rect(Double, Double, Double, Double) -> GridRect
+
+pub fn normalize_grid_rect_with_inset(Double, Double, Double, Double, Double, Double, Double, Double) -> GridRect
+
+pub fn snap_to_grid(Double) -> Int
+
+pub fn spacer(flex_grow? : Double) -> Component
+
+pub fn string_display_width(String) -> Int
+
+pub fn styled_text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
+
+pub fn text(String, fg? : Color, bg? : Color, bold? : Bool, underline? : Bool) -> Component
+
+pub fn text_box(String, id? : String, width? : @values.Dimension, height? : @values.Dimension, min_width? : @values.Dimension, min_height? : @values.Dimension, max_width? : @values.Dimension, max_height? : @values.Dimension, flex_grow? : Double, flex_shrink? : Double, flex_basis? : @values.Dimension, padding? : Double, padding_x? : Double, padding_y? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, border? : BorderChars?, border_color? : Color, bg? : Color, fg? : Color, bold? : Bool, underline? : Bool) -> Component
+
+pub fn text_measure_func(String) -> @crater-core.MeasureFunc
+
+// Errors
+
+// Types and methods
+pub(all) struct BorderChars {
+  top_left : Char
+  top_right : Char
+  bottom_left : Char
+  bottom_right : Char
+  horizontal : Char
+  vertical : Char
+}
+pub fn BorderChars::ascii() -> Self
+pub fn BorderChars::double() -> Self
+pub fn BorderChars::rounded() -> Self
+pub fn BorderChars::single() -> Self
+
+pub(all) struct ClickHandler(() -> Unit)
+pub fn ClickHandler::invoke(Self) -> Unit
+pub fn ClickHandler::new(() -> Unit) -> Self
+
+pub(all) struct ClickHandlers(Map[String, ClickHandler])
+pub fn ClickHandlers::get(Self, String) -> ClickHandler?
+pub fn ClickHandlers::iter(Self) -> Iter[(String, ClickHandler)]
+pub fn ClickHandlers::new() -> Self
+pub fn ClickHandlers::set(Self, String, ClickHandler) -> Unit
+
+pub(all) struct Color {
+  r : Int
+  g : Int
+  b : Int
+  a : Double
+}
+pub fn Color::black() -> Self
+pub fn Color::blue() -> Self
+pub fn Color::cyan() -> Self
+pub fn Color::from_crater(@values.Color) -> Self
+pub fn Color::green() -> Self
+pub fn Color::is_transparent(Self) -> Bool
+pub fn Color::magenta() -> Self
+pub fn Color::red() -> Self
+pub fn Color::rgb(Int, Int, Int) -> Self
+pub fn Color::rgba(Int, Int, Int, Double) -> Self
+pub fn Color::transparent() -> Self
+pub fn Color::white() -> Self
+pub fn Color::yellow() -> Self
+pub impl Eq for Color
+
+pub struct Component {
+  node : @node.Node
+  styles : RenderStyleMap
+  texts : TextContentMap
+  click_handlers : ClickHandlers
+  roles : RoleMap
+}
+pub fn Component::get_click_handlers(Self) -> ClickHandlers
+pub fn Component::get_node(Self) -> @node.Node
+pub fn Component::get_role(Self, String) -> Role?
+pub fn Component::get_roles(Self) -> RoleMap
+pub fn Component::get_styles(Self) -> RenderStyleMap
+pub fn Component::get_text(Self, String) -> String?
+pub fn Component::get_texts(Self) -> TextContentMap
+pub fn Component::id(Self) -> String
+
+pub struct GridRect {
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+} derive(Eq, @debug.Debug)
+pub impl Show for GridRect
+
+pub(all) struct RenderStyle {
+  fg : Color
+  bg : Color
+  bold : Bool
+  underline : Bool
+  border : BorderChars?
+  border_fg : Color
+}
+pub fn RenderStyle::default() -> Self
+
+pub struct RenderStyleMap(Map[String, RenderStyle])
+pub fn RenderStyleMap::get(Self, String) -> RenderStyle
+pub fn RenderStyleMap::new() -> Self
+pub fn RenderStyleMap::set(Self, String, RenderStyle) -> Unit
+
+pub(all) enum Role {
+  Button
+  Checkbox
+  Link
+  Menuitem
+  Option
+  Radio
+  Slider
+  Switch
+  Tab
+  Textbox
+  Listbox
+  Menu
+  Menubar
+  Radiogroup
+  Tablist
+  Tree
+  Treegrid
+  Article
+  Cell
+  Columnheader
+  Definition
+  Directory
+  Document
+  Group
+  Heading
+  Img
+  List
+  Listitem
+  Row
+  Rowgroup
+  Rowheader
+  Separator
+  Table
+  Term
+  Banner
+  Complementary
+  Contentinfo
+  Form
+  Main
+  Navigation
+  Region
+  Search
+  Alert
+  Log
+  Marquee
+  Status
+  Timer
+  Alertdialog
+  Dialog
+  Custom(String)
+} derive(Eq, @debug.Debug)
+pub impl Show for Role
+
+pub(all) struct RoleMap(Map[String, Role])
+pub fn RoleMap::get(Self, String) -> Role?
+pub fn RoleMap::iter(Self) -> Iter[(String, Role)]
+pub fn RoleMap::new() -> Self
+pub fn RoleMap::set(Self, String, Role) -> Unit
+
+pub struct TextContentMap(Map[String, String])
+pub fn TextContentMap::get(Self, String) -> String?
+pub fn TextContentMap::new() -> Self
+pub fn TextContentMap::set(Self, String, String) -> Unit
+
+// Type aliases
+
+// Traits
+

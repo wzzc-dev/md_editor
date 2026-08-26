@@ -1,0 +1,10 @@
+import {
+  "cross_framework/md_editor_moui/app",
+  "wzzc-dev/moui/runtime",
+  "wzzc-dev/moui_skia_renderer" @render_skia,
+  "wzzc-dev/moui/backend/macos",
+}
+
+supported_targets = "native"
+
+pkgtype(kind: "executable")

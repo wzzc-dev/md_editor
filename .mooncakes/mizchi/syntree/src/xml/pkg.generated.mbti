@@ -1,0 +1,58 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/xml"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_xml(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_xml_to_html(String) -> String
+
+pub fn xml_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct XmlToken {
+  token_type : XmlTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for XmlToken
+pub impl Show for XmlToken
+
+pub(all) enum XmlTokenType {
+  TagOpen
+  TagClose
+  TagSelfClose
+  TagName
+  AttrName
+  AttrValue
+  Text
+  Comment
+  CData
+  ProcessingInstruction
+  DocType
+  Entity
+  Equals
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for XmlTokenType
+pub impl Show for XmlTokenType
+
+pub(all) struct XmlTokenizer {
+  input : String
+  // private fields
+}
+pub fn XmlTokenizer::new(String) -> Self
+pub fn XmlTokenizer::next_token(Self) -> XmlToken?
+pub fn XmlTokenizer::tokenize_all(Self) -> Array[XmlToken]
+
+// Type aliases
+
+// Traits
+

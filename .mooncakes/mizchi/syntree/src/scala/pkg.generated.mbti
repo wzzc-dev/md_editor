@@ -1,0 +1,80 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/scala"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_scala(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_scala_to_html(String) -> String
+
+pub fn scala_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct ScalaToken {
+  token_type : ScalaTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for ScalaToken
+pub impl Show for ScalaToken
+
+pub(all) enum ScalaTokenType {
+  Keyword
+  DeclKeyword
+  Modifier
+  String
+  MultilineString
+  StringInterp
+  Char
+  Symbol
+  Number
+  Bool
+  Null
+  Identifier
+  TypeName
+  Annotation
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Arrow
+  TypeArrow
+  Guard
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Semicolon
+  Colon
+  Dot
+  Underscore
+  LineComment
+  BlockComment
+  DocComment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for ScalaTokenType
+pub impl Show for ScalaTokenType
+
+pub(all) struct ScalaTokenizer {
+  input : String
+  // private fields
+}
+pub fn ScalaTokenizer::new(String) -> Self
+pub fn ScalaTokenizer::next_token(Self) -> ScalaToken?
+pub fn ScalaTokenizer::tokenize_all(Self) -> Array[ScalaToken]
+
+// Type aliases
+
+// Traits
+

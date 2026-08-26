@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/argparse",
+  "moonbitlang/x/fs",
+  "moonbitlang/parser/fmt",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")
