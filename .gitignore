@@ -11,3 +11,4 @@ scripts/__pycache__/
 data/*.md
 data/.generated
 .DS_Store
+.mooncakes
