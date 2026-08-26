@@ -1,0 +1,8 @@
+import {
+  "Milky2018/moon_accesskit" @lib,
+  "Milky2018/moon_accesskit/consumer" @consumer,
+}
+
+options(
+  "is-main": true,
+)

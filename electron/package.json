@@ -1,0 +1,11 @@
+{
+  "name": "cross-framework-markdown-electron",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "benchmark": "node benchmark.js --benchmark"
+  },
+  "devDependencies": { "electron": "^31.0.0" }
+}

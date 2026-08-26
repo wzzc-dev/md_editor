@@ -1,0 +1,10 @@
+import {
+  "mizchi/tui",
+  "mizchi/tui/vnode",
+}
+
+supported_targets = "js"
+
+options(
+  "is-main": true,
+)

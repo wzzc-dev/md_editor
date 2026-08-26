@@ -1,0 +1,81 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/kotlin"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_kotlin(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_kotlin_to_html(String) -> String
+
+pub fn kotlin_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct KotlinToken {
+  token_type : KotlinTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for KotlinToken
+pub impl Show for KotlinToken
+
+pub(all) enum KotlinTokenType {
+  Keyword
+  DeclKeyword
+  Modifier
+  String
+  MultilineString
+  StringTemplate
+  Char
+  Number
+  Bool
+  Null
+  Identifier
+  TypeName
+  Annotation
+  Label
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Range
+  Elvis
+  SafeCall
+  NotNull
+  Arrow
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Semicolon
+  Colon
+  Dot
+  LineComment
+  BlockComment
+  DocComment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for KotlinTokenType
+pub impl Show for KotlinTokenType
+
+pub(all) struct KotlinTokenizer {
+  input : String
+  // private fields
+}
+pub fn KotlinTokenizer::new(String) -> Self
+pub fn KotlinTokenizer::next_token(Self) -> KotlinToken?
+pub fn KotlinTokenizer::tokenize_all(Self) -> Array[KotlinToken]
+
+// Type aliases
+
+// Traits
+

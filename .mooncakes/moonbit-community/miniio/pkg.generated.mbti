@@ -1,0 +1,187 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/miniio"
+
+import {
+  "moonbit-community/miniio/io",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn args_get() -> Array[String] raise Errno
+
+pub fn copy_file(StringView, StringView, append? : Bool, create_mode? : CreateMode) -> Unit raise Errno
+
+pub fn create(StringView) -> File raise Errno
+
+pub fn environ_get() -> Array[(String, String)] raise Errno
+
+pub fn exists(StringView) -> Bool raise Errno
+
+pub fn exit(Int) -> Unit
+
+pub fn get_env_var(StringView) -> String? raise Errno
+
+pub fn get_env_vars() -> Map[String, String] raise Errno
+
+pub fn is_dir(StringView) -> Bool raise Errno
+
+pub fn is_file(StringView) -> Bool raise Errno
+
+pub fn kind(StringView) -> FileKind raise Errno
+
+pub fn mkdir(StringView) -> Unit raise Errno
+
+pub fn open(StringView, mode? : Mode, append? : Bool, create_mode? : CreateMode, follow_symlink? : Bool) -> File raise Errno
+
+pub fn read_file(StringView) -> &@io.Data raise Errno
+
+pub fn read_json_file(StringView) -> Json raise Errno
+
+pub fn read_text_file(StringView) -> String raise Errno
+
+pub fn readdir(StringView, include_hidden? : Bool, sort? : Bool, follow_symlink? : Bool) -> Array[String] raise Errno
+
+pub fn remove(StringView) -> Unit raise Errno
+
+pub fn remove_file(StringView) -> Unit raise Errno
+
+pub fn rmdir(StringView, recursive? : Bool) -> Unit raise Errno
+
+pub let stderr : File
+
+pub let stdin : File
+
+pub let stdout : File
+
+pub fn write_file(StringView, &@io.Data, append? : Bool, create_mode? : CreateMode) -> Unit raise Errno
+
+pub fn write_json_file(StringView, Json, append? : Bool, create_mode? : CreateMode) -> Unit raise Errno
+
+pub fn write_text_file(StringView, StringView, append? : Bool, create_mode? : CreateMode) -> Unit raise Errno
+
+// Errors
+pub(all) suberror Errno {
+  Success
+  TooBig
+  Acces
+  Addrinuse
+  Addrnotavail
+  Afnosupport
+  Again
+  Already
+  Badf
+  Badmsg
+  Busy
+  Canceled
+  Child
+  Connaborted
+  Connrefused
+  Connreset
+  Deadlock
+  Destaddrreq
+  Dom
+  Dquot
+  Exist
+  Fault
+  Fbig
+  Hostunreach
+  Idrm
+  Ilseq
+  Inprogress
+  Intr
+  Inval
+  IO
+  Isconn
+  Isdir
+  Loop
+  Mfile
+  Mlink
+  Msgsize
+  Multihop
+  Nametoolong
+  Netdown
+  Netreset
+  Netunreach
+  Nfile
+  Nobufs
+  Nodev
+  Noent
+  Noexec
+  Nolck
+  Nolink
+  Nomem
+  Nomsg
+  Noprotoopt
+  Nospc
+  Nosys
+  Notconn
+  Notdir
+  Notempty
+  Notrecoverable
+  Notsock
+  Notsup
+  Notty
+  Nxio
+  Overflow
+  Ownerdead
+  Perm
+  Pipe
+  Proto
+  Protonosupport
+  Prototype
+  Range
+  Rofs
+  Spipe
+  Srch
+  Stale
+  Timedout
+  Txtbsy
+  Xdev
+  Notcapable
+} derive(Eq, @debug.Debug)
+pub impl Show for Errno
+
+// Types and methods
+pub(all) enum CreateMode {
+  OpenExisting
+  TruncateExisting
+  OpenOrCreate
+  CreateOrTruncate
+  CreateNew
+} derive(Eq, @debug.Debug)
+
+type File
+pub fn File::close(Self) -> Unit raise Errno
+pub fn File::seek(Self, Int64, from? : SeekFrom) -> UInt64 raise Errno
+pub fn File::tell(Self) -> UInt64 raise Errno
+pub fn File::write_all(Self, BytesView) -> Unit raise Errno
+pub fn File::write_text(Self, StringView) -> Unit raise Errno
+pub impl @io.Reader for File
+pub impl @io.Writer for File
+
+pub(all) enum FileKind {
+  Unknown
+  Regular
+  Directory
+  SymLink
+  Socket
+  BlockDevice
+  CharDevice
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Mode {
+  ReadOnly
+  WriteOnly
+  ReadWrite
+} derive(Eq, @debug.Debug)
+
+pub(all) enum SeekFrom {
+  Start
+  Current
+  End
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

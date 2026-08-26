@@ -1,0 +1,12 @@
+import {
+  "moonbit-community/miniio",
+}
+
+supported_targets = "wasm"
+
+import {
+} for "test"
+
+options(
+  is_main: true,
+)

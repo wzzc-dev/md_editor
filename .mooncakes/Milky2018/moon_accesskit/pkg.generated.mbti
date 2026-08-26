@@ -1,0 +1,967 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Milky2018/moon_accesskit"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn action_mask_to_action_vec(UInt) -> Array[Action]
+
+// Errors
+
+// Types and methods
+pub(all) enum Action {
+  Click
+  Focus
+  Blur
+  Collapse
+  Expand
+  CustomAction
+  Decrement
+  Increment
+  HideTooltip
+  ShowTooltip
+  ReplaceSelectedText
+  ScrollDown
+  ScrollLeft
+  ScrollRight
+  ScrollUp
+  ScrollIntoView
+  ScrollToPoint
+  SetScrollOffset
+  SetTextSelection
+  SetSequentialFocusNavigationStartingPoint
+  SetValue
+  ShowContextMenu
+} derive(Eq, @debug.Debug)
+pub fn Action::index(Self) -> Int
+pub fn Action::mask(Self) -> UInt
+pub fn Action::n(Int) -> Self?
+pub impl Show for Action
+pub impl ToJson for Action
+pub impl @json.FromJson for Action
+
+pub(all) enum ActionData {
+  CustomAction(Int)
+  Value(String)
+  NumericValue(Double)
+  ScrollUnit(ScrollUnit)
+  ScrollHint(ScrollHint)
+  ScrollToPoint(Point)
+  SetScrollOffset(Point)
+  SetTextSelection(TextSelection)
+} derive(Eq, @debug.Debug)
+pub impl Show for ActionData
+pub impl ToJson for ActionData
+pub impl @json.FromJson for ActionData
+
+pub(all) struct ActionRequest {
+  // private fields
+}
+pub fn ActionRequest::ActionRequest(Action, TreeId, NodeId) -> Self
+pub fn ActionRequest::action(Self) -> Action
+pub fn ActionRequest::data(Self) -> ActionData?
+pub fn ActionRequest::set_data(Self, ActionData) -> Unit
+pub fn ActionRequest::target_node(Self) -> NodeId
+pub fn ActionRequest::target_tree(Self) -> TreeId
+pub impl ToJson for ActionRequest
+pub impl @json.FromJson for ActionRequest
+
+pub(all) struct Affine {
+  a : Double
+  b : Double
+  c : Double
+  d : Double
+  e : Double
+  f : Double
+} derive(Eq, @debug.Debug)
+pub fn Affine::Affine(Double, Double, Double, Double, Double, Double) -> Self
+pub fn Affine::as_coeffs(Self) -> Array[Double]
+pub fn Affine::determinant(Self) -> Double
+pub fn Affine::flip_x() -> Self
+pub fn Affine::flip_y() -> Self
+pub fn Affine::identity() -> Self
+pub fn Affine::inverse(Self) -> Self
+pub fn Affine::is_finite(Self) -> Bool
+pub fn Affine::is_nan(Self) -> Bool
+pub fn Affine::map_unit_square(Rect) -> Self
+pub fn Affine::mul(Self, Self) -> Self
+pub fn Affine::scale(Double) -> Self
+pub fn Affine::scale_non_uniform(Double, Double) -> Self
+pub fn Affine::transform_point(Self, Point) -> Point
+pub fn Affine::transform_rect_bbox(Self, Rect) -> Rect
+pub fn Affine::translate(Vec2) -> Self
+pub impl Show for Affine
+pub impl ToJson for Affine
+pub impl @json.FromJson for Affine
+
+pub(all) enum AriaCurrent {
+  False
+  True
+  Page
+  Step
+  Location
+  Date
+  Time
+} derive(Eq, @debug.Debug)
+pub impl Show for AriaCurrent
+pub impl ToJson for AriaCurrent
+pub impl @json.FromJson for AriaCurrent
+
+pub(all) enum AutoComplete {
+  Inline
+  List
+  Both
+} derive(Eq, @debug.Debug)
+pub impl Show for AutoComplete
+pub impl ToJson for AutoComplete
+pub impl @json.FromJson for AutoComplete
+
+pub(all) struct Color {
+  red : Byte
+  green : Byte
+  blue : Byte
+  alpha : Byte
+} derive(Eq, @debug.Debug)
+pub fn Color::Color(Byte, Byte, Byte, Byte) -> Self
+pub impl Show for Color
+pub impl ToJson for Color
+pub impl @json.FromJson for Color
+
+pub(all) struct CustomAction {
+  id : Int
+  description : String
+} derive(Eq, @debug.Debug)
+pub fn CustomAction::CustomAction(Int, String) -> Self
+pub fn CustomAction::debug(Self) -> String
+pub impl Show for CustomAction
+pub impl ToJson for CustomAction
+pub impl @json.FromJson for CustomAction
+
+pub(all) enum HasPopup {
+  Menu
+  Listbox
+  Tree
+  Grid
+  Dialog
+} derive(Eq, @debug.Debug)
+pub impl Show for HasPopup
+pub impl ToJson for HasPopup
+pub impl @json.FromJson for HasPopup
+
+pub(all) enum Invalid {
+  True
+  Grammar
+  Spelling
+} derive(Eq, @debug.Debug)
+pub impl Show for Invalid
+pub impl ToJson for Invalid
+pub impl @json.FromJson for Invalid
+
+pub(all) enum ListStyle {
+  Circle
+  Disc
+  Image
+  Numeric
+  Square
+  Other
+} derive(Eq, @debug.Debug)
+pub impl Show for ListStyle
+pub impl ToJson for ListStyle
+pub impl @json.FromJson for ListStyle
+
+pub(all) enum Live {
+  Off
+  Polite
+  Assertive
+} derive(Eq, @debug.Debug)
+pub impl Show for Live
+pub impl ToJson for Live
+pub impl @json.FromJson for Live
+
+pub(all) struct Node {
+  // private fields
+}
+pub fn Node::Node(Role) -> Self
+pub fn Node::access_key(Self) -> String?
+pub fn Node::actions_mask(Self) -> UInt
+pub fn Node::active_descendant(Self) -> NodeId?
+pub fn Node::add_action(Self, Action) -> Unit
+pub fn Node::add_child_action(Self, Action) -> Unit
+pub fn Node::aria_current(Self) -> AriaCurrent?
+pub fn Node::author_id(Self) -> String?
+pub fn Node::auto_complete(Self) -> AutoComplete?
+pub fn Node::background_color(Self) -> Color?
+pub fn Node::bounds(Self) -> Rect?
+pub fn Node::braille_label(Self) -> String?
+pub fn Node::braille_role_description(Self) -> String?
+pub fn Node::character_lengths(Self) -> Array[Int]
+pub fn Node::character_positions(Self) -> Array[Float]?
+pub fn Node::character_widths(Self) -> Array[Float]?
+pub fn Node::child_actions_mask(Self) -> UInt
+pub fn Node::child_supports_action(Self, Action) -> Bool
+pub fn Node::children(Self) -> Array[NodeId]
+pub fn Node::class_name(Self) -> String?
+pub fn Node::clear_access_key(Self) -> Unit
+pub fn Node::clear_actions(Self) -> Unit
+pub fn Node::clear_active_descendant(Self) -> Unit
+pub fn Node::clear_aria_current(Self) -> Unit
+pub fn Node::clear_author_id(Self) -> Unit
+pub fn Node::clear_auto_complete(Self) -> Unit
+pub fn Node::clear_background_color(Self) -> Unit
+pub fn Node::clear_bounds(Self) -> Unit
+pub fn Node::clear_braille_label(Self) -> Unit
+pub fn Node::clear_braille_role_description(Self) -> Unit
+pub fn Node::clear_busy(Self) -> Unit
+pub fn Node::clear_character_lengths(Self) -> Unit
+pub fn Node::clear_character_positions(Self) -> Unit
+pub fn Node::clear_character_widths(Self) -> Unit
+pub fn Node::clear_child_actions(Self) -> Unit
+pub fn Node::clear_children(Self) -> Unit
+pub fn Node::clear_class_name(Self) -> Unit
+pub fn Node::clear_clips_children(Self) -> Unit
+pub fn Node::clear_color_value(Self) -> Unit
+pub fn Node::clear_column_count(Self) -> Unit
+pub fn Node::clear_column_index(Self) -> Unit
+pub fn Node::clear_column_index_text(Self) -> Unit
+pub fn Node::clear_column_span(Self) -> Unit
+pub fn Node::clear_controls(Self) -> Unit
+pub fn Node::clear_custom_actions(Self) -> Unit
+pub fn Node::clear_described_by(Self) -> Unit
+pub fn Node::clear_description(Self) -> Unit
+pub fn Node::clear_details(Self) -> Unit
+pub fn Node::clear_disabled(Self) -> Unit
+pub fn Node::clear_error_message(Self) -> Unit
+pub fn Node::clear_expanded(Self) -> Unit
+pub fn Node::clear_flow_to(Self) -> Unit
+pub fn Node::clear_font_family(Self) -> Unit
+pub fn Node::clear_font_size(Self) -> Unit
+pub fn Node::clear_font_weight(Self) -> Unit
+pub fn Node::clear_foreground_color(Self) -> Unit
+pub fn Node::clear_has_popup(Self) -> Unit
+pub fn Node::clear_hidden(Self) -> Unit
+pub fn Node::clear_html_tag(Self) -> Unit
+pub fn Node::clear_in_page_link_target(Self) -> Unit
+pub fn Node::clear_inner_html(Self) -> Unit
+pub fn Node::clear_invalid(Self) -> Unit
+pub fn Node::clear_is_grammar_error(Self) -> Unit
+pub fn Node::clear_is_line_breaking_object(Self) -> Unit
+pub fn Node::clear_is_page_breaking_object(Self) -> Unit
+pub fn Node::clear_is_search_match(Self) -> Unit
+pub fn Node::clear_is_spelling_error(Self) -> Unit
+pub fn Node::clear_is_suggestion(Self) -> Unit
+pub fn Node::clear_italic(Self) -> Unit
+pub fn Node::clear_keyboard_shortcut(Self) -> Unit
+pub fn Node::clear_label(Self) -> Unit
+pub fn Node::clear_labelled_by(Self) -> Unit
+pub fn Node::clear_language(Self) -> Unit
+pub fn Node::clear_level(Self) -> Unit
+pub fn Node::clear_list_style(Self) -> Unit
+pub fn Node::clear_live(Self) -> Unit
+pub fn Node::clear_live_atomic(Self) -> Unit
+pub fn Node::clear_max_numeric_value(Self) -> Unit
+pub fn Node::clear_member_of(Self) -> Unit
+pub fn Node::clear_min_numeric_value(Self) -> Unit
+pub fn Node::clear_modal(Self) -> Unit
+pub fn Node::clear_multiselectable(Self) -> Unit
+pub fn Node::clear_next_on_line(Self) -> Unit
+pub fn Node::clear_numeric_value(Self) -> Unit
+pub fn Node::clear_numeric_value_jump(Self) -> Unit
+pub fn Node::clear_numeric_value_step(Self) -> Unit
+pub fn Node::clear_orientation(Self) -> Unit
+pub fn Node::clear_overline(Self) -> Unit
+pub fn Node::clear_owns(Self) -> Unit
+pub fn Node::clear_placeholder(Self) -> Unit
+pub fn Node::clear_popup_for(Self) -> Unit
+pub fn Node::clear_position_in_set(Self) -> Unit
+pub fn Node::clear_previous_on_line(Self) -> Unit
+pub fn Node::clear_radio_group(Self) -> Unit
+pub fn Node::clear_read_only(Self) -> Unit
+pub fn Node::clear_required(Self) -> Unit
+pub fn Node::clear_role_description(Self) -> Unit
+pub fn Node::clear_row_count(Self) -> Unit
+pub fn Node::clear_row_index(Self) -> Unit
+pub fn Node::clear_row_index_text(Self) -> Unit
+pub fn Node::clear_row_span(Self) -> Unit
+pub fn Node::clear_scroll_x(Self) -> Unit
+pub fn Node::clear_scroll_x_max(Self) -> Unit
+pub fn Node::clear_scroll_x_min(Self) -> Unit
+pub fn Node::clear_scroll_y(Self) -> Unit
+pub fn Node::clear_scroll_y_max(Self) -> Unit
+pub fn Node::clear_scroll_y_min(Self) -> Unit
+pub fn Node::clear_selected(Self) -> Unit
+pub fn Node::clear_size_of_set(Self) -> Unit
+pub fn Node::clear_sort_direction(Self) -> Unit
+pub fn Node::clear_state_description(Self) -> Unit
+pub fn Node::clear_strikethrough(Self) -> Unit
+pub fn Node::clear_text_align(Self) -> Unit
+pub fn Node::clear_text_direction(Self) -> Unit
+pub fn Node::clear_text_selection(Self) -> Unit
+pub fn Node::clear_toggled(Self) -> Unit
+pub fn Node::clear_tooltip(Self) -> Unit
+pub fn Node::clear_touch_transparent(Self) -> Unit
+pub fn Node::clear_transform(Self) -> Unit
+pub fn Node::clear_tree_id(Self) -> Unit
+pub fn Node::clear_underline(Self) -> Unit
+pub fn Node::clear_url(Self) -> Unit
+pub fn Node::clear_value(Self) -> Unit
+pub fn Node::clear_vertical_offset(Self) -> Unit
+pub fn Node::clear_visited(Self) -> Unit
+pub fn Node::clear_word_starts(Self) -> Unit
+pub fn Node::clips_children(Self) -> Bool
+pub fn Node::color_value(Self) -> Color?
+pub fn Node::column_count(Self) -> Int?
+pub fn Node::column_index(Self) -> Int?
+pub fn Node::column_index_text(Self) -> String?
+pub fn Node::column_span(Self) -> Int?
+pub fn Node::controls(Self) -> Array[NodeId]
+pub fn Node::custom_actions(Self) -> Array[CustomAction]
+pub fn Node::debug(Self) -> String
+pub fn Node::described_by(Self) -> Array[NodeId]
+pub fn Node::description(Self) -> String?
+pub fn Node::details(Self) -> Array[NodeId]
+pub fn Node::error_message(Self) -> NodeId?
+pub fn Node::flow_to(Self) -> Array[NodeId]
+pub fn Node::font_family(Self) -> String?
+pub fn Node::font_size(Self) -> Float?
+pub fn Node::font_weight(Self) -> Float?
+pub fn Node::foreground_color(Self) -> Color?
+pub fn Node::has_popup(Self) -> HasPopup?
+pub fn Node::html_tag(Self) -> String?
+pub fn Node::in_page_link_target(Self) -> NodeId?
+pub fn Node::inner_html(Self) -> String?
+pub fn Node::invalid(Self) -> Invalid?
+pub fn Node::is_busy(Self) -> Bool
+pub fn Node::is_disabled(Self) -> Bool
+pub fn Node::is_expanded(Self) -> Bool?
+pub fn Node::is_grammar_error(Self) -> Bool
+pub fn Node::is_hidden(Self) -> Bool
+pub fn Node::is_italic(Self) -> Bool
+pub fn Node::is_line_breaking_object(Self) -> Bool
+pub fn Node::is_live_atomic(Self) -> Bool
+pub fn Node::is_modal(Self) -> Bool
+pub fn Node::is_multiselectable(Self) -> Bool
+pub fn Node::is_page_breaking_object(Self) -> Bool
+pub fn Node::is_read_only(Self) -> Bool
+pub fn Node::is_required(Self) -> Bool
+pub fn Node::is_search_match(Self) -> Bool
+pub fn Node::is_selected(Self) -> Bool?
+pub fn Node::is_spelling_error(Self) -> Bool
+pub fn Node::is_suggestion(Self) -> Bool
+pub fn Node::is_touch_transparent(Self) -> Bool
+pub fn Node::is_visited(Self) -> Bool
+pub fn Node::keyboard_shortcut(Self) -> String?
+pub fn Node::label(Self) -> String?
+pub fn Node::labelled_by(Self) -> Array[NodeId]
+pub fn Node::language(Self) -> String?
+pub fn Node::level(Self) -> Int?
+pub fn Node::list_style(Self) -> ListStyle?
+pub fn Node::live(Self) -> Live?
+pub fn Node::max_numeric_value(Self) -> Double?
+pub fn Node::member_of(Self) -> NodeId?
+pub fn Node::min_numeric_value(Self) -> Double?
+pub fn Node::next_on_line(Self) -> NodeId?
+pub fn Node::numeric_value(Self) -> Double?
+pub fn Node::numeric_value_jump(Self) -> Double?
+pub fn Node::numeric_value_step(Self) -> Double?
+pub fn Node::orientation(Self) -> Orientation?
+pub fn Node::overline(Self) -> TextDecoration?
+pub fn Node::owns(Self) -> Array[NodeId]
+pub fn Node::placeholder(Self) -> String?
+pub fn Node::popup_for(Self) -> NodeId?
+pub fn Node::position_in_set(Self) -> Int?
+pub fn Node::previous_on_line(Self) -> NodeId?
+pub fn Node::push_child(Self, NodeId) -> Unit
+pub fn Node::push_controlled(Self, NodeId) -> Unit
+pub fn Node::push_custom_action(Self, CustomAction) -> Unit
+pub fn Node::push_described_by(Self, NodeId) -> Unit
+pub fn Node::push_detail(Self, NodeId) -> Unit
+pub fn Node::push_flow_to(Self, NodeId) -> Unit
+pub fn Node::push_labelled_by(Self, NodeId) -> Unit
+pub fn Node::push_owned(Self, NodeId) -> Unit
+pub fn Node::push_to_radio_group(Self, NodeId) -> Unit
+pub fn Node::radio_group(Self) -> Array[NodeId]
+pub fn Node::remove_action(Self, Action) -> Unit
+pub fn Node::remove_child_action(Self, Action) -> Unit
+pub fn Node::role(Self) -> Role
+pub fn Node::role_description(Self) -> String?
+pub fn Node::row_count(Self) -> Int?
+pub fn Node::row_index(Self) -> Int?
+pub fn Node::row_index_text(Self) -> String?
+pub fn Node::row_span(Self) -> Int?
+pub fn Node::scroll_x(Self) -> Double?
+pub fn Node::scroll_x_max(Self) -> Double?
+pub fn Node::scroll_x_min(Self) -> Double?
+pub fn Node::scroll_y(Self) -> Double?
+pub fn Node::scroll_y_max(Self) -> Double?
+pub fn Node::scroll_y_min(Self) -> Double?
+pub fn Node::set_access_key(Self, String) -> Unit
+pub fn Node::set_active_descendant(Self, NodeId) -> Unit
+pub fn Node::set_aria_current(Self, AriaCurrent) -> Unit
+pub fn Node::set_author_id(Self, String) -> Unit
+pub fn Node::set_auto_complete(Self, AutoComplete) -> Unit
+pub fn Node::set_background_color(Self, Color) -> Unit
+pub fn Node::set_bounds(Self, Rect) -> Unit
+pub fn Node::set_braille_label(Self, String) -> Unit
+pub fn Node::set_braille_role_description(Self, String) -> Unit
+pub fn Node::set_busy(Self) -> Unit
+pub fn Node::set_character_lengths(Self, Array[Int]) -> Unit
+pub fn Node::set_character_positions(Self, Array[Float]) -> Unit
+pub fn Node::set_character_widths(Self, Array[Float]) -> Unit
+pub fn Node::set_children(Self, Array[NodeId]) -> Unit
+pub fn Node::set_class_name(Self, String) -> Unit
+pub fn Node::set_clips_children(Self) -> Unit
+pub fn Node::set_color_value(Self, Color) -> Unit
+pub fn Node::set_column_count(Self, Int) -> Unit
+pub fn Node::set_column_index(Self, Int) -> Unit
+pub fn Node::set_column_index_text(Self, String) -> Unit
+pub fn Node::set_column_span(Self, Int) -> Unit
+pub fn Node::set_controls(Self, Array[NodeId]) -> Unit
+pub fn Node::set_custom_actions(Self, Array[CustomAction]) -> Unit
+pub fn Node::set_described_by(Self, Array[NodeId]) -> Unit
+pub fn Node::set_description(Self, String) -> Unit
+pub fn Node::set_details(Self, Array[NodeId]) -> Unit
+pub fn Node::set_disabled(Self) -> Unit
+pub fn Node::set_error_message(Self, NodeId) -> Unit
+pub fn Node::set_expanded(Self, Bool) -> Unit
+pub fn Node::set_flow_to(Self, Array[NodeId]) -> Unit
+pub fn Node::set_font_family(Self, String) -> Unit
+pub fn Node::set_font_size(Self, Float) -> Unit
+pub fn Node::set_font_weight(Self, Float) -> Unit
+pub fn Node::set_foreground_color(Self, Color) -> Unit
+pub fn Node::set_has_popup(Self, HasPopup) -> Unit
+pub fn Node::set_hidden(Self) -> Unit
+pub fn Node::set_html_tag(Self, String) -> Unit
+pub fn Node::set_in_page_link_target(Self, NodeId) -> Unit
+pub fn Node::set_inner_html(Self, String) -> Unit
+pub fn Node::set_invalid(Self, Invalid) -> Unit
+pub fn Node::set_is_grammar_error(Self) -> Unit
+pub fn Node::set_is_line_breaking_object(Self) -> Unit
+pub fn Node::set_is_page_breaking_object(Self) -> Unit
+pub fn Node::set_is_search_match(Self) -> Unit
+pub fn Node::set_is_spelling_error(Self) -> Unit
+pub fn Node::set_is_suggestion(Self) -> Unit
+pub fn Node::set_italic(Self) -> Unit
+pub fn Node::set_keyboard_shortcut(Self, String) -> Unit
+pub fn Node::set_label(Self, String) -> Unit
+pub fn Node::set_labelled_by(Self, Array[NodeId]) -> Unit
+pub fn Node::set_language(Self, String) -> Unit
+pub fn Node::set_level(Self, Int) -> Unit
+pub fn Node::set_list_style(Self, ListStyle) -> Unit
+pub fn Node::set_live(Self, Live) -> Unit
+pub fn Node::set_live_atomic(Self) -> Unit
+pub fn Node::set_max_numeric_value(Self, Double) -> Unit
+pub fn Node::set_member_of(Self, NodeId) -> Unit
+pub fn Node::set_min_numeric_value(Self, Double) -> Unit
+pub fn Node::set_modal(Self) -> Unit
+pub fn Node::set_multiselectable(Self) -> Unit
+pub fn Node::set_next_on_line(Self, NodeId) -> Unit
+pub fn Node::set_numeric_value(Self, Double) -> Unit
+pub fn Node::set_numeric_value_jump(Self, Double) -> Unit
+pub fn Node::set_numeric_value_step(Self, Double) -> Unit
+pub fn Node::set_orientation(Self, Orientation) -> Unit
+pub fn Node::set_overline(Self, TextDecoration) -> Unit
+pub fn Node::set_owns(Self, Array[NodeId]) -> Unit
+pub fn Node::set_placeholder(Self, String) -> Unit
+pub fn Node::set_popup_for(Self, NodeId) -> Unit
+pub fn Node::set_position_in_set(Self, Int) -> Unit
+pub fn Node::set_previous_on_line(Self, NodeId) -> Unit
+pub fn Node::set_radio_group(Self, Array[NodeId]) -> Unit
+pub fn Node::set_read_only(Self) -> Unit
+pub fn Node::set_required(Self) -> Unit
+pub fn Node::set_role(Self, Role) -> Unit
+pub fn Node::set_role_description(Self, String) -> Unit
+pub fn Node::set_row_count(Self, Int) -> Unit
+pub fn Node::set_row_index(Self, Int) -> Unit
+pub fn Node::set_row_index_text(Self, String) -> Unit
+pub fn Node::set_row_span(Self, Int) -> Unit
+pub fn Node::set_scroll_x(Self, Double) -> Unit
+pub fn Node::set_scroll_x_max(Self, Double) -> Unit
+pub fn Node::set_scroll_x_min(Self, Double) -> Unit
+pub fn Node::set_scroll_y(Self, Double) -> Unit
+pub fn Node::set_scroll_y_max(Self, Double) -> Unit
+pub fn Node::set_scroll_y_min(Self, Double) -> Unit
+pub fn Node::set_selected(Self, Bool) -> Unit
+pub fn Node::set_size_of_set(Self, Int) -> Unit
+pub fn Node::set_sort_direction(Self, SortDirection) -> Unit
+pub fn Node::set_state_description(Self, String) -> Unit
+pub fn Node::set_strikethrough(Self, TextDecoration) -> Unit
+pub fn Node::set_text_align(Self, TextAlign) -> Unit
+pub fn Node::set_text_direction(Self, TextDirection) -> Unit
+pub fn Node::set_text_selection(Self, TextSelection) -> Unit
+pub fn Node::set_toggled(Self, Toggled) -> Unit
+pub fn Node::set_tooltip(Self, String) -> Unit
+pub fn Node::set_touch_transparent(Self) -> Unit
+pub fn Node::set_transform(Self, Affine) -> Unit
+pub fn Node::set_tree_id(Self, TreeId) -> Unit
+pub fn Node::set_underline(Self, TextDecoration) -> Unit
+pub fn Node::set_url(Self, String) -> Unit
+pub fn Node::set_value(Self, String) -> Unit
+pub fn Node::set_vertical_offset(Self, VerticalOffset) -> Unit
+pub fn Node::set_visited(Self) -> Unit
+pub fn Node::set_word_starts(Self, Array[Int]) -> Unit
+pub fn Node::size_of_set(Self) -> Int?
+pub fn Node::sort_direction(Self) -> SortDirection?
+pub fn Node::state_description(Self) -> String?
+pub fn Node::strikethrough(Self) -> TextDecoration?
+pub fn Node::supports_action(Self, Action) -> Bool
+pub fn Node::text_align(Self) -> TextAlign?
+pub fn Node::text_direction(Self) -> TextDirection?
+pub fn Node::text_selection(Self) -> TextSelection?
+pub fn Node::toggled(Self) -> Toggled?
+pub fn Node::tooltip(Self) -> String?
+pub fn Node::transform(Self) -> Affine?
+pub fn Node::tree_id(Self) -> TreeId?
+pub fn Node::underline(Self) -> TextDecoration?
+pub fn Node::url(Self) -> String?
+pub fn Node::value(Self) -> String?
+pub fn Node::vertical_offset(Self) -> VerticalOffset?
+pub fn Node::word_starts(Self) -> Array[Int]
+pub impl ToJson for Node
+pub impl @json.FromJson for Node
+
+pub(all) struct NodeId(UInt64) derive(Eq, Hash, @debug.Debug)
+pub fn NodeId::debug(Self) -> String
+pub fn NodeId::from_u64(UInt64) -> Self
+pub fn NodeId::root() -> Self
+pub fn NodeId::to_u64(Self) -> UInt64
+pub impl Show for NodeId
+pub impl ToJson for NodeId
+pub impl @json.FromJson for NodeId
+
+pub(all) struct NodeUpdate {
+  // private fields
+}
+pub fn NodeUpdate::NodeUpdate(NodeId, Node) -> Self
+pub fn NodeUpdate::id(Self) -> NodeId
+pub fn NodeUpdate::node(Self) -> Node
+pub impl ToJson for NodeUpdate
+pub impl @json.FromJson for NodeUpdate
+
+pub(all) enum Orientation {
+  Horizontal
+  Vertical
+} derive(Eq, @debug.Debug)
+pub impl Show for Orientation
+pub impl ToJson for Orientation
+pub impl @json.FromJson for Orientation
+
+pub(all) struct Point {
+  x : Double
+  y : Double
+} derive(Eq, @debug.Debug)
+pub fn Point::Point(Double, Double) -> Self
+pub fn Point::origin() -> Self
+pub fn Point::to_vec2(Self) -> Vec2
+pub fn Point::zero() -> Self
+pub impl Show for Point
+pub impl ToJson for Point
+pub impl @json.FromJson for Point
+
+pub(all) struct Rect {
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+} derive(Eq, @debug.Debug)
+pub fn Rect::Rect(Double, Double, Double, Double) -> Self
+pub fn Rect::abs(Self) -> Self
+pub fn Rect::area(Self) -> Double
+pub fn Rect::contains(Self, Point) -> Bool
+pub fn Rect::from_origin_size(Point, Size) -> Self
+pub fn Rect::from_points(Point, Point) -> Self
+pub fn Rect::height(Self) -> Double
+pub fn Rect::intersect(Self, Self) -> Self
+pub fn Rect::is_empty(Self) -> Bool
+pub fn Rect::max_x(Self) -> Double
+pub fn Rect::max_y(Self) -> Double
+pub fn Rect::min_x(Self) -> Double
+pub fn Rect::min_y(Self) -> Double
+pub fn Rect::origin(Self) -> Point
+pub fn Rect::size(Self) -> Size
+pub fn Rect::union(Self, Self) -> Self
+pub fn Rect::union_pt(Self, Point) -> Self
+pub fn Rect::width(Self) -> Double
+pub fn Rect::with_origin(Self, Point) -> Self
+pub fn Rect::with_size(Self, Size) -> Self
+pub fn Rect::zero() -> Self
+pub impl Show for Rect
+pub impl ToJson for Rect
+pub impl @json.FromJson for Rect
+
+pub(all) enum Role {
+  Unknown
+  TextRun
+  Cell
+  Label
+  Image
+  Link
+  Row
+  ListItem
+  ListMarker
+  TreeItem
+  ListBoxOption
+  MenuItem
+  MenuListOption
+  Paragraph
+  GenericContainer
+  CheckBox
+  RadioButton
+  TextInput
+  Button
+  DefaultButton
+  Pane
+  RowHeader
+  ColumnHeader
+  RowGroup
+  List
+  Table
+  LayoutTableCell
+  LayoutTableRow
+  LayoutTable
+  Switch
+  Menu
+  MultilineTextInput
+  SearchInput
+  DateInput
+  DateTimeInput
+  WeekInput
+  MonthInput
+  TimeInput
+  EmailInput
+  NumberInput
+  PasswordInput
+  PhoneNumberInput
+  UrlInput
+  Abbr
+  Alert
+  AlertDialog
+  Application
+  Article
+  Audio
+  Banner
+  Blockquote
+  Canvas
+  Caption
+  Caret
+  Code
+  ColorWell
+  ComboBox
+  EditableComboBox
+  Complementary
+  Comment
+  ContentDeletion
+  ContentInsertion
+  ContentInfo
+  Definition
+  DescriptionList
+  Details
+  Dialog
+  DisclosureTriangle
+  Document
+  EmbeddedObject
+  Emphasis
+  Feed
+  FigureCaption
+  Figure
+  Footer
+  Form
+  Grid
+  GridCell
+  Group
+  Header
+  Heading
+  Iframe
+  IframePresentational
+  ImeCandidate
+  Keyboard
+  Legend
+  LineBreak
+  ListBox
+  Log
+  Main
+  Mark
+  Marquee
+  Math
+  MenuBar
+  MenuItemCheckBox
+  MenuItemRadio
+  MenuListPopup
+  Meter
+  Navigation
+  Note
+  PluginObject
+  ProgressIndicator
+  RadioGroup
+  Region
+  RootWebArea
+  Ruby
+  RubyAnnotation
+  ScrollBar
+  ScrollView
+  Search
+  Section
+  SectionFooter
+  SectionHeader
+  Slider
+  SpinButton
+  Splitter
+  Status
+  Strong
+  Suggestion
+  SvgRoot
+  Tab
+  TabList
+  TabPanel
+  Term
+  Time
+  Timer
+  TitleBar
+  Toolbar
+  Tooltip
+  Tree
+  TreeGrid
+  Video
+  WebView
+  Window
+  PdfActionableHighlight
+  PdfRoot
+  GraphicsDocument
+  GraphicsObject
+  GraphicsSymbol
+  DocAbstract
+  DocAcknowledgements
+  DocAfterword
+  DocAppendix
+  DocBackLink
+  DocBiblioEntry
+  DocBibliography
+  DocBiblioRef
+  DocChapter
+  DocColophon
+  DocConclusion
+  DocCover
+  DocCredit
+  DocCredits
+  DocDedication
+  DocEndnote
+  DocEndnotes
+  DocEpigraph
+  DocEpilogue
+  DocErrata
+  DocExample
+  DocFootnote
+  DocForeword
+  DocGlossary
+  DocGlossRef
+  DocIndex
+  DocIntroduction
+  DocNoteRef
+  DocNotice
+  DocPageBreak
+  DocPageFooter
+  DocPageHeader
+  DocPageList
+  DocPart
+  DocPreface
+  DocPrologue
+  DocPullquote
+  DocQna
+  DocSubtitle
+  DocTip
+  DocToc
+  ListGrid
+  Terminal
+} derive(Eq, @debug.Debug)
+pub impl Show for Role
+pub impl ToJson for Role
+pub impl @json.FromJson for Role
+
+pub(all) enum ScrollHint {
+  TopLeft
+  BottomRight
+  TopEdge
+  BottomEdge
+  LeftEdge
+  RightEdge
+} derive(Eq, @debug.Debug)
+pub impl Show for ScrollHint
+pub impl ToJson for ScrollHint
+pub impl @json.FromJson for ScrollHint
+
+pub(all) enum ScrollUnit {
+  Item
+  Page
+} derive(Eq, @debug.Debug)
+pub impl Show for ScrollUnit
+pub impl ToJson for ScrollUnit
+pub impl @json.FromJson for ScrollUnit
+
+pub(all) struct Size {
+  width : Double
+  height : Double
+} derive(Eq, @debug.Debug)
+pub fn Size::Size(Double, Double) -> Self
+pub fn Size::to_vec2(Self) -> Vec2
+pub fn Size::zero() -> Self
+pub impl Show for Size
+pub impl ToJson for Size
+pub impl @json.FromJson for Size
+
+pub(all) enum SortDirection {
+  Ascending
+  Descending
+  Other
+} derive(Eq, @debug.Debug)
+pub impl Show for SortDirection
+pub impl ToJson for SortDirection
+pub impl @json.FromJson for SortDirection
+
+pub(all) enum TextAlign {
+  Left
+  Right
+  Center
+  Justify
+} derive(Eq, @debug.Debug)
+pub impl Show for TextAlign
+pub impl ToJson for TextAlign
+pub impl @json.FromJson for TextAlign
+
+pub(all) struct TextDecoration {
+  style : TextDecorationStyle
+  color : Color
+} derive(Eq, @debug.Debug)
+pub fn TextDecoration::TextDecoration(TextDecorationStyle, Color) -> Self
+pub impl Show for TextDecoration
+pub impl ToJson for TextDecoration
+pub impl @json.FromJson for TextDecoration
+
+pub(all) enum TextDecorationStyle {
+  Solid
+  Dotted
+  Dashed
+  Double
+  Wavy
+} derive(Eq, @debug.Debug)
+pub impl Show for TextDecorationStyle
+pub impl ToJson for TextDecorationStyle
+pub impl @json.FromJson for TextDecorationStyle
+
+pub(all) enum TextDirection {
+  LeftToRight
+  RightToLeft
+  TopToBottom
+  BottomToTop
+} derive(Eq, @debug.Debug)
+pub impl Show for TextDirection
+pub impl ToJson for TextDirection
+pub impl @json.FromJson for TextDirection
+
+pub(all) struct TextPosition {
+  node : NodeId
+  character_index : Int
+} derive(Eq, @debug.Debug)
+pub fn TextPosition::TextPosition(NodeId, Int) -> Self
+pub impl Show for TextPosition
+pub impl ToJson for TextPosition
+pub impl @json.FromJson for TextPosition
+
+pub(all) struct TextSelection {
+  anchor : TextPosition
+  focus : TextPosition
+} derive(Eq, @debug.Debug)
+pub fn TextSelection::TextSelection(TextPosition, TextPosition) -> Self
+pub impl Show for TextSelection
+pub impl ToJson for TextSelection
+pub impl @json.FromJson for TextSelection
+
+pub(all) enum Toggled {
+  False
+  True
+  Mixed
+} derive(Eq, @debug.Debug)
+pub fn Toggled::from_bool(Bool) -> Self
+pub impl Show for Toggled
+pub impl ToJson for Toggled
+pub impl @json.FromJson for Toggled
+
+pub(all) struct Tree {
+  root : NodeId
+  toolkit_name : String?
+  toolkit_version : String?
+} derive(Eq, @debug.Debug)
+pub fn Tree::Tree(NodeId) -> Self
+pub fn Tree::root_id(Self) -> NodeId
+pub fn Tree::toolkit_name(Self) -> String?
+pub fn Tree::toolkit_version(Self) -> String?
+pub impl Show for Tree
+pub impl ToJson for Tree
+pub impl @json.FromJson for Tree
+
+pub(all) struct TreeId(Uuid) derive(Eq, Hash, @debug.Debug)
+pub fn TreeId::debug(Self) -> String
+pub fn TreeId::root() -> Self
+pub impl Show for TreeId
+pub impl ToJson for TreeId
+pub impl @json.FromJson for TreeId
+
+pub(all) struct TreeUpdate {
+  // private fields
+}
+pub fn TreeUpdate::TreeUpdate(TreeId, NodeId) -> Self
+pub fn TreeUpdate::focus(Self) -> NodeId
+pub fn TreeUpdate::nodes(Self) -> Array[NodeUpdate]
+pub fn TreeUpdate::push_node(Self, NodeId, Node) -> Unit
+pub fn TreeUpdate::set_tree(Self, Tree) -> Unit
+pub fn TreeUpdate::tree(Self) -> Tree?
+pub fn TreeUpdate::tree_id(Self) -> TreeId
+pub impl ToJson for TreeUpdate
+pub impl @json.FromJson for TreeUpdate
+
+pub(all) struct Uuid {
+  high : UInt64
+  low : UInt64
+} derive(Eq, Hash, @debug.Debug)
+pub fn Uuid::debug(Self) -> String
+pub fn Uuid::nil() -> Self
+pub impl Show for Uuid
+pub impl ToJson for Uuid
+pub impl @json.FromJson for Uuid
+
+pub(all) struct Vec2 {
+  x : Double
+  y : Double
+} derive(Eq, @debug.Debug)
+pub fn Vec2::Vec2(Double, Double) -> Self
+pub fn Vec2::to_point(Self) -> Point
+pub fn Vec2::to_size(Self) -> Size
+pub fn Vec2::zero() -> Self
+pub impl Show for Vec2
+pub impl ToJson for Vec2
+pub impl @json.FromJson for Vec2
+
+pub(all) enum VerticalOffset {
+  Subscript
+  Superscript
+} derive(Eq, @debug.Debug)
+pub impl Show for VerticalOffset
+pub impl ToJson for VerticalOffset
+pub impl @json.FromJson for VerticalOffset
+
+// Type aliases
+
+// Traits
+pub(open) trait ActionHandler {
+  do_action(Self, ActionRequest) -> Unit
+}
+
+pub(open) trait ActivationHandler {
+  request_initial_tree(Self) -> TreeUpdate?
+}
+
+pub(open) trait DeactivationHandler {
+  deactivate_accessibility(Self) -> Unit
+}
+

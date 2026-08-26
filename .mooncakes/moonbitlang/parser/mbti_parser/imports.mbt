@@ -1,0 +1,50 @@
+///|
+using @tokens {type Token, type TokenKind}
+
+///|
+using @basic {type Location, type Position, type Report}
+
+///|
+using @tokens {
+  type Comment,
+  type CharLiteral,
+  type StringLiteral,
+  type InterpLiteral,
+}
+
+///|
+using @syntax {type DocString}
+
+///|
+using @attribute {type Attribute}
+
+///|
+using @mbti_ast {
+  type Name,
+  type QualifiedName,
+  type Label,
+  type Visibility,
+  type Constant,
+  type Type,
+  type ErrorType,
+  type Parameter,
+  type TypeParamNoConstraints,
+  type TypeParamWithConstraints,
+  type FieldDecl,
+  type ConstrDecl,
+  type ConstrId,
+  type ConstrParam,
+  type AliasSig,
+  type TraitSig,
+  type TraitMethodSig,
+  type ImplSig,
+  type FuncSig,
+  type ValueSig,
+  type ConstSig,
+  type TypeSig,
+  type Sig,
+  type PackageImport,
+  type Mbti,
+  type MethodSelfType,
+  type TypeDefinition,
+}

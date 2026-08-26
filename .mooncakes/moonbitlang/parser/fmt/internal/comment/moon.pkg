@@ -1,0 +1,14 @@
+import {
+  "moonbitlang/parser/syntax",
+  "moonbitlang/lexer/basic",
+  "moonbitlang/lexer/tokens",
+  "moonbit-community/prettyprinter" @pp,
+  "moonbitlang/core/queue",
+  "moonbitlang/core/sorted_map",
+  "moonbitlang/core/debug",
+}
+
+import {
+  "moonbitlang/lexer",
+  "moonbitlang/parser/handrolled_parser",
+} for "wbtest"

@@ -1,0 +1,13 @@
+import {
+  "mizchi/tui",
+  "mizchi/tui/vnode",
+  "mizchi/tui/render",
+  "mizchi/signals",
+  "moonbitlang/async",
+}
+
+supported_targets = "js"
+
+options(
+  "is-main": true,
+)

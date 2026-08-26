@@ -1,0 +1,71 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/go"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn go_highlighter() -> @syntree.Highlighter
+
+pub fn highlight_go(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_go_to_html(String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct GoToken {
+  token_type : GoTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for GoToken
+pub impl Show for GoToken
+
+pub(all) enum GoTokenType {
+  Keyword
+  TypeKeyword
+  DeclKeyword
+  Identifier
+  TypeName
+  PackageName
+  Number
+  String
+  Rune
+  Operator
+  Assignment
+  Comparison
+  Logical
+  Bitwise
+  Arrow
+  Ellipsis
+  Semicolon
+  Comma
+  Colon
+  Dot
+  ParenOpen
+  ParenClose
+  BraceOpen
+  BraceClose
+  BracketOpen
+  BracketClose
+  LineComment
+  BlockComment
+  Error
+}
+pub impl Eq for GoTokenType
+pub impl Show for GoTokenType
+
+pub(all) struct GoTokenizer {
+  input : String
+  // private fields
+}
+pub fn GoTokenizer::at_end(Self) -> Bool
+pub fn GoTokenizer::new(String) -> Self
+pub fn GoTokenizer::tokenize_all(Self) -> Array[GoToken]
+
+// Type aliases
+
+// Traits
+

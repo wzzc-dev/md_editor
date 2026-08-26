@@ -1,0 +1,76 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/java"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_java(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_java_to_html(String) -> String
+
+pub fn java_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct JavaToken {
+  token_type : JavaTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for JavaToken
+pub impl Show for JavaToken
+
+pub(all) enum JavaTokenType {
+  Keyword
+  Modifier
+  String
+  TextBlock
+  Char
+  Number
+  Identifier
+  TypeKeyword
+  TypeName
+  Annotation
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Bitwise
+  Increment
+  Ternary
+  Arrow
+  DoubleColon
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Semicolon
+  Dot
+  LineComment
+  BlockComment
+  DocComment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for JavaTokenType
+pub impl Show for JavaTokenType
+
+pub(all) struct JavaTokenizer {
+  input : String
+  // private fields
+}
+pub fn JavaTokenizer::new(String) -> Self
+pub fn JavaTokenizer::next_token(Self) -> JavaToken?
+pub fn JavaTokenizer::tokenize_all(Self) -> Array[JavaToken]
+
+// Type aliases
+
+// Traits
+

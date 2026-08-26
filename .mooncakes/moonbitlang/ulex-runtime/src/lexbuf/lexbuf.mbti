@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/ulex-runtime/lexbuf"
+
+import(
+  "moonbitlang/core/bytes"
+)
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct BytesLexbuf {
+  data : Bytes
+  end : Int
+  mut pos : Int
+}
+fn BytesLexbuf::from_bytes(Bytes) -> Self
+impl IBytesLexbuf for BytesLexbuf
+
+pub struct StringLexbuf {
+  data : String
+  end : Int
+  mut pos : Int
+}
+fn StringLexbuf::from_string(String) -> Self
+impl IStringLexbuf for StringLexbuf
+
+// Type aliases
+
+// Traits
+pub(open) trait IBytesLexbuf {
+  next_as_int(Self) -> Int
+  curr_pos(Self) -> Int
+  reset(Self, pos~ : Int) -> Unit
+  get_char(Self, Int, Int) -> Byte
+  get_string(Self, Int, Int) -> @bytes.View
+}
+
+pub(open) trait IStringLexbuf {
+  next_as_int(Self) -> Int
+  curr_pos(Self) -> Int
+  reset(Self, pos~ : Int) -> Unit
+  get_char(Self, Int, Int) -> Char
+  get_string(Self, Int, Int) -> String
+}
+

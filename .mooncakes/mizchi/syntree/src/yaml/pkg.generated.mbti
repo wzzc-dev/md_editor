@@ -1,0 +1,65 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/yaml"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_yaml(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_yaml_to_html(String) -> String
+
+pub fn yaml_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct YamlToken {
+  token_type : YamlTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for YamlToken
+pub impl Show for YamlToken
+
+pub(all) enum YamlTokenType {
+  Key
+  Value
+  ListItem
+  String
+  UnquotedString
+  Number
+  Bool
+  Null
+  Anchor
+  Alias
+  Tag
+  Directive
+  Colon
+  Dash
+  Comma
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Pipe
+  Greater
+  Comment
+  Error
+}
+pub impl Eq for YamlTokenType
+pub impl Show for YamlTokenType
+
+pub(all) struct YamlTokenizer {
+  input : String
+  // private fields
+}
+pub fn YamlTokenizer::at_end(Self) -> Bool
+pub fn YamlTokenizer::new(String) -> Self
+pub fn YamlTokenizer::tokenize_all(Self) -> Array[YamlToken]
+
+// Type aliases
+
+// Traits
+

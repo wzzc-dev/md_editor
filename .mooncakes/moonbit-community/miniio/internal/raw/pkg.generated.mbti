@@ -1,0 +1,214 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit-community/miniio/internal/raw"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn args() -> Array[String] raise Errno
+
+pub fn create(StringView) -> File raise Errno
+
+pub fn envs() -> Array[(String, String)] raise Errno
+
+pub fn mkdir(StringView) -> Unit raise Errno
+
+pub fn open(StringView, mode? : Mode, append? : Bool, create_mode? : CreateMode, lookup_flags? : LookupFlags) -> File raise Errno
+
+pub fn open_read(StringView) -> File raise Errno
+
+pub fn open_write(StringView, append? : Bool, create_mode? : CreateMode) -> File raise Errno
+
+pub fn preopens() -> Array[String] raise Errno
+
+pub fn read_file(StringView) -> Bytes raise Errno
+
+pub fn readdir(StringView, buffer_size? : Int, lookup_flags? : LookupFlags) -> Array[DirEntry] raise Errno
+
+pub fn readdir_names(StringView, buffer_size? : Int, lookup_flags? : LookupFlags) -> Array[String] raise Errno
+
+pub fn remove_dir(StringView) -> Unit raise Errno
+
+pub fn remove_file(StringView) -> Unit raise Errno
+
+pub let stderr : File
+
+pub let stdin : File
+
+pub let stdout : File
+
+pub fn write_file(StringView, BytesView, append? : Bool, create_mode? : CreateMode) -> Unit raise Errno
+
+pub fn write_text_file(StringView, StringView, append? : Bool, create_mode? : CreateMode) -> Unit raise Errno
+
+// Errors
+pub(all) suberror Errno {
+  Success
+  TooBig
+  Acces
+  Addrinuse
+  Addrnotavail
+  Afnosupport
+  Again
+  Already
+  Badf
+  Badmsg
+  Busy
+  Canceled
+  Child
+  Connaborted
+  Connrefused
+  Connreset
+  Deadlock
+  Destaddrreq
+  Dom
+  Dquot
+  Exist
+  Fault
+  Fbig
+  Hostunreach
+  Idrm
+  Ilseq
+  Inprogress
+  Intr
+  Inval
+  IO
+  Isconn
+  Isdir
+  Loop
+  Mfile
+  Mlink
+  Msgsize
+  Multihop
+  Nametoolong
+  Netdown
+  Netreset
+  Netunreach
+  Nfile
+  Nobufs
+  Nodev
+  Noent
+  Noexec
+  Nolck
+  Nolink
+  Nomem
+  Nomsg
+  Noprotoopt
+  Nospc
+  Nosys
+  Notconn
+  Notdir
+  Notempty
+  Notrecoverable
+  Notsock
+  Notsup
+  Notty
+  Nxio
+  Overflow
+  Ownerdead
+  Perm
+  Pipe
+  Proto
+  Protonosupport
+  Prototype
+  Range
+  Rofs
+  Spipe
+  Srch
+  Stale
+  Timedout
+  Txtbsy
+  Xdev
+  Notcapable
+} derive(Eq, @debug.Debug)
+
+// Types and methods
+pub(all) enum CreateMode {
+  OpenExisting
+  TruncateExisting
+  OpenOrCreate
+  CreateOrTruncate
+  CreateNew
+} derive(Eq, @debug.Debug)
+
+type DirCookie derive(Eq, @debug.Debug)
+
+type DirEnt derive(Eq, @debug.Debug)
+
+type DirEntry derive(Eq, @debug.Debug)
+pub fn DirEntry::kind(Self) -> EntryKind
+pub fn DirEntry::name(Self) -> String
+
+type DirNamlen derive(Eq, @debug.Debug)
+
+pub(all) enum EntryKind {
+  Unknown
+  Regular
+  Directory
+  SymLink
+  Socket
+  BlockDevice
+  CharDevice
+} derive(Eq, @debug.Debug)
+
+type Fd derive(Eq, @debug.Debug)
+
+type FdFlag derive(Eq, @debug.Debug)
+
+type FdFlags derive(Eq, @debug.Debug)
+
+type File
+pub fn File::close(Self) -> Unit raise Errno
+pub fn File::read(Self, FixedArray[Byte], offset? : Int, max_len? : Int) -> Int raise Errno
+pub fn File::read_all(Self, chunk_size? : Int) -> Bytes raise Errno
+pub fn File::seek(Self, Int64, from? : SeekFrom) -> UInt64 raise Errno
+pub fn File::tell(Self) -> UInt64 raise Errno
+pub fn File::write_all(Self, BytesView) -> Unit raise Errno
+pub fn File::write_once(Self, BytesView) -> Int raise Errno
+pub fn File::write_text(Self, StringView) -> Unit raise Errno
+
+type FileDelta derive(Eq, @debug.Debug)
+
+type FileSize derive(Eq, @debug.Debug)
+
+type FileType derive(Eq, @debug.Debug)
+
+type Inode derive(Eq, @debug.Debug)
+
+type LookupFlags derive(Eq, @debug.Debug)
+pub fn LookupFlags::new() -> Self
+pub fn LookupFlags::symlink_follow(Self) -> Self
+
+pub(all) enum Mode {
+  ReadOnly
+  WriteOnly
+  ReadWrite
+} derive(Eq, @debug.Debug)
+
+type OpenFlag derive(Eq, @debug.Debug)
+
+type OpenFlags derive(Eq, @debug.Debug)
+
+type PreStat derive(Eq, @debug.Debug)
+
+type PreStat_dir derive(Eq, @debug.Debug)
+
+type Right derive(Eq, @debug.Debug)
+
+type Rights derive(Eq, @debug.Debug)
+
+pub(all) enum SeekFrom {
+  Start
+  Current
+  End
+} derive(Eq, @debug.Debug)
+
+type Size derive(Eq, @debug.Debug)
+
+type Whence derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

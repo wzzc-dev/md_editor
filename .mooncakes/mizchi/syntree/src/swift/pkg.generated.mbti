@@ -1,0 +1,76 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/syntree/swift"
+
+import {
+  "mizchi/syntree",
+}
+
+// Values
+pub fn highlight_swift(String) -> Array[@syntree.HighlightToken]
+
+pub fn highlight_swift_to_html(String) -> String
+
+pub fn swift_highlighter() -> @syntree.Highlighter
+
+// Errors
+
+// Types and methods
+pub(all) struct SwiftToken {
+  token_type : SwiftTokenType
+  from : Int
+  to : Int
+}
+pub impl Eq for SwiftToken
+pub impl Show for SwiftToken
+
+pub(all) enum SwiftTokenType {
+  Keyword
+  DeclKeyword
+  Modifier
+  String
+  MultilineString
+  StringInterp
+  Number
+  Bool
+  Identifier
+  TypeName
+  Attribute
+  Operator
+  Comparison
+  Assignment
+  Logical
+  Range
+  Optional
+  Arrow
+  ParenOpen
+  ParenClose
+  BracketOpen
+  BracketClose
+  BraceOpen
+  BraceClose
+  Comma
+  Colon
+  Semicolon
+  Dot
+  LineComment
+  BlockComment
+  DocComment
+  Whitespace
+  Newline
+  Unknown
+}
+pub impl Eq for SwiftTokenType
+pub impl Show for SwiftTokenType
+
+pub(all) struct SwiftTokenizer {
+  input : String
+  // private fields
+}
+pub fn SwiftTokenizer::new(String) -> Self
+pub fn SwiftTokenizer::next_token(Self) -> SwiftToken?
+pub fn SwiftTokenizer::tokenize_all(Self) -> Array[SwiftToken]
+
+// Type aliases
+
+// Traits
+

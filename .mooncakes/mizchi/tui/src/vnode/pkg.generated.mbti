@@ -1,0 +1,374 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/tui/vnode"
+
+import {
+  "mizchi/crater-core",
+  "mizchi/crater-core/node",
+  "mizchi/css/values",
+  "mizchi/layout/types",
+  "mizchi/signals",
+  "mizchi/signals/ui",
+  "mizchi/tui/core",
+  "mizchi/tui/events",
+  "mizchi/tui/render",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn attr(TuiAttrValue) -> @ui.Attr[TuiEvent, TuiAttrValue]
+
+pub fn attr_dyn(() -> TuiAttrValue) -> @ui.Attr[TuiEvent, TuiAttrValue]
+
+pub fn attr_to_string(TuiAttrValue) -> (String, String)
+
+pub fn box_node(BoxProps, Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn box_to_crater(TypedRenderContext, BoxProps, Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @node.Node
+
+pub fn build_a11y_tree(@crater-core.Layout, RenderContext) -> Array[A11yNode]
+
+pub fn column(id? : String, gap? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, min_width? : Double, min_height? : Double, flex_grow? : Double, justify? : String, align? : String, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, on_click? : ((TuiEvent) -> Unit)?, Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn component(() -> @ui.Node[TuiEvent, TuiAttrValue]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn dump_a11y_tree(Array[A11yNode]) -> String
+
+pub fn extract_tab_index(Array[(String, @ui.Attr[TuiEvent, TuiAttrValue])]) -> Int?
+
+pub fn for_each(() -> Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn form_edit_config(String, @signals.Signal[String], on_edit_start? : (() -> Unit)?, on_edit_end? : (() -> Unit)?, on_force_quit? : (() -> Unit)?) -> EditConfig
+
+pub fn fragment(Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn grid(columns? : Array[Double], rows? : Array[Double], areas? : Array[String], auto_flow? : String, id? : String, gap? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn grid_area(String, @ui.Node[TuiEvent, TuiAttrValue]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn grid_item(column? : Int, row? : Int, column_span? : Int, row_span? : Int, tab_index? : Int, child~ : @ui.Node[TuiEvent, TuiAttrValue]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn hspace(Double) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn init_vnode_terminal(Int, Int, (String) -> Unit, mouse? : Bool, raw_mode? : Bool) -> (VNodeApp, () -> Unit)
+
+pub fn input(String, id? : String, placeholder? : String, state? : InputState, fg? : String, bg? : String, placeholder_fg? : String, focus_border_color? : String, edit_border_color? : String, disabled_fg? : String, disabled_bg? : String, width? : Double, min_width? : Double, padding_x? : Double, padding_y? : Double) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn input_plain(String, placeholder? : String, state? : InputState, fg? : String, placeholder_fg? : String) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn is_printable_char(Char) -> Bool
+
+pub fn is_printable_string(String) -> Bool
+
+pub fn on((TuiEvent) -> Unit) -> @ui.Attr[TuiEvent, TuiAttrValue]
+
+pub fn render_overlay_at(Int, Int, @ui.Node[TuiEvent, TuiAttrValue]) -> String
+
+pub fn render_to_lines(@ui.Node[TuiEvent, TuiAttrValue]) -> Array[String]
+
+pub fn render_vnode_once(Int, Int, @ui.Node[TuiEvent, TuiAttrValue]) -> String
+
+pub fn row(id? : String, gap? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, min_width? : Double, min_height? : Double, flex_grow? : Double, justify? : String, align? : String, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, on_click? : ((TuiEvent) -> Unit)?, Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn run_vnode_app(Int, Int, () -> @ui.Node[TuiEvent, TuiAttrValue], (String) -> Unit) -> () -> Unit
+
+pub fn show(() -> Bool, () -> @ui.Node[TuiEvent, TuiAttrValue]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn spacer() -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn start_edit(EditConfig, String, () -> Unit, confirm_on_shift_enter? : Bool, esc_cancels? : Bool) -> Unit
+
+pub fn start_edit_inplace(EditConfig, String, Int, Int, Int, Int, Bool, () -> Unit, confirm_on_shift_enter? : Bool, esc_cancels? : Bool, on_lines_change? : ((Int) -> Int)?, on_completion? : ((String, Int) -> String?)?) -> Unit
+
+pub fn start_edit_inplace_in_bounds(EditConfig, String, @events.HitTestResult, Bool, () -> Unit, confirm_on_shift_enter? : Bool, esc_cancels? : Bool, border? : Int, on_lines_change? : ((Int) -> Int)?, on_completion? : ((String, Int) -> String?)?) -> Unit
+
+pub fn text(String, fg? : String, bold? : Bool, underline? : Bool, role? : String) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn text_dyn(() -> String, fg? : String, bold? : Bool, underline? : Bool, role? : String) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn text_node(TextProps) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn textarea(String, id? : String, placeholder? : String, state? : InputState, rows? : Int, fg? : String, bg? : String, placeholder_fg? : String, focus_border_color? : String, edit_border_color? : String, min_width? : Double, padding_x? : Double, padding_y? : Double) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn to_crater_node(RenderContext, @ui.Node[TuiEvent, TuiAttrValue]) -> @node.Node
+
+pub fn view(direction? : String, id? : String, gap? : Double, margin? : Double, margin_x? : Double, margin_y? : Double, padding? : Double, padding_x? : Double, padding_y? : Double, width? : Double, height? : Double, min_width? : Double, min_height? : Double, flex_grow? : Double, justify? : String, align? : String, border? : String, border_color? : String, bg? : String, role? : String, tab_index? : Int, on_click? : ((TuiEvent) -> Unit)?, Array[@ui.Node[TuiEvent, TuiAttrValue]]) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+pub fn vspace(Double) -> @ui.Node[TuiEvent, TuiAttrValue]
+
+// Errors
+
+// Types and methods
+pub struct A11yNode {
+  id : String
+  role : @core.Role
+  name : String
+  rect : A11yRect
+  children : Array[A11yNode]
+} derive(@debug.Debug)
+pub impl Show for A11yNode
+
+pub struct A11yRect {
+  x : Int
+  y : Int
+  width : Int
+  height : Int
+} derive(@debug.Debug)
+pub impl Show for A11yRect
+
+pub(all) enum AlignmentValue {
+  Start
+  Center
+  End
+  Stretch
+  SpaceBetween
+  SpaceAround
+  SpaceEvenly
+  FlexStart
+  FlexEnd
+}
+pub fn AlignmentValue::to_alignment(Self) -> @values.Alignment
+pub fn AlignmentValue::to_layout_alignment(Self) -> @types.Alignment
+
+pub(all) enum BorderValue {
+  None
+  Single
+  Double
+  Rounded
+  Ascii
+}
+pub fn BorderValue::to_border_chars(Self) -> @core.BorderChars?
+
+pub struct BoxProps {
+  id : String
+  direction : DirectionValue
+  width : DimensionValue
+  height : DimensionValue
+  min_width : DimensionValue
+  min_height : DimensionValue
+  flex_grow : Double
+  flex_shrink : Double
+  gap : Double
+  padding : Double
+  padding_x : Double
+  padding_y : Double
+  margin : Double
+  margin_x : Double
+  margin_y : Double
+  justify : AlignmentValue?
+  align : AlignmentValue?
+  border : BorderValue
+  border_color : ColorValue?
+  bg : ColorValue?
+  tab_index : Int
+  role : @core.Role?
+}
+pub fn BoxProps::default() -> Self
+pub fn BoxProps::to_attrs(Self) -> Array[TuiAttrValue]
+
+pub(all) enum ColorValue {
+  Transparent
+  Named(String)
+  Rgb(Int, Int, Int)
+}
+pub fn ColorValue::to_color(Self) -> @core.Color
+
+pub(all) enum DimensionValue {
+  Auto
+  Length(Double)
+  Percent(Double)
+}
+pub fn DimensionValue::to_dimension(Self) -> @values.Dimension
+pub fn DimensionValue::to_layout_dimension(Self) -> @types.Dimension
+
+pub(all) enum DirectionValue {
+  Row
+  Column
+}
+pub fn DirectionValue::to_flex_direction(Self) -> @values.FlexDirection
+pub fn DirectionValue::to_layout_flex_direction(Self) -> @types.FlexDirection
+
+pub(all) enum DisplayValue {
+  Flex
+  Grid
+}
+pub fn DisplayValue::to_display(Self) -> @values.Display
+
+pub(all) struct EditConfig {
+  field_name : String
+  on_change : (String) -> Unit
+  on_edit_start : (() -> Unit)?
+  on_edit_end : (() -> Unit)?
+  on_force_quit : (() -> Unit)?
+}
+
+pub struct FocusContext {
+  elements : Array[FocusableElement]
+  mut current_index : Int
+}
+pub fn FocusContext::clear(Self) -> Unit
+pub fn FocusContext::count(Self) -> Int
+pub fn FocusContext::current_focus(Self) -> String?
+pub fn FocusContext::focus_by_id(Self, String) -> Bool
+pub fn FocusContext::focus_next(Self) -> String?
+pub fn FocusContext::focus_prev(Self) -> String?
+pub fn FocusContext::focusable_ids(Self) -> Array[String]
+pub fn FocusContext::is_focusable(Self, String) -> Bool
+pub fn FocusContext::new() -> Self
+pub fn FocusContext::register(Self, String, Int) -> Unit
+
+pub struct FocusableElement {
+  id : String
+  tab_index : Int
+}
+
+pub(all) struct GridAreaInfo {
+  column : Int
+  row : Int
+  column_span : Int
+  row_span : Int
+}
+
+pub(all) enum GridAutoFlowValue {
+  Row
+  Column
+  RowDense
+  ColumnDense
+}
+pub fn GridAutoFlowValue::to_grid_auto_flow(Self) -> @values.GridAutoFlow
+
+pub(all) enum InputState {
+  Idle
+  Focused
+  Editing
+  Disabled
+}
+
+pub(all) enum MouseButton {
+  Left
+  Right
+  Middle
+}
+
+pub(all) struct OverlayEntry {
+  node : @ui.Node[TuiEvent, TuiAttrValue]
+  position : PopupPosition
+  backdrop : Bool
+  shrink : Bool
+}
+
+pub(all) enum PopupPosition {
+  Center
+  Top
+  Bottom
+  At(Int, Int)
+}
+
+pub struct RenderContext {
+  styles : Map[String, @core.RenderStyle]
+  texts : Map[String, String]
+  handlers : Map[String, (TuiEvent) -> Unit]
+  roles : Map[String, @core.Role]
+  mut id_counter : Int
+  area_stack : Array[Map[String, GridAreaInfo]]
+}
+pub fn RenderContext::new() -> Self
+
+pub struct TextProps {
+  content : String
+  fg : ColorValue?
+  bold : Bool
+  underline : Bool
+  role : @core.Role?
+}
+pub fn TextProps::default(String) -> Self
+pub fn TextProps::to_attrs(Self) -> Array[TuiAttrValue]
+
+pub(all) enum TuiAttrValue {
+  Direction(DirectionValue)
+  Width(DimensionValue)
+  Height(DimensionValue)
+  MinWidth(DimensionValue)
+  MinHeight(DimensionValue)
+  FlexGrow(Double)
+  FlexShrink(Double)
+  Gap(Double)
+  Display(DisplayValue)
+  GridTemplateColumns(Array[@values.TrackSizingFunction])
+  GridTemplateRows(Array[@values.TrackSizingFunction])
+  GridAutoFlow(GridAutoFlowValue)
+  GridColumn(Int)
+  GridRow(Int)
+  GridColumnSpan(Int)
+  GridRowSpan(Int)
+  GridTemplateAreas(Array[String])
+  GridArea(String)
+  Padding(Double)
+  PaddingX(Double)
+  PaddingY(Double)
+  Margin(Double)
+  MarginX(Double)
+  MarginY(Double)
+  Justify(AlignmentValue)
+  Align(AlignmentValue)
+  Border(BorderValue)
+  BorderColor(ColorValue)
+  Fg(ColorValue)
+  Bg(ColorValue)
+  Bold(Bool)
+  Underline(Bool)
+  Id(String)
+  TabIndex(Int)
+  Role(@core.Role)
+}
+
+pub(all) enum TuiEvent {
+  Click(x~ : Int, y~ : Int, button~ : MouseButton)
+  Hover(x~ : Int, y~ : Int, id~ : String)
+  Key(key~ : String, modifiers~ : Int)
+}
+
+pub struct TypedRenderContext {
+  styles : Map[String, @core.RenderStyle]
+  texts : Map[String, String]
+  handlers : Map[String, (TuiEvent) -> Unit]
+  roles : Map[String, @core.Role]
+  mut id_counter : Int
+  area_stack : Array[Map[String, GridAreaInfo]]
+}
+pub fn TypedRenderContext::new() -> Self
+
+pub struct VNodeApp {
+  mut width : Int
+  mut height : Int
+  mut prev_buffer : @render.CharBuffer?
+  mut last_layout : @crater-core.Layout?
+  mut overlay_layouts : Array[@crater-core.Layout]
+  mut render_ctx : RenderContext
+}
+pub fn VNodeApp::a11y_tree(Self) -> Array[A11yNode]
+pub fn VNodeApp::clear_prev_buffer(Self) -> Unit
+pub fn VNodeApp::create_render_effect(Self, () -> @ui.Node[TuiEvent, TuiAttrValue], (String) -> Unit) -> () -> Unit
+pub fn VNodeApp::dispatch_hover(Self, @events.MouseEvent) -> String?
+pub fn VNodeApp::dump_a11y_tree(Self) -> String
+pub fn VNodeApp::find_by_id(Self, String) -> @events.HitTestResult?
+pub fn VNodeApp::handle_click(Self, @events.MouseEvent) -> String?
+pub fn VNodeApp::hit_test(Self, Int, Int) -> @events.HitTestResult?
+pub fn VNodeApp::init_terminal() -> String
+pub fn VNodeApp::layout_rects(Self) -> Array[@events.HitTestResult]
+pub fn VNodeApp::new(Int, Int) -> Self
+pub fn VNodeApp::render(Self, @ui.Node[TuiEvent, TuiAttrValue]) -> String
+pub fn VNodeApp::render_frame(Self, @ui.Node[TuiEvent, TuiAttrValue]) -> String
+pub fn VNodeApp::render_frame_with_overlays(Self, @ui.Node[TuiEvent, TuiAttrValue], Array[OverlayEntry]) -> String
+pub fn VNodeApp::render_with_overlays(Self, @ui.Node[TuiEvent, TuiAttrValue], Array[OverlayEntry]) -> String
+pub fn VNodeApp::resize(Self, Int, Int) -> Unit
+pub fn VNodeApp::restore_terminal() -> String
+
+// Type aliases
+pub type TuiAttr = @ui.Attr[TuiEvent, TuiAttrValue]
+
+pub type TuiHandler = @ui.EventHandler[TuiEvent]
+
+pub type TuiNode = @ui.Node[TuiEvent, TuiAttrValue]
+
+// Traits
+

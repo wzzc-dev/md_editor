@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/moon_config"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/immut/vector",
+  "moonbitlang/lexer/basic",
+}
+
+// Values
+pub fn parse_moon_mod(name? : String, String) -> (Ast, Array[@basic.Report])
+
+pub fn parse_moon_pkg(name? : String, String) -> (Ast, Array[@basic.Report])
+
+pub fn parse_moon_work(name? : String, String) -> (Ast, Array[@basic.Report])
+
+pub fn validate_moon_mod(Ast) -> Array[@basic.Report]
+
+pub fn validate_moon_pkg(Ast) -> Array[@basic.Report]
+
+pub fn validate_moon_work(Ast) -> Array[@basic.Report]
+
+// Errors
+
+// Types and methods
+pub(all) enum Ast {
+  Null(loc~ : @basic.Location)
+  Bool(Bool, loc~ : @basic.Location)
+  Str(String, loc~ : @basic.Location)
+  Float(String, loc~ : @basic.Location)
+  Arr(@vector.Vector[Ast], loc~ : @basic.Location)
+  Obj(@vector.Vector[(String, Ast)], loc~ : @basic.Location)
+} derive(Eq, @debug.Debug)
+pub fn Ast::loc(Self) -> @basic.Location
+pub impl ToJson for Ast
+
+// Type aliases
+
+// Traits
+

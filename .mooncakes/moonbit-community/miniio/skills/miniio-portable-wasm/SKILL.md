@@ -1,0 +1,69 @@
+---
+name: miniio-portable-wasm
+description: Build portable MoonBit WASIp1 command-line executables and agent skill tools using moonbit-community/miniio as a normal dependency installed with moon add, including stdio, args/env, preopen-safe file I/O, and wasm run commands.
+---
+
+# MiniIO Portable WASM
+
+Use this when creating or revising a MoonBit executable for portable tools,
+Codex skills, or other agent workflows that should work outside this repository
+after `moon add moonbit-community/miniio`.
+
+## Start
+
+- For a new tool, copy `assets/miniio-cli/` and rename the module/package.
+- For an existing tool, add the dependency with `moon add moonbit-community/miniio`.
+- Keep the package target to WASM and make the package main-only:
+
+```moonbit
+import {
+  "moonbit-community/miniio",
+}
+
+supported_targets = "wasm"
+
+options(
+  is_main: true,
+)
+```
+
+Do not add explicit export-memory linker config. Current MoonBit toolchains add
+the needed memory export for `is_main: true` WASM executables.
+
+## I/O Rules
+
+- Read args with `@miniio.args_get()`. `args[0]` is the executable name, so
+  command arguments start at `args[1]`.
+- Use `@miniio.stdin`, `stdout`, and `stderr` for stdio.
+- Use `@miniio.read_text_file` and `write_text_file` for UTF-8 text.
+- Use `@miniio.read_json_file` and `write_json_file` for JSON config and
+  manifest files.
+- Use `@miniio.copy_file` when copying bytes from one guest path to another.
+- Use `@miniio.read_file`, `write_file`, `open`, `create`, `readdir`, and
+  `rmdir` for lower-level file work.
+- Use `remove_file` when the path must be a file, `rmdir` when it must be a
+  directory, and `remove` only when accepting either is intentional.
+- Use `create_mode=CreateOrTruncate`, `OpenExisting`, or `CreateNew` instead of
+  boolean creation flags.
+- Treat every filesystem path as guest-visible. WASIp1 has no ambient cwd.
+- `moon run` and `moon test` are useful development runners, but their WASI
+  sandbox only exposes the working/project directory. Keep test fixtures under
+  that tree when using Moon's runner.
+- Document required preopens. For example, a program reading `data/input.txt`
+  needs a run command such as:
+
+```sh
+wasmtime run --dir ./data::data _build/wasm/debug/build/<module>/<package>.wasm data/input.txt
+```
+
+## Validate
+
+Run these before handoff:
+
+```sh
+moon check
+moon test
+moon build
+```
+
+Prefer `moon run <pkg> <args>` for quick development tests.

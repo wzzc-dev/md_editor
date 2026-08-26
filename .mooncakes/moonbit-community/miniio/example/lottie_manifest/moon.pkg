@@ -1,0 +1,14 @@
+import {
+  "moonbit-community/miniio",
+  "cg-zhou/moon_lottie/lib/parser",
+  "moonbitlang/core/json",
+}
+
+supported_targets = "wasm"
+
+import {
+} for "test"
+
+options(
+  is_main: true,
+)

@@ -1,0 +1,13 @@
+import {
+  "wzzc-dev/window/core",
+  "wzzc-dev/window/dpi",
+  "wzzc-dev/window/internal/embedded_dispatch",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "native"
+
+options(
+  "native-stub": [ "native_ios_host.c" ],
+  targets: { "host_ffi.mbt": [ "native" ] },
+)

@@ -1,0 +1,10 @@
+import {
+  "moonbitlang/moon_config" @config,
+  "moonbit-community/miniio",
+  "moonbit-community/miniio/io",
+  "moonbitlang/core/json",
+}
+
+supported_targets = "wasm"
+
+pkgtype(kind: "executable")

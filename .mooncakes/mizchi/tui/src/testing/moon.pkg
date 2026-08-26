@@ -1,0 +1,12 @@
+import {
+  "mizchi/tui/render",
+  "mizchi/tui/core",
+  "mizchi/tui/events",
+  "mizchi/tui/vnode",
+}
+
+import {
+  "moonbitlang/core/debug",
+} for "test"
+
+supported_targets = "js+native"

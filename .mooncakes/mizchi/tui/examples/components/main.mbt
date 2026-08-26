@@ -1,0 +1,703 @@
+///|
+/// VNode Components - Complete component gallery using @components
+/// Demonstrates all major UI patterns with pre-built styled components
+
+///|
+using @vnode {type TuiNode, type VNodeApp, column, row, text, vspace, spacer}
+
+// Demo indices
+
+///|
+let demo_tabs : Int = 0
+
+///|
+let demo_accordion : Int = 1
+
+///|
+let demo_radio : Int = 2
+
+///|
+let demo_switch : Int = 3
+
+///|
+let demo_listbox : Int = 4
+
+///|
+let demo_combobox : Int = 5
+
+///|
+let demo_splitter : Int = 6
+
+///|
+let demo_menubar : Int = 7
+
+///|
+async fn main {
+  let (width, height) = @tui.get_terminal_size()
+
+  // State
+  let current_demo = @signals.signal(0)
+  let tab_selected = @signals.signal(0)
+  let accordion_expanded = @signals.signal(0)
+  let radio_selected = @signals.signal(1)
+  let switch_on = @signals.signal(true)
+  let checkbox_checked = @signals.signal(true)
+  let listbox_selected = @signals.signal(0)
+  let combobox_open = @signals.signal(false)
+  let combobox_selected = @signals.signal(0)
+  let splitter_pos = @signals.signal(50)
+  let menubar_open = @signals.signal(-1)
+  let menubar_item = @signals.signal(0)
+  let message = @signals.signal("←/→: demos | q: quit")
+
+  // Demo names
+  let demos = [
+    "Tabs", "Accordion", "Radio", "Switch", "Listbox", "Combobox", "Splitter", "Menubar",
+  ]
+
+  // Create the vnode app
+  let app = VNodeApp::new(width, height)
+
+  // ==========================================================================
+  // Demo Renderers
+  // ==========================================================================
+
+  fn render_tabs_demo() -> TuiNode {
+    let tabs = ["Home", "Profile", "Settings"]
+    let selected = tab_selected.get()
+    let tab_items : Array[TuiNode] = []
+    for i, t in tabs {
+      tab_items.push(@ui.tab(t, selected == i, id="tab-" + i.to_string()))
+    }
+    let content = match selected {
+      0 => "Welcome to the Home tab! This is the main dashboard area."
+      1 => "User profile information and account settings."
+      2 => "Application configuration and preferences."
+      _ => "Unknown tab"
+    }
+    column(gap=0.5, [
+      text("Tabs Component", fg="yellow", bold=true),
+      text("Press 1/2/3 or click", fg="rgb(128,128,128)"),
+      vspace(1.0),
+      row(gap=0.5, tab_items),
+      column(padding=1.0, border="single", border_color="rgb(80,80,80)", [
+        text(content),
+      ]),
+      vspace(0.5),
+      text("Selected: Tab " + (selected + 1).to_string(), fg="green"),
+    ])
+  }
+
+  fn render_accordion_demo() -> TuiNode {
+    let sections = [
+      (
+        "Introduction", "Welcome to the accordion demo. Click headers to expand.",
+      ),
+      ("Features", "Supports expand/collapse with smooth state management."),
+      ("FAQ", "Q: How does it work? A: Click on section headers!"),
+    ]
+    let expanded = accordion_expanded.get()
+    let section_nodes : Array[TuiNode] = []
+    for i, s in sections {
+      section_nodes.push(
+        @ui.accordion_section(
+          s.0,
+          text(s.1, fg="rgb(180,180,180)"),
+          expanded == i,
+          id="acc-" + i.to_string(),
+        ),
+      )
+    }
+    column(
+      [
+        text("Accordion Component", fg="yellow", bold=true),
+        text("Press 1/2/3 or click to expand sections", fg="rgb(128,128,128)"),
+        ..section_nodes,
+      ],
+    )
+  }
+
+  fn render_radio_demo() -> TuiNode {
+    let options = ["Fast", "Balanced", "Power Saver"]
+    let selected = radio_selected.get()
+    let option_nodes : Array[TuiNode] = []
+    for i, opt in options {
+      option_nodes.push(
+        @ui.radio(opt, selected == i, id="radio-" + i.to_string()),
+      )
+    }
+    column(gap=0.5, [
+      text("Radio Group", fg="yellow", bold=true),
+      text("Use ↑/↓ or click to navigate", fg="rgb(128,128,128)"),
+      vspace(1.0),
+      text("Select mode:"),
+      column(border="single", border_color="rgb(60,60,80)", option_nodes),
+      vspace(0.5),
+      text("Selected: " + options[selected], fg="green"),
+    ])
+  }
+
+  fn render_switch_demo() -> TuiNode {
+    let sw = switch_on.get()
+    let cb = checkbox_checked.get()
+    column(gap=0.5, [
+      text("Switch & Checkbox", fg="yellow", bold=true),
+      text(
+        "Space or click: toggle switch, 1 or click: toggle checkbox",
+        fg="rgb(128,128,128)",
+      ),
+      vspace(1.0),
+      @ui.switch(sw, "Dark Mode", id="switch-dark"),
+      @ui.switch(!sw, "Notifications", id="switch-notif"),
+      vspace(0.5),
+      @ui.checkbox("Accept Terms", cb, id="cb-terms"),
+      @ui.checkbox("Subscribe to Newsletter", !cb, id="cb-news"),
+    ])
+  }
+
+  fn render_listbox_demo() -> TuiNode {
+    let items = ["Apple", "Banana", "Cherry", "Grape", "Orange"]
+    let selected = listbox_selected.get()
+    let list_nodes : Array[TuiNode] = []
+    for i, item in items {
+      list_nodes.push(
+        @ui.listbox_item(item, selected == i, id="list-" + i.to_string()),
+      )
+    }
+    column(gap=0.5, [
+      text("Listbox", fg="yellow", bold=true),
+      text("Use ↑/↓ or click to navigate", fg="rgb(128,128,128)"),
+      vspace(1.0),
+      text("Choose a fruit:"),
+      column(border="single", border_color="rgb(60,60,80)", list_nodes),
+      vspace(0.5),
+      text("Selected: " + items[selected], fg="green"),
+    ])
+  }
+
+  fn render_combobox_demo() -> TuiNode {
+    let options = ["JavaScript", "TypeScript", "Python", "Rust", "Go"]
+    let selected = combobox_selected.get()
+    let open = combobox_open.get()
+    // Dropdown items (only shown when open)
+    let dropdown_items : Array[TuiNode] = if open {
+      let items : Array[TuiNode] = []
+      for i, opt in options {
+        items.push(
+          @ui.combobox_item(opt, selected == i, id="combo-" + i.to_string()),
+        )
+      }
+      [
+        column(
+          id="combo-dropdown",
+          border="single",
+          border_color="cyan",
+          bg="rgb(40,40,50)",
+          items,
+        ),
+      ]
+    } else {
+      []
+    }
+    // Show selected text only when dropdown is closed
+    let status_text : Array[TuiNode] = if open {
+      []
+    } else {
+      [text("Selected: " + options[selected], fg="green")]
+    }
+    column(
+      [
+        text("Combobox (Dropdown)", fg="yellow", bold=true),
+        text(
+          "Space/click: open/close, ↑/↓ or click: select",
+          fg="rgb(128,128,128)",
+        ),
+        text("Select language:"),
+        @ui.combobox_trigger(options[selected], open, id="combo-trigger"),
+        ..dropdown_items,
+        ..status_text,
+      ],
+    )
+  }
+
+  fn render_splitter_demo() -> TuiNode {
+    let pos = splitter_pos.get()
+    let left_width = pos * 60 / 100
+    let right_width = 60 - left_width - 1
+    // Splitter divider (custom, not in components yet)
+    fn splitter_divider(focused : Bool, id : String) -> TuiNode {
+      let color = if focused { "cyan" } else { "rgb(80,80,80)" }
+      column(
+        id~,
+        width=1.0,
+        justify="center",
+        align="center",
+        bg="rgb(40,40,50)",
+        [text("|", fg=color)],
+      )
+    }
+
+    column(gap=0.5, [
+      text("Window Splitter", fg="yellow", bold=true),
+      text("Use ↑/↓ to resize", fg="rgb(128,128,128)"),
+      vspace(1.0),
+      row(id="splitter", [
+        // Left pane
+        column(
+          width=left_width.to_double(),
+          height=8.0,
+          padding=1.0,
+          border="single",
+          border_color="rgb(60,60,80)",
+          bg="rgb(40,40,50)",
+          [
+            text("Left Pane", fg="cyan"),
+            text("Width: " + left_width.to_string()),
+          ],
+        ),
+        // Divider
+        splitter_divider(true, "splitter-div"),
+        // Right pane
+        column(
+          width=right_width.to_double(),
+          height=8.0,
+          padding=1.0,
+          border="single",
+          border_color="rgb(60,60,80)",
+          bg="rgb(50,40,40)",
+          [
+            text("Right Pane", fg="yellow"),
+            text("Width: " + right_width.to_string()),
+          ],
+        ),
+      ]),
+      vspace(0.5),
+      text("Position: " + pos.to_string() + "%", fg="green"),
+    ])
+  }
+
+  fn render_menubar_demo() -> TuiNode {
+    let menus = ["File", "Edit", "View"]
+    let file_items = ["New", "Open", "Save", "Exit"]
+    let edit_items = ["Cut", "Copy", "Paste"]
+    let view_items = ["Toolbar", "Status Bar", "Zoom In", "Zoom Out"]
+    let open_menu = menubar_open.get()
+    let selected_item = menubar_item.get()
+
+    // Helper to get menu items
+    fn get_menu_items(idx : Int) -> Array[String] {
+      match idx {
+        0 => file_items
+        1 => edit_items
+        2 => view_items
+        _ => []
+      }
+    }
+
+    // Menu bar
+    let menu_bar_items : Array[TuiNode] = []
+    for i, m in menus {
+      menu_bar_items.push(
+        @ui.menubar_item(m, open_menu == i, id="menu-" + i.to_string()),
+      )
+    }
+
+    // Dropdown (if open) - use same structure for both states
+    // Fixed height for dropdown area
+    let dropdown_height = 10.0
+    let dropdown : TuiNode = if open_menu >= 0 {
+      let items = get_menu_items(open_menu)
+      let item_nodes : Array[TuiNode] = []
+      for i, item in items {
+        item_nodes.push(
+          @ui.menu_item(
+            item,
+            selected_item == i,
+            id="menuitem-" + i.to_string(),
+          ),
+        )
+      }
+      column(
+        id="dropdown",
+        border="single",
+        border_color="cyan",
+        bg="rgb(50,50,60)",
+        height=dropdown_height,
+        item_nodes,
+      )
+    } else {
+      // Use same column structure as placeholder to keep layout stable
+      column(id="dropdown", height=dropdown_height, [])
+    }
+
+    // Get current item name
+    let current_item_name = if open_menu >= 0 {
+      let items = get_menu_items(open_menu)
+      if selected_item < items.length() {
+        items[selected_item]
+      } else {
+        "none"
+      }
+    } else {
+      "none"
+    }
+    column([
+      text("Menubar", fg="yellow", bold=true),
+      text(
+        "1/2/3 or click: open menu, ↑/↓ or click: select",
+        fg="rgb(128,128,128)",
+      ),
+      vspace(1.0),
+      row(
+        bg="rgb(40,40,50)",
+        border="single",
+        border_color="rgb(60,60,80)",
+        menu_bar_items,
+      ),
+      dropdown,
+      spacer(),
+      text(
+        "Menu: " +
+        (if open_menu >= 0 { menus[open_menu] } else { "none" }) +
+        " | Item: " +
+        current_item_name,
+        fg="green",
+      ),
+    ])
+  }
+
+  // ==========================================================================
+  // Main Render
+  // ==========================================================================
+
+  fn render_ui() -> TuiNode {
+    let current = current_demo.get()
+
+    // Navigation tabs
+    let nav_items : Array[TuiNode] = []
+    for i, d in demos {
+      nav_items.push(@ui.tab(d, current == i, id="nav-" + i.to_string()))
+    }
+
+    // Demo content
+    let demo_content = match current {
+      _ if current == demo_tabs => render_tabs_demo()
+      _ if current == demo_accordion => render_accordion_demo()
+      _ if current == demo_radio => render_radio_demo()
+      _ if current == demo_switch => render_switch_demo()
+      _ if current == demo_listbox => render_listbox_demo()
+      _ if current == demo_combobox => render_combobox_demo()
+      _ if current == demo_splitter => render_splitter_demo()
+      _ if current == demo_menubar => render_menubar_demo()
+      _ => text("Unknown demo")
+    }
+    column(width=width.to_double(), height=height.to_double(), [
+      // Header
+      row(justify="center", padding_y=0.5, [
+        text("VNode Component Gallery", fg="yellow", bold=true),
+      ]),
+      // Navigation
+      row(justify="center", gap=0.5, nav_items),
+      // Demo content
+      column(
+        flex_grow=1.0,
+        padding_x=1.0,
+        padding_y=0.5,
+        border="rounded",
+        border_color="rgb(80,80,100)",
+        [demo_content],
+      ),
+      // Footer
+      row(justify="center", padding_y=1.0, [
+        text(message.get(), fg="rgb(100,100,100)"),
+      ]),
+    ])
+  }
+
+  // ==========================================================================
+  // Event Handling
+  // ==========================================================================
+
+  // Parse ID string like "radio-2" into (prefix, index)
+  fn parse_id_index(id : String) -> (String, Int)? {
+    let chars : Array[Char] = id.to_array()
+    let len = chars.length()
+    let mut last_dash = -1
+    for i in 0..<len {
+      if chars[i] == '-' {
+        last_dash = i
+      }
+    }
+    if last_dash < 0 {
+      return None
+    }
+    let mut idx = 0
+    let mut valid = false
+    for i in (last_dash + 1)..<len {
+      let c = chars[i]
+      if c >= '0' && c <= '9' {
+        idx = idx * 10 + (c.to_int() - '0'.to_int())
+        valid = true
+      } else {
+        return None
+      }
+    }
+    if !valid {
+      return None
+    }
+    let buf = StringBuilder::new()
+    for i in 0..<last_dash {
+      buf.write_char(chars[i])
+    }
+    Some((buf.to_string(), idx))
+  }
+
+  // Initialize terminal
+  @tui.print_raw(VNodeApp::init_terminal())
+  @tui.enable_raw_mode()
+  @tui.print_raw(@tui.enable_mouse_all())
+
+  // Initial render
+  @tui.print_raw(app.render_frame(render_ui()))
+
+  // Event loop
+  let mut running = true
+  while running {
+    let key = @tui.read_key()
+    if key.length() == 0 {
+      continue
+    }
+    let event = @tui.parse_input(key)
+    let mut need_render = true
+    let current = current_demo.get()
+    match event {
+      @tui.InputEvent::Key(key_event) =>
+        match key_event {
+          // Quit
+          @tui.KeyEvent::Char('q', @tui.KeyModifier::None) => running = false
+          @tui.KeyEvent::Char('c', @tui.KeyModifier::Ctrl) => running = false
+          @tui.KeyEvent::Special(@tui.SpecialKey::Escape, _) => running = false
+          // Navigate demos
+          @tui.KeyEvent::Special(@tui.SpecialKey::Left, _) =>
+            if current > 0 {
+              current_demo.set(current - 1)
+              message.set("Demo: " + demos[current - 1])
+            }
+          @tui.KeyEvent::Special(@tui.SpecialKey::Right, _) =>
+            if current < demos.length() - 1 {
+              current_demo.set(current + 1)
+              message.set("Demo: " + demos[current + 1])
+            }
+          // Demo-specific: Up
+          @tui.KeyEvent::Special(@tui.SpecialKey::Up, _) =>
+            match current {
+              _ if current == demo_radio => {
+                let sel = radio_selected.get()
+                if sel > 0 {
+                  radio_selected.set(sel - 1)
+                  message.set("Radio: " + (sel - 1).to_string())
+                }
+              }
+              _ if current == demo_listbox => {
+                let sel = listbox_selected.get()
+                if sel > 0 {
+                  listbox_selected.set(sel - 1)
+                }
+              }
+              _ if current == demo_combobox =>
+                if combobox_open.get() {
+                  let sel = combobox_selected.get()
+                  if sel > 0 {
+                    combobox_selected.set(sel - 1)
+                  }
+                }
+              _ if current == demo_splitter => {
+                let pos = splitter_pos.get()
+                if pos > 10 {
+                  splitter_pos.set(pos - 5)
+                  message.set("Splitter: " + (pos - 5).to_string() + "%")
+                }
+              }
+              _ if current == demo_menubar =>
+                if menubar_open.get() >= 0 {
+                  let sel = menubar_item.get()
+                  if sel > 0 {
+                    menubar_item.set(sel - 1)
+                  }
+                }
+              _ => need_render = false
+            }
+          // Demo-specific: Down
+          @tui.KeyEvent::Special(@tui.SpecialKey::Down, _) =>
+            match current {
+              _ if current == demo_radio => {
+                let sel = radio_selected.get()
+                if sel < 2 {
+                  radio_selected.set(sel + 1)
+                  message.set("Radio: " + (sel + 1).to_string())
+                }
+              }
+              _ if current == demo_listbox => {
+                let sel = listbox_selected.get()
+                if sel < 4 {
+                  listbox_selected.set(sel + 1)
+                }
+              }
+              _ if current == demo_combobox =>
+                if combobox_open.get() {
+                  let sel = combobox_selected.get()
+                  if sel < 4 {
+                    combobox_selected.set(sel + 1)
+                  }
+                }
+              _ if current == demo_splitter => {
+                let pos = splitter_pos.get()
+                if pos < 90 {
+                  splitter_pos.set(pos + 5)
+                  message.set("Splitter: " + (pos + 5).to_string() + "%")
+                }
+              }
+              _ if current == demo_menubar =>
+                if menubar_open.get() >= 0 {
+                  let menu_idx = menubar_open.get()
+                  let items = match menu_idx {
+                    0 => 4
+                    1 => 3
+                    2 => 4
+                    _ => 0
+                  }
+                  let sel = menubar_item.get()
+                  if sel < items - 1 {
+                    menubar_item.set(sel + 1)
+                  }
+                }
+              _ => need_render = false
+            }
+          // Space toggle
+          @tui.KeyEvent::Char(' ', _) =>
+            match current {
+              _ if current == demo_switch => {
+                switch_on.set(!switch_on.get())
+                message.set(
+                  "Switch: " + (if switch_on.get() { "ON" } else { "OFF" }),
+                )
+              }
+              _ if current == demo_combobox =>
+                combobox_open.set(!combobox_open.get())
+              _ if current == demo_menubar => {
+                menubar_open.set(-1)
+                menubar_item.set(0)
+              }
+              _ => need_render = false
+            }
+          // Number keys
+          @tui.KeyEvent::Char('1', _) =>
+            match current {
+              _ if current == demo_tabs => tab_selected.set(0)
+              _ if current == demo_accordion => accordion_expanded.set(0)
+              _ if current == demo_switch =>
+                checkbox_checked.set(!checkbox_checked.get())
+              _ if current == demo_menubar => {
+                menubar_open.set(0)
+                menubar_item.set(0)
+              }
+              _ => need_render = false
+            }
+          @tui.KeyEvent::Char('2', _) =>
+            match current {
+              _ if current == demo_tabs => tab_selected.set(1)
+              _ if current == demo_accordion => accordion_expanded.set(1)
+              _ if current == demo_menubar => {
+                menubar_open.set(1)
+                menubar_item.set(0)
+              }
+              _ => need_render = false
+            }
+          @tui.KeyEvent::Char('3', _) =>
+            match current {
+              _ if current == demo_tabs => tab_selected.set(2)
+              _ if current == demo_accordion => accordion_expanded.set(2)
+              _ if current == demo_menubar => {
+                menubar_open.set(2)
+                menubar_item.set(0)
+              }
+              _ => need_render = false
+            }
+          _ => need_render = false
+        }
+      @tui.InputEvent::Mouse(mouse_event) =>
+        match (mouse_event.event_type, mouse_event.button) {
+          (@tui.MouseEventType::Press, @tui.MouseButton::Left) => {
+            let mx = mouse_event.x
+            let my = mouse_event.y
+            match app.hit_test(mx, my) {
+              Some(hit) => {
+                let id = hit.id
+                match parse_id_index(id) {
+                  Some(("nav", i)) =>
+                    if i >= 0 && i < demos.length() {
+                      current_demo.set(i)
+                      message.set("Demo: " + demos[i])
+                    }
+                  Some(("tab", i)) => tab_selected.set(i)
+                  Some(("acc", i)) => accordion_expanded.set(i)
+                  Some(("radio", i)) => radio_selected.set(i)
+                  Some(("list", i)) => listbox_selected.set(i)
+                  Some(("combo", i)) => {
+                    combobox_selected.set(i)
+                    combobox_open.set(false)
+                  }
+                  Some(("menu", i)) => {
+                    menubar_open.set(i)
+                    menubar_item.set(0)
+                  }
+                  Some(("menuitem", i)) => {
+                    let menu_idx = menubar_open.get()
+                    let items = match menu_idx {
+                      0 => ["New", "Open", "Save", "Exit"]
+                      1 => ["Cut", "Copy", "Paste"]
+                      2 => ["Toolbar", "Status Bar", "Zoom In", "Zoom Out"]
+                      _ => []
+                    }
+                    if i < items.length() {
+                      message.set("Selected: " + items[i])
+                    }
+                    menubar_open.set(-1)
+                    menubar_item.set(0)
+                  }
+                  _ =>
+                    match id {
+                      "switch-dark" | "switch-notif" => {
+                        switch_on.set(!switch_on.get())
+                        message.set(
+                          "Switch: " +
+                          (if switch_on.get() { "ON" } else { "OFF" }),
+                        )
+                      }
+                      "cb-terms" | "cb-news" =>
+                        checkbox_checked.set(!checkbox_checked.get())
+                      "combo-trigger" => combobox_open.set(!combobox_open.get())
+                      _ => need_render = false
+                    }
+                }
+              }
+              None => need_render = false
+            }
+          }
+          _ => need_render = false
+        }
+      _ => need_render = false
+    }
+
+    // Re-render
+    if need_render && running {
+      @tui.print_raw(app.render_frame(render_ui()))
+    }
+  }
+
+  // Restore terminal
+  @tui.print_raw(@tui.disable_mouse_all())
+  @tui.cleanup_stdin()
+  @tui.print_raw(VNodeApp::restore_terminal())
+  println("Goodbye!")
+}
