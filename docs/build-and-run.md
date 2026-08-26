@@ -18,8 +18,12 @@ the editor; use `moon run moui/windows_skia --target native` on Windows. Set
 `MOUI_SKIA_RENDERER=skia-gpu` for Skia GPU. The same environment selection is
 available on both native entrypoints. A file can be opened with **Open** and
 saved with **Save**. For protocol smoke tests without a window, run
-`moon run moui/benchmark --target native -- data/small.md scroll`; this uses
-the same runtime view tree and reports `headless-render`.
+`moon run moui/benchmark --target native -- data/small.md scroll`; this prints
+a comparable `headless-render` row (a lightweight block splitter matching the
+GPUI/Electron/Flutter adapters) plus a `richtext-full` row
+(`markdown_document`, capped at the small fixture). Set
+`MOUI_SKIA_RENDERER` before the command to label the adapter
+(`moui-skia-raster` or `moui-skia-gpu`).
 
 ## GPUI
 

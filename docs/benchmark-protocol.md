@@ -37,11 +37,14 @@ measurements should use the same fixture and scenario script while launching
 the desktop app with `--no-enable-impeller` (Skia) and `--enable-impeller`
 (Impeller), and should report `measurement_scope=ui-frame`.
 
-The MoUI adapter executes the same runtime draw pipeline as the desktop app,
-while `flutter/tool/benchmark.dart` executes the matching Dart block parser.
-Both report `measurement_scope=headless-render`; use an instrumented desktop run
-and `measurement_scope=ui-frame` before applying the acceptance threshold.
+The MoUI adapter prints two JSON objects per run: a `headless-render` row
+(`split_blocks`, the cross-framework block-split baseline matching the
+GPUI/Electron/Flutter splitters) and a `richtext-full` row
+(`markdown_document`, MoUI's full rich-text preparation, capped at the small
+fixture). `flutter/tool/benchmark.dart` executes the matching Dart block
+splitter and reports `headless-render`. Use an instrumented desktop run and
+`measurement_scope=ui-frame` before applying the acceptance threshold.
 
 The report includes `platform`, `machine`, `cpu`, `memory_gb`, renderer and
 all command lines. It is safe to compare only rows with matching fixture,
-viewport, warm-up and repetition settings.
+viewport, warm-up, repetition and `measurement_scope` settings.

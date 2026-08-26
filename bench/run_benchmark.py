@@ -108,7 +108,15 @@ def parse_adapters(values: list[str]) -> dict[str, str]:
     return adapters
 
 
-def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | None = None) -> dict:
+def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | None = None) -> list[dict]:
+    """Run one adapter invocation and return a list of measured records.
+
+    Adapters may print more than one JSON object (one per measurement scope, for
+    example a comparable `headless-render` row plus a renderer-level
+    `richtext-full` row). Each printed object becomes its own record; the
+    adapter-emitted `adapter` field is authoritative so a single command can
+    back multiple rows.
+    """
     tokens = shlex.split(command)
     rendered = [token.format(fixture=str(fixture), scenario=scenario) for token in tokens]
     if "{fixture}" not in command:
@@ -117,30 +125,33 @@ def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | 
         rendered.append(scenario)
     started = time.perf_counter()
     try:
-        process = subprocess.run(rendered, cwd=ROOT, text=True, capture_output=True, timeout=300)
+        process = subprocess.run(rendered, cwd=ROOT, text=True, capture_output=True, timeout=1800)
     except FileNotFoundError as error:
-        return {"status": "skipped", "command": rendered, "elapsed_ms": 0.0,
-                "reason": f"adapter executable unavailable: {error}"}
+        return [{"status": "skipped", "command": rendered, "elapsed_ms": 0.0,
+                 "reason": f"adapter executable unavailable: {error}"}]
     except subprocess.TimeoutExpired:
-        return {"status": "error", "command": rendered, "elapsed_ms": 300000.0, "error": "adapter timed out after 300 seconds"}
+        return [{"status": "error", "command": rendered, "elapsed_ms": 1800000.0,
+                 "error": "adapter timed out after 1800 seconds"}]
     elapsed = (time.perf_counter() - started) * 1000
     if process.returncode:
-        return {"status": "error", "command": rendered, "elapsed_ms": elapsed,
-                "error": process.stderr[-4000:] or f"exit {process.returncode}"}
-    lines = [line for line in process.stdout.splitlines() if line.strip()]
-    try:
-        payload = json.loads(lines[-1])
-    except (IndexError, json.JSONDecodeError):
-        return {"status": "error", "command": rendered, "elapsed_ms": elapsed,
-                "error": "adapter did not print one JSON object", "stdout": process.stdout[-4000:]}
-    # The matrix key is authoritative: one executable may back multiple
-    # renderer variants (for example MoUI Raster/GPU or Flutter Skia/Impeller).
-    if adapter_name:
-        payload["adapter"] = adapter_name
-    payload.update({"status": "measured", "command": rendered, "process_elapsed_ms": elapsed})
-    if scenario == "open":
-        payload.setdefault("startup_ms", elapsed)
-    return payload
+        return [{"status": "error", "command": rendered, "elapsed_ms": elapsed,
+                 "error": process.stderr[-4000:] or f"exit {process.returncode}"}]
+    records: list[dict] = []
+    for line in process.stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        payload.update({"status": "measured", "command": rendered, "process_elapsed_ms": elapsed})
+        if scenario == "open":
+            payload.setdefault("startup_ms", elapsed)
+        records.append(payload)
+    if not records:
+        return [{"status": "error", "command": rendered, "elapsed_ms": elapsed,
+                 "error": "adapter did not print any JSON object", "stdout": process.stdout[-4000:]}]
+    return records
 
 
 def main() -> None:
@@ -169,7 +180,8 @@ def main() -> None:
                     run_command(command, fixture, scenario, adapter)
                 runs = [run_command(command, fixture, scenario, adapter) for _ in range(args.repetitions)]
                 for run in runs:
-                    records.append({**base, **run})
+                    for record in run:
+                        records.append({**base, **record})
     renderer_env: dict[str, str] = {}
     for key in ("MOUI_SKIA_RENDERER", "FLUTTER_ENGINE_SWITCHES", "GPU_MODEL"):
         if key in os.environ:

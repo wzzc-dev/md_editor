@@ -25,14 +25,16 @@ def main() -> None:
     print(f"- Viewport: `{payload['viewport']['width']}x{payload['viewport']['height']} @ {payload['viewport']['refresh_hz']} Hz`\n")
     grouped = defaultdict(list)
     for record in payload["records"]:
-        grouped[(record["adapter"], record["fixture"], record["scenario"])].append(record)
+        scope = record.get("measurement_scope") or record.get("status") or ""
+        grouped[(record["adapter"], record["fixture"], record["scenario"], scope)].append(record)
     print("| Adapter | Fixture | Scenario | Scope | Mean ms | P95 ms | P99 ms | Input ms | Startup ms | Samples | Dropped | Drop rate | Status |")
     print("| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
     for key in sorted(grouped):
         records = grouped[key]
         measured = [record for record in records if record.get("status") == "measured"]
+        scope = key[3] or "-"
         if not measured:
-            print(f"| {key[0]} | {key[1]} | {key[2]} | - | - | - | - | - | - | - | - | - | {records[0].get('status')} ({records[0].get('reason', records[0].get('error', ''))}) |")
+            print(f"| {key[0]} | {key[1]} | {key[2]} | {scope} | - | - | - | - | - | - | - | - | {records[0].get('status')} ({records[0].get('reason', records[0].get('error', ''))}) |")
             continue
         means = [record.get("mean_ms") for record in measured if record.get("mean_ms") is not None]
         p95 = [record.get("p95_ms") for record in measured if record.get("p95_ms") is not None]
@@ -44,7 +46,6 @@ def main() -> None:
         avg = lambda values: sum(values) / len(values) if values else None
         fmt = lambda value: "-" if value is None else f"{value:.3f}"
         drop_rate = (100.0 * dropped / samples) if samples else None
-        scope = measured[0].get("measurement_scope", "unspecified")
         print(f"| {key[0]} | {key[1]} | {key[2]} | {scope} | {fmt(avg(means))} | {fmt(avg(p95))} | {fmt(avg(p99))} | {fmt(avg(input_latency))} | {fmt(avg(startup))} | {samples} | {dropped} | {fmt(drop_rate)}% | measured |")
     print("\nRaw samples are retained in the input JSON. Do not compare rows with different fixture, renderer, viewport or repetition settings.")
 
