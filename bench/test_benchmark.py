@@ -1,6 +1,7 @@
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -108,7 +109,103 @@ class FixtureTests(unittest.TestCase):
         )
         result = run_command(command, fixture, "scroll", "electron")
         self.assertEqual(result[0]["status"], "error")
-        self.assertIn("120 frame samples", result[0]["error"])
+        self.assertIn("120 samples", result[0]["error"])
+
+    def test_ui_payload_rejects_non_finite_samples(self):
+        fixture = ROOT / "data" / "small.md"
+        command = (
+            "python3 -c 'import json; print(json.dumps({{"
+            "\"adapter\":\"electron\",\"measurement_scope\":\"ui-frame\","
+            "\"scenario\":\"{scenario}\",\"samples_ms\":[float(\"nan\")],"
+            "\"mean_ms\":1,\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
+            "\"document_load_ms\":1,\"first_interactive_ms\":1,"
+            "\"viewport\":{{\"width\":1280,\"height\":800}}}}))'"
+        )
+        result = run_command(command, fixture, "open", "electron")
+        self.assertEqual(result[0]["status"], "error")
+        self.assertIn("finite and nonnegative", result[0]["error"])
+
+    def test_ui_payload_requires_startup_only_for_open(self):
+        fixture = ROOT / "data" / "small.md"
+        command = (
+            "python3 -c 'import json; print(json.dumps({{"
+            "\"adapter\":\"electron\",\"measurement_scope\":\"ui-frame\","
+            "\"scenario\":\"{scenario}\",\"samples_ms\":[1],\"mean_ms\":1,"
+            "\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
+            "\"action_count\":1,\"frame_sample_count\":1,\"warmup_action_count\":0,"
+            "\"document_load_ms\":1,\"first_interactive_ms\":1,"
+            "\"startup_ms\":1,\"viewport\":{{\"width\":1280,\"height\":800}}}}))'"
+        )
+        result = run_command(command, fixture, "open", "electron")
+        self.assertEqual(result[0]["status"], "measured")
+        command = command.replace('\\\"startup_ms\\\":1,', '')
+        result = run_command(command, fixture, "open", "electron")
+        self.assertEqual(result[0]["status"], "measured")
+
+    def test_report_pools_raw_samples_for_percentiles(self):
+        records = []
+        for samples in ([0.0] * 9 + [100.0], [10.0] * 10):
+            records.append({
+                "adapter": "electron",
+                "fixture": "small",
+                "scenario": "scroll",
+                "measurement_scope": "ui-frame",
+                "status": "measured",
+                "samples_ms": samples,
+                "p95_ms": 55.0,
+                "p99_ms": 55.0,
+                "action_count": 10,
+                "dropped_frames": 1,
+            })
+        payload = {
+            "schema": "md-editor-benchmark/v1",
+            "platform": "test",
+            "machine": "test",
+            "memory_gb": 16,
+            "viewport": {"width": 1280, "height": 800, "refresh_hz": 60},
+            "records": records,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "benchmark.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            report = subprocess.run(
+                [sys.executable, str(ROOT / "bench" / "report.py"), str(path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+        row = next(line for line in report.splitlines() if line.startswith("| electron |"))
+        columns = [column.strip() for column in row.strip("|").split("|")]
+        self.assertEqual(columns[4], "10.000")
+        self.assertEqual(columns[5], "10.000")
+        self.assertEqual(columns[6], "100.000")
+
+    def test_report_error_rows_keep_the_table_shape(self):
+        payload = {
+            "schema": "md-editor-benchmark/v1",
+            "platform": "test",
+            "machine": "test",
+            "memory_gb": 16,
+            "viewport": {"width": 1280, "height": 800, "refresh_hz": 60},
+            "records": [{
+                "adapter": "electron",
+                "fixture": "small",
+                "scenario": "open",
+                "status": "error",
+                "error": "failed",
+            }],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "benchmark.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            report = subprocess.run(
+                [sys.executable, str(ROOT / "bench" / "report.py"), str(path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+        row = next(line for line in report.splitlines() if line.startswith("| electron |"))
+        self.assertEqual(len(row.strip("|").split("|")), 16)
 
 
 if __name__ == "__main__":

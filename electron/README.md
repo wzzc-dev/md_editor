@@ -11,6 +11,7 @@ Small-only `wysiwyg-full` row from the same parser:
 
 ```sh
 npm ci --prefix electron
+npm run check --prefix electron
 npm start --prefix electron
 npm run benchmark --prefix electron -- data/medium.md scroll
 python3 electron/ui_benchmark.py data/medium.md scroll

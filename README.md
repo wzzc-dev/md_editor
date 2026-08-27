@@ -3,14 +3,14 @@
 This repository contains intentionally small desktop Markdown editors and one
 repeatable benchmark protocol. The same source document, 1280x800 viewport and
 interaction script are used for MoUI (Skia raster/GPU), GPUI, Flutter (Skia/
-Impeller) and Electron/Vditor. Real-window adapters emit `ui-frame` records;
+Impeller) and Electron/Vditor. Desktop UI-process adapters emit `ui-frame` records;
 separate command-line adapters retain a renderer-independent
 `headless-render` diagnostic baseline.
 
 The editor contract is deliberately narrow: open a `.md` file, edit Markdown,
-render the formatted document live, and scroll a long document. The saved
-value is always the original Markdown source. Unsupported constructs remain
-editable source text.
+render the formatted document live, and scroll a long document. Saving emits
+Markdown source from the edited block model; insignificant whitespace may be
+normalized. Unsupported constructs remain editable source text.
 
 ## Layout
 
@@ -27,7 +27,7 @@ editable source text.
 ## Quick start
 
 ```sh
-# Build each application once and run all six real-window adapters.
+# Build each application once and run all six desktop UI-process adapters.
 ./scripts/run_ui_benchmark.sh
 
 # Fast six-adapter integration smoke run.
@@ -59,8 +59,8 @@ Electron uses Vditor 3.11.3 in `mode: "wysiwyg"` and loads all assets locally;
 its headless benchmark additionally emits a Small-only full Lute DOM row.
 GPUI's MoonBit
 executable links a small Rust GPUI static library through native FFI. Both
-editors expose a single formatted document surface and preserve Markdown
-source on save. The GPUI MoonBit package owns the shared block counter and
+editors expose a single formatted document surface and emit Markdown source
+on save. The GPUI MoonBit package owns the shared block counter and
 native process entrypoint; the Rust layer supplies the GPUI interactive host.
 
 ## Reproducibility
