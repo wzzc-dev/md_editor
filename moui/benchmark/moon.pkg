@@ -1,6 +1,10 @@
 import {
+  "cross_framework/md_editor_moui/app",
+  "wzzc-dev/moui/core",
+  "wzzc-dev/moui/runtime",
   "wzzc-dev/moui_richtext" @richtext,
-  "wzzc-dev/moui/text" @text,
+  "wzzc-dev/moui_skia_renderer" @skia_renderer,
+  "wzzc-dev/moui/text",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
 }
@@ -8,3 +12,7 @@ import {
 supported_targets = "native"
 
 pkgtype(kind: "executable")
+
+options(
+  "native-stub": [ "benchmark_clock.c" ],
+)

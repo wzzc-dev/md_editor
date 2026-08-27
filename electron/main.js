@@ -1,21 +1,34 @@
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const fs = require('fs/promises');
 const path = require('path');
+const { performance } = require('perf_hooks');
 
 const markdownFilter = [{ name: 'Markdown', extensions: ['md', 'markdown'] }];
+const processStarted = performance.now();
 
-function createWindow() {
+function createWindow(benchmark = null) {
   const window = new BrowserWindow({
     width: 1280,
     height: 800,
+    useContentSize: true,
     minWidth: 800,
     minHeight: 500,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  if (benchmark) {
+    ipcMain.handle('benchmark:config', () => benchmark);
+    ipcMain.once('benchmark:report', (_event, report) => {
+      if (report.scenario === 'open' && report.startup_ms == null) {
+        report.startup_ms = performance.now() - processStarted;
+      }
+      process.stdout.write(`${JSON.stringify(report)}\n`, () => app.quit());
+    });
+  }
   window.loadFile(path.join(__dirname, 'index.html'));
 }
 
@@ -39,6 +52,23 @@ if (process.argv.includes('--benchmark')) {
     await fs.writeFile(filePath, document.source, 'utf8');
     return { path: filePath, name: path.basename(filePath) };
   });
-  app.whenReady().then(createWindow);
-  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+  app.whenReady().then(async () => {
+    const benchmarkIndex = process.argv.indexOf('--ui-benchmark');
+    if (benchmarkIndex < 0) {
+      createWindow();
+      return;
+    }
+    const fixtureArg = process.argv[benchmarkIndex + 1];
+    const scenario = process.argv[benchmarkIndex + 2];
+    if (!fixtureArg || !['open', 'input', 'scroll'].includes(scenario)) {
+      throw new Error('usage: electron . --ui-benchmark <fixture> <open|input|scroll>');
+    }
+    const fixture = path.resolve(process.cwd(), fixtureArg);
+    const loadStarted = performance.now();
+    const source = await fs.readFile(fixture, 'utf8');
+    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted });
+  });
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin' || process.argv.includes('--ui-benchmark')) app.quit();
+  });
 }

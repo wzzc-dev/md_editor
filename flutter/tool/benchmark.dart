@@ -71,7 +71,8 @@ List<Block> blocks(String source) {
 
 void main(List<String> args) {
   if (args.length < 2) {
-    stderr.writeln('usage: dart run tool/benchmark.dart <fixture> <open|input|scroll>');
+    stderr.writeln(
+        'usage: dart run tool/benchmark.dart <fixture> <open|input|scroll>');
     exitCode = 64;
     return;
   }
@@ -88,13 +89,16 @@ void main(List<String> args) {
     sample(source);
   } else {
     final count = scenario == 'scroll' ? 120 : 10;
-    for (var i = 0; i < count; i++) sample(scenario == 'input' ? '$source$i' : source);
+    for (var i = 0; i < count; i++) {
+      sample(scenario == 'input' ? '$source$i' : source);
+    }
   }
   samples.sort();
   final mean = samples.reduce((a, b) => a + b) / samples.length;
   double at(double ratio) => samples[((samples.length - 1) * ratio).round()];
+  final renderer = Platform.environment['FLUTTER_RENDERER'] ?? 'skia';
   stdout.writeln(jsonEncode({
-    'adapter': 'flutter',
+    'adapter': 'flutter-${renderer == 'impeller' ? 'impeller' : 'skia'}',
     'measurement_scope': 'headless-render',
     'scenario': scenario,
     'samples_ms': samples,

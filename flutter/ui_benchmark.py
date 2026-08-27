@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Run a Flutter Profile UI benchmark and verify the engine renderer log."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import platform
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+APP_NAME = "cross_framework_markdown_flutter"
+RENDERER_MARKERS = {
+    "skia": "Using the Skia rendering backend",
+    "impeller": "Using the Impeller rendering backend",
+}
+
+
+def profile_binary() -> Path:
+    system = platform.system()
+    if system == "Darwin":
+        return (
+            ROOT
+            / "build"
+            / "macos"
+            / "Build"
+            / "Products"
+            / "Profile"
+            / f"{APP_NAME}.app"
+            / "Contents"
+            / "MacOS"
+            / APP_NAME
+        )
+    if system == "Windows":
+        return ROOT / "build" / "windows" / "x64" / "runner" / "Profile" / f"{APP_NAME}.exe"
+    raise SystemExit("Flutter desktop UI benchmark supports macOS and Windows only")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("renderer", choices=tuple(RENDERER_MARKERS))
+    parser.add_argument("fixture", type=Path)
+    parser.add_argument("scenario", choices=("open", "input", "scroll"))
+    args = parser.parse_args()
+
+    binary = profile_binary()
+    if not binary.is_file():
+        system = platform.system().lower()
+        target = "macos" if system == "darwin" else "windows"
+        raise SystemExit(
+            f"{binary} is missing; run 'flutter build {target} --profile' in {ROOT}"
+        )
+    fixture = args.fixture.resolve()
+    if not fixture.is_file():
+        raise SystemExit(f"fixture is unreadable: {fixture}")
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "FLUTTER_ENGINE_SWITCHES": "1",
+            "FLUTTER_ENGINE_SWITCH_1": (
+                "enable-impeller=true"
+                if args.renderer == "impeller"
+                else "enable-impeller=false"
+            ),
+            # The app uses this only for its result label. The wrapper verifies
+            # the actual renderer independently from the engine startup log.
+            "FLUTTER_RENDERER": args.renderer,
+        }
+    )
+    process: subprocess.CompletedProcess[str] | None = None
+    attempt = 0
+    for attempt in (1, 2):
+        try:
+            process = subprocess.run(
+                [str(binary), "--ui-benchmark", str(fixture), args.scenario],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=1800,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise SystemExit("Flutter UI benchmark timed out after 1800 seconds") from error
+        log = f"{process.stderr}\n{process.stdout}"
+        transient_renderer_crash = (
+            process.returncode < 0 or "ImpellerValidationBreak" in log
+        )
+        if process.returncode == 0 or not transient_renderer_crash:
+            break
+
+    assert process is not None
+    log = f"{process.stderr}\n{process.stdout}"
+    marker = RENDERER_MARKERS[args.renderer]
+    if process.returncode != 0:
+        sys.stderr.write(process.stderr)
+        raise SystemExit(f"Flutter UI benchmark exited with {process.returncode}")
+    if marker not in log:
+        sys.stderr.write(process.stderr)
+        raise SystemExit(
+            f"Flutter engine log did not confirm the requested {args.renderer} renderer"
+        )
+
+    expected_adapter = f"flutter-{args.renderer}"
+    for line in process.stdout.splitlines():
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if payload.get("measurement_scope") != "ui-frame":
+            continue
+        if payload.get("adapter") != expected_adapter:
+            raise SystemExit(
+                f"Flutter payload adapter mismatch: expected {expected_adapter!r}"
+            )
+        if payload.get("scenario") != args.scenario:
+            raise SystemExit("Flutter payload scenario mismatch")
+        viewport = payload.get("viewport", {})
+        if viewport.get("width") != 1280 or viewport.get("height") != 800:
+            raise SystemExit(
+                f"Flutter viewport mismatch: {payload.get('viewport')!r}"
+            )
+        payload["verified_renderer"] = args.renderer
+        payload["renderer_verification_source"] = "flutter-engine-startup-log"
+        payload["wrapper_retry_count"] = attempt - 1
+        print(json.dumps(payload, separators=(",", ":")))
+        return
+    sys.stderr.write(process.stderr)
+    raise SystemExit("Flutter UI benchmark did not emit a ui-frame JSON payload")
+
+
+if __name__ == "__main__":
+    main()

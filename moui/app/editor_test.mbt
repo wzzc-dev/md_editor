@@ -32,6 +32,16 @@ test "markdown editor can initialize from a benchmark fixture" {
 }
 
 ///|
+test "block input updates the Markdown source" {
+  let model = Model::with_source("# First\n\nSecond")
+  let next = update(model, BlockInput(0, "# Changed"))
+  assert_eq(next.source, "# Changed\n\nSecond\n")
+  assert_eq(next.blocks[0].markdown, "# Changed")
+  assert_eq(next.blocks[1].markdown, "Second")
+  assert_eq(next.saved_source, "# First\n\nSecond")
+}
+
+///|
 test "markdown editor runtime exposes the editing shell" {
   let runtime = @runtime.new_program_with_dimensions(
     program=program(),
@@ -42,8 +52,45 @@ test "markdown editor runtime exposes the editing shell" {
     runtime
     .draw_commands()
     .any(command => {
-      command is @core.DrawCommand::DrawText({ text, .. }) &&
-      text == "MoUI Markdown Editor"
+      command is DrawText({ text, .. }) && text == "MoUI Markdown Editor"
+    }),
+  )
+}
+
+///|
+test "markdown editor scroll changes the visible virtual blocks" {
+  let rows : Array[String] = []
+  for index in 0..<40 {
+    rows.push("# Row \{index}")
+  }
+  let runtime = @runtime.new_program_with_dimensions(
+    program=program_with_source(rows.join("\n\n")),
+    width=1100.0,
+    height=760.0,
+  )
+  let before = runtime.draw_commands()
+  assert_true(
+    before.any(command => {
+      command is DrawText({ text, .. }) && text.contains("Row 0")
+    }),
+  )
+  let dispatched = runtime.dispatch_pointer_input(
+    @core.PointerEvent::new(
+      position=@core.Point::new(x=480.0, y=360.0),
+      phase=Move,
+      wheel_delta=@core.Point::new(x=0.0, y=-480.0),
+    ),
+  )
+  assert_true(dispatched.handled)
+  let after = runtime.draw_commands()
+  assert_false(
+    after.any(command => {
+      command is DrawText({ text, .. }) && text.contains("Row 0")
+    }),
+  )
+  assert_true(
+    after.any(command => {
+      command is DrawText({ text, .. }) && text.contains("Row 8")
     }),
   )
 }

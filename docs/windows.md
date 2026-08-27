@@ -1,61 +1,60 @@
 # Windows amd64 reproduction
 
-The benchmark protocol is operating-system agnostic and the same
-`scripts/run_benchmark.sh` runs on Windows. The instructions below cover a
-native Windows amd64 host (16 GiB) using Git Bash; WSL2 is also acceptable as
-long as the adapters build native Windows binaries.
+Windows performance evidence must be captured on a real Windows amd64 16 GiB
+host. WSL results are not a substitute because the desktop renderer, window
+system and GPU route differ.
 
 ## Prerequisites
 
-- **Rust** (`cargo`) for the GPUI adapter and editor.
-- **MoonBit** (`moon`) for the MoUI adapter and editor; check out the MoUI
-  workspace next to this repo (see `docs/build-and-run.md`).
-- **Node 20+** for the Electron adapter.
-- **Flutter/Dart** (optional) for the Flutter rows; if absent these are
-  recorded as `skipped`.
-- **Git Bash** (or any POSIX shell) to run `scripts/run_benchmark.sh`.
+- Rust with the MSVC x64 target and Visual Studio C++ build tools.
+- MoonBit native toolchain.
+- Python 3.12+.
+- Node 22.12+ (required by Electron 44).
+- Current stable Flutter with Windows desktop support.
+- Git Bash to execute the shared POSIX scripts.
 
-## Build checks
+Check out MoUI next to this repository if its MoonBit packages are not resolved
+from the registry. Then validate the toolchains:
 
 ```sh
+moon update
 moon check moui/app --target native
 cargo check --manifest-path gpui/Cargo.toml
-npm install --prefix electron
+npm ci --prefix electron
+flutter doctor -v
 ```
 
-`moon run moui/windows_skia --target native` opens the MoUI editor on Windows;
-set `MOUI_SKIA_RENDERER=skia-raster` or `skia-gpu` to select the renderer.
+## Full UI matrix
 
-## Run the full matrix
+From Git Bash on an idle machine with power saving disabled:
 
 ```sh
-./scripts/run_benchmark.sh
+UI_BENCHMARK_OUT=results/windows-amd64-ui.json \
+  ./scripts/run_ui_benchmark.sh
 ```
 
-This regenerates the fixtures, runs all adapters across the four fixtures
-(small/medium/large/stress) and three scenarios (open/input/scroll), and writes
-`results/local.json` plus `results/local.md`. The MoUI adapter uses
-`env MOUI_SKIA_RENDERER=...`, which Git Bash exposes as the `env` executable.
+The script selects `MOUI_GPU_ROUTE=direct3d`, builds Flutter Profile for
+Windows, verifies its Skia/Impeller startup logs, builds the MoonBit/GPUI native
+executable, installs the Electron runtime and runs all four fixtures and three
+scenarios. Default settings are one discarded process warm-up and three
+recorded repetitions.
 
-For a Windows capture under a dedicated name, copy the output:
+For a fast integration check first:
 
 ```sh
-cp results/local.json results/windows-amd64-local.json
-cp results/local.md  results/windows-amd64-local.md
-python3 bench/report.py results/windows-amd64-local.json
+UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
+  ./scripts/run_ui_benchmark.sh --fixture small \
+  --out results/windows-amd64-smoke-ui.json
 ```
 
-## Notes
+The final JSON must report `machine` as `AMD64`/`x86_64`, `memory_gb` near 16,
+the real GPU model, 1280x800 viewports, `ui-frame` scope and no skipped/error
+rows. Commit both the raw JSON and generated Markdown report when the hardware
+capture is available.
 
-- The macOS arm64 capture (`results/macos-arm64-local.json`) confirms MoUI and
-  GPUI are within 2x of Electron on every fixture/scenario for the comparable
-  `headless-render` scope. The Windows capture is the remaining piece of
-  deliverable #6 (MacOS arm64 + Windows amd64 results); it must be produced on a
-  real Windows amd64 host, as Windows runtime metrics and OS metadata cannot be
-  synthesized faithfully on macOS.
-- Report rows with `measurement_scope=richtext-full` only appear for the small
-  fixture by design (see `docs/limitations.md`); the `headless-render` row covers
-  every fixture.
-- Run on an idle machine with power saving disabled and a fixed 1280x800
-  window. The report records OS release, CPU, memory, GPU and toolchain
-  versions, so a Windows capture is directly comparable to the macOS one.
+## CI scope
+
+GitHub Actions regenerates fixtures and uploads Small headless and UI smoke
+artifacts on Windows. Hosted-runner data validates reproducibility, not the
+16 GiB hardware acceptance result; runner virtualization and GPU availability
+must be kept distinct from a dedicated-machine capture.

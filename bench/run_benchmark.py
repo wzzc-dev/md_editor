@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shlex
 import subprocess
 import sys
@@ -80,7 +81,14 @@ def gpu_model() -> str | None:
 
 def toolchain_versions() -> dict[str, str]:
     versions: dict[str, str] = {"python": sys.version.split()[0]}
-    for name, command in (("moon", ["moon", "version"]), ("rustc", ["rustc", "--version"]), ("flutter", ["flutter", "--version"])):
+    for name, command in (
+        ("moon", ["moon", "version"]),
+        ("rustc", ["rustc", "--version"]),
+        ("cargo", ["cargo", "--version"]),
+        ("node", ["node", "--version"]),
+        ("npm", ["npm", "--version"]),
+        ("flutter", ["flutter", "--version"]),
+    ):
         try:
             result = subprocess.run(command, text=True, capture_output=True, timeout=10, check=False)
         except (OSError, subprocess.TimeoutExpired):
@@ -96,6 +104,31 @@ def percentile(values: list[float], ratio: float) -> float | None:
         return None
     ordered = sorted(values)
     return ordered[round((len(ordered) - 1) * ratio)]
+
+
+def validate_ui_payload(payload: dict, scenario: str) -> None:
+    """Reject malformed UI records before they enter a comparison report."""
+    if payload.get("measurement_scope") != "ui-frame":
+        return
+    expected = 1 if scenario == "open" else (120 if scenario == "scroll" else 10)
+    samples = payload.get("samples_ms")
+    if not isinstance(samples, list) or len(samples) != expected:
+        raise ValueError(f"ui-frame {scenario} must contain {expected} frame samples")
+    if payload.get("action_count") not in (None, expected):
+        raise ValueError(f"ui-frame {scenario} action_count must be {expected}")
+    if payload.get("frame_sample_count") not in (None, expected):
+        raise ValueError(f"ui-frame {scenario} frame_sample_count must be {expected}")
+    if payload.get("warmup_action_count") not in (None, 0 if scenario == "open" else 1):
+        raise ValueError(f"ui-frame {scenario} warmup_action_count is invalid")
+    viewport = payload.get("viewport", {})
+    if viewport.get("width") != 1280 or viewport.get("height") != 800:
+        raise ValueError(f"ui-frame viewport must be 1280x800, got {viewport!r}")
+    if payload.get("scenario") not in (None, scenario):
+        raise ValueError(f"ui-frame scenario mismatch: {payload.get('scenario')!r}")
+    if scenario == "input":
+        latencies = payload.get("input_latency_samples_ms")
+        if not isinstance(latencies, list) or len(latencies) != expected:
+            raise ValueError("ui-frame input must contain one latency sample per action")
 
 
 def parse_adapters(values: list[str]) -> dict[str, str]:
@@ -118,23 +151,35 @@ def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | 
     back multiple rows.
     """
     tokens = shlex.split(command)
+    command_env = os.environ.copy()
+    assignments: list[str] = []
+    # Allow adapter-specific settings without invoking a shell, e.g.
+    # `FLUTTER_RENDERER=impeller dart run ...`. Keeping this in the harness
+    # makes commands reproducible on macOS, Windows and CI alike.
+    assignment = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=.*$")
+    while tokens and assignment.match(tokens[0]):
+        assignment_token = tokens.pop(0)
+        assignments.append(assignment_token)
+        key, value = assignment_token.split("=", 1)
+        command_env[key] = value
     rendered = [token.format(fixture=str(fixture), scenario=scenario) for token in tokens]
     if "{fixture}" not in command:
         rendered.append(str(fixture))
     if "{scenario}" not in command:
         rendered.append(scenario)
+    displayed_command = assignments + rendered
     started = time.perf_counter()
     try:
-        process = subprocess.run(rendered, cwd=ROOT, text=True, capture_output=True, timeout=1800)
+        process = subprocess.run(rendered, cwd=ROOT, env=command_env, text=True, capture_output=True, timeout=1800)
     except FileNotFoundError as error:
-        return [{"status": "skipped", "command": rendered, "elapsed_ms": 0.0,
+        return [{"status": "skipped", "command": displayed_command, "elapsed_ms": 0.0,
                  "reason": f"adapter executable unavailable: {error}"}]
     except subprocess.TimeoutExpired:
-        return [{"status": "error", "command": rendered, "elapsed_ms": 1800000.0,
+        return [{"status": "error", "command": displayed_command, "elapsed_ms": 1800000.0,
                  "error": "adapter timed out after 1800 seconds"}]
     elapsed = (time.perf_counter() - started) * 1000
     if process.returncode:
-        return [{"status": "error", "command": rendered, "elapsed_ms": elapsed,
+        return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
                  "error": process.stderr[-4000:] or f"exit {process.returncode}"}]
     records: list[dict] = []
     for line in process.stdout.splitlines():
@@ -144,12 +189,22 @@ def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | 
             payload = json.loads(line)
         except json.JSONDecodeError:
             continue
-        payload.update({"status": "measured", "command": rendered, "process_elapsed_ms": elapsed})
+        payload.setdefault("status", "measured")
+        payload.update({"command": displayed_command, "process_elapsed_ms": elapsed})
+        payload.setdefault("action_count", 1 if scenario == "open" else (120 if scenario == "scroll" else 10))
+        payload.setdefault("frame_sample_count", len(payload.get("samples_ms", [])))
+        payload.setdefault("warmup_action_count", 0)
         if scenario == "open":
             payload.setdefault("startup_ms", elapsed)
+        if payload.get("status") == "measured":
+            try:
+                validate_ui_payload(payload, scenario)
+            except ValueError as error:
+                payload["status"] = "error"
+                payload["error"] = str(error)
         records.append(payload)
     if not records:
-        return [{"status": "error", "command": rendered, "elapsed_ms": elapsed,
+        return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
                  "error": "adapter did not print any JSON object", "stdout": process.stdout[-4000:]}]
     return records
 
@@ -160,6 +215,7 @@ def main() -> None:
     parser.add_argument("--fixture", action="append", choices=tuple(FIXTURES), dest="fixtures")
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--warmups", type=int, default=1)
+    parser.add_argument("--fail-on-error", action="store_true")
     parser.add_argument("--out", type=Path, default=ROOT / "results" / "benchmark.json")
     args = parser.parse_args()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "generate_fixtures.py")], check=True)
@@ -201,6 +257,8 @@ def main() -> None:
     args.out.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
     measured = sum(record.get("status") == "measured" for record in records)
     print(f"wrote {args.out} ({measured} measured records, {len(records) - measured} skipped/error)")
+    if args.fail_on_error and measured != len(records):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

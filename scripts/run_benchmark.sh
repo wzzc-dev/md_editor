@@ -5,12 +5,16 @@
 set -eu
 python3 "$(dirname "$0")/generate_fixtures.py"
 
+# Build the MoonBit GPUI app once; the adapter below only invokes its stable
+# benchmark entrypoint for each fixture/scenario repetition.
+"$(dirname "$0")/../gpui/build.sh"
+
 python3 "$(dirname "$0")/../bench/run_benchmark.py" \
-  --adapter moui-skia-raster='env MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native -- {fixture} {scenario}' \
-  --adapter moui-skia-gpu='env MOUI_SKIA_RENDERER=skia-gpu moon run moui/benchmark --target native -- {fixture} {scenario}' \
-  --adapter gpui='cargo run --release --manifest-path gpui/Cargo.toml -- --benchmark {fixture} {scenario}' \
-  --adapter flutter-skia='dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
-  --adapter flutter-impeller='dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
+  --adapter moui-skia-raster='MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
+  --adapter moui-skia-gpu='MOUI_SKIA_RENDERER=skia-gpu moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
+  --adapter gpui='python3 gpui/benchmark.py {fixture} {scenario}' \
+  --adapter flutter-skia='FLUTTER_RENDERER=skia dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
+  --adapter flutter-impeller='FLUTTER_RENDERER=impeller dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
   --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \
   --out results/local.json
 python3 "$(dirname "$0")/../bench/report.py" results/local.json > results/local.md

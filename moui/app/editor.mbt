@@ -1,16 +1,22 @@
 ///|
-using @views {button, column, row, spacer, text}
+using @views {button, column, row, spacer, text, virtual_list}
 
 ///|
 pub struct Model {
   mut source : String
   mut saved_source : String
   mut path : String
+  mut blocks : Array[MarkdownBlockItem]
+  mut active_block : Int
+  mut scroll : @geometry.Point
 }
 
 ///|
 pub(all) enum Msg {
   Input(String)
+  BlockInput(Int, String)
+  EditBlock(Int)
+  ScrollChanged(@geometry.Point)
   NewDocument
   OpenDocument
   SaveDocument
@@ -29,7 +35,14 @@ pub struct Update {
 ///|
 pub fn Model::new() -> Model {
   let source = "# MoUI Markdown Editor\n\nEdit **Markdown** and see the formatted page update live.\n\n- Open a .md file\n- Type with normal keyboard shortcuts\n- Scroll long documents with the wheel\n\n> The saved value is always Markdown source.\n\n```text\nlet renderer = \\\"Skia\\\"\n```\n"
-  { source, saved_source: source, path: "" }
+  {
+    source,
+    saved_source: source,
+    path: "",
+    blocks: parse_markdown_blocks(source),
+    active_block: 0,
+    scroll: @geometry.Point::new(x=0.0, y=0.0),
+  }
 }
 
 ///|
@@ -37,7 +50,14 @@ pub fn Model::new() -> Model {
 /// This is used by benchmark harnesses so they exercise the exact same view
 /// tree as the interactive application.
 pub fn Model::with_source(source : String) -> Model {
-  { source, saved_source: source, path: "" }
+  {
+    source,
+    saved_source: source,
+    path: "",
+    blocks: parse_markdown_blocks(source),
+    active_block: 0,
+    scroll: @geometry.Point::new(x=0.0, y=0.0),
+  }
 }
 
 ///|
@@ -45,12 +65,29 @@ pub fn update(model : Model, message : Msg) -> Model {
   match message {
     Input(value) => {
       model.source = value
+      model.blocks = parse_markdown_blocks(value)
+      model
+    }
+    BlockInput(index, value) => {
+      update_markdown_block(model.blocks, index, value)
+      model.source = serialize_markdown_blocks(model.blocks)
+      model
+    }
+    EditBlock(index) => {
+      model.active_block = index
+      model
+    }
+    ScrollChanged(offset) => {
+      model.scroll = offset
       model
     }
     NewDocument => {
       model.source = "# Untitled\n\n"
       model.saved_source = model.source
       model.path = ""
+      model.blocks = parse_markdown_blocks(model.source)
+      model.active_block = 0
+      model.scroll = @geometry.Point::new(x=0.0, y=0.0)
       model
     }
     OpenDocument => model
@@ -105,6 +142,9 @@ fn Model::update_with_services(
           model.source = source
           model.saved_source = source
           model.path = path
+          model.blocks = parse_markdown_blocks(source)
+          model.active_block = 0
+          model.scroll = @geometry.Point::new(x=0.0, y=0.0)
           { model, effect: @moui.Effect::none() }
         }
         Failure(error) => {
@@ -177,24 +217,59 @@ fn editor_font() -> @text.FontSpec {
 }
 
 ///|
+fn block_editor_view(
+  block : MarkdownBlockItem,
+  active_block : Int,
+) -> @moui.View[Msg] {
+  if block.id == active_block {
+    @moui_richtext.controlled_markdown_editor(
+      value=block.markdown,
+      on_input=value => BlockInput(block.id, value),
+      placeholder="Write Markdown...",
+      size=@geometry.Size::new(width=960.0, height=64.0),
+      font=editor_font(),
+      foreground=@graphics.Color::rgba(r=0.12, g=0.13, b=0.15),
+      placeholder_color=@graphics.Color::rgba(r=0.45, g=0.47, b=0.50),
+      background=@graphics.Brush::solid(@graphics.Color::white()),
+      cursor_color=@graphics.Color::rgba(r=0.10, g=0.35, b=0.80),
+      corner_radius=4.0,
+      accepts_tab_input=true,
+      key=Some("moui-markdown-editor"),
+    )
+  } else {
+    @moui_richtext.markdown_viewer(
+      source=block.markdown,
+      size=@geometry.Size::new(width=960.0, height=64.0),
+      font=editor_font(),
+      foreground=@graphics.Color::rgba(r=0.12, g=0.13, b=0.15),
+      background=@graphics.Brush::solid(@graphics.Color::white()),
+      corner_radius=4.0,
+      visible_viewport_height=64.0,
+      visible_overscan=64.0,
+      key=Some("markdown-block-\{block.id}"),
+    ).on_tap(EditBlock(block.id))
+  }
+}
+
+///|
 pub fn view(model : Model) -> @moui.View[Msg] {
   let clean = model.source == model.saved_source
   let title = if model.path == "" { "Untitled.md" } else { model.path }
   let status = if clean { "Saved" } else { "Unsaved changes" }
-  let editor = @moui_richtext.controlled_markdown_editor(
-    value=model.source,
-    on_input=value => Input(value),
-    placeholder="Write Markdown...",
-    size=@geometry.Size::new(width=960.0, height=650.0),
-    font=editor_font(),
-    foreground=@graphics.Color::rgba(r=0.12, g=0.13, b=0.15),
-    placeholder_color=@graphics.Color::rgba(r=0.45, g=0.47, b=0.50),
-    background=@graphics.Brush::solid(@graphics.Color::white()),
-    cursor_color=@graphics.Color::rgba(r=0.10, g=0.35, b=0.80),
-    corner_radius=6.0,
-    accepts_tab_input=true,
-    key=Some("moui-markdown-editor"),
-  )
+  let active_block = model.active_block
+  let editor = virtual_list(
+      model.blocks,
+      block => block.id.to_string(),
+      block => block_editor_view(block, active_block),
+      item_height=64.0,
+      viewport_height=650.0,
+      spacing=2.0,
+      overscan=4,
+      offset=model.scroll,
+      on_scroll=offset => ScrollChanged(offset),
+    )
+    .key("markdown-block-list")
+    .frame(width=960.0, height=650.0)
   column([
     row([
       text("MoUI Markdown Editor").title(),
@@ -208,7 +283,9 @@ pub fn view(model : Model) -> @moui.View[Msg] {
     row([
       text(status),
       spacer(weight=1.0),
-      text("Skia | scrollable formatted document"),
+      text(
+        "\{model.blocks.length()} blocks | Skia | formatted virtual document",
+      ),
     ]),
   ])
 }
