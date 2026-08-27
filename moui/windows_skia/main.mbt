@@ -8,9 +8,7 @@ fn main {
       height=800.0,
     ),
   )
-  .render_all(
-    @render_skia.from_env(platform=@render_skia.NativeGpuPlatform::Windows),
-  )
+  .render_all(@render_skia.from_env(platform=Windows))
   .backend(@windows_backend.entry())
   .run()
 }

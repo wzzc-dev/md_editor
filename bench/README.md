@@ -1,33 +1,35 @@
 # Adapter protocol
 
-An adapter receives a fixture path and one scenario (`open`, `input`, or
-`scroll`) and prints one JSON object per line on stdout. An adapter may print
-more than one object to emit multiple measurement scopes (for example MoUI emits
-a comparable `headless-render` row from a lightweight block splitter plus a
-renderer-level `richtext-full` row); each object becomes its own record. The
-required fields are:
+An adapter receives a fixture path and one scenario (`open`, `input` or
+`scroll`) and prints one JSON object per line. The core payload is:
 
 ```json
-{"adapter":"name","measurement_scope":"headless-render","scenario":"scroll","samples_ms":[1.2],"mean_ms":1.2,"p95_ms":1.2,"p99_ms":1.2,"dropped_frames":0,"input_latency_ms":null}
+{"adapter":"name","measurement_scope":"ui-frame","scenario":"scroll","samples_ms":[1.2],"mean_ms":1.2,"p95_ms":1.2,"p99_ms":1.2,"dropped_frames":0,"action_count":120,"frame_sample_count":120,"warmup_action_count":1,"input_latency_ms":null}
 ```
 
-`run_benchmark.py` adds process elapsed time and environment metadata; the
-adapter-emitted `adapter` field is authoritative so one command can back
-multiple renderer variants or scopes. For local runs against built
-applications:
+`run_benchmark.py` adds process elapsed time, command and environment metadata.
+An adapter may emit multiple scopes; its emitted `adapter` field is
+authoritative. Missing executables become `skipped`, while non-zero exits,
+timeouts or absent JSON become `error`.
+
+## Real-window run
+
+Use the build-once wrapper for comparable UI records:
 
 ```sh
-python3 bench/run_benchmark.py \
-  --adapter moui-skia-raster='env MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native -- {fixture} {scenario}' \
-  --adapter moui-skia-gpu='env MOUI_SKIA_RENDERER=skia-gpu moon run moui/benchmark --target native -- {fixture} {scenario}' \
-  --adapter gpui='cargo run --release --manifest-path gpui/Cargo.toml -- --benchmark {fixture} {scenario}' \
-  --adapter flutter-skia='dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
-  --adapter flutter-impeller='dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
-  --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \
-  --fixture small --fixture medium --out results/local.json
-python3 bench/report.py results/local.json > results/local.md
+./scripts/run_ui_benchmark.sh
 ```
 
-The MoUI and Flutter binaries can be wrapped in the same protocol without
-changing the runner. Keeping the protocol outside the UI lets a Windows host
-run the exact same scenarios as macOS.
+The wrapper directly invokes built MoUI and GPUI binaries, Flutter Profile and
+the installed Electron runtime. It writes `results/<platform>-ui.json` and the
+corresponding Markdown report. Pass any harness options after the script, for
+example `--fixture small --repetitions 1 --warmups 0`.
+
+## Headless diagnostics
+
+`scripts/run_benchmark.sh` retains the parser/block-split baseline. Its
+`headless-render`, `richtext-full` and `wysiwyg-full` scopes are diagnostics;
+they must not be compared to `ui-frame` rows or labelled as renderer timing.
+
+See `docs/benchmark-protocol.md` for scenario definitions, clocks and
+comparison rules.

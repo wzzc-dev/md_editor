@@ -5,14 +5,17 @@ header { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0
 header strong { font-size: 17px; } header #file { color: #66717d; flex: 1; }
 button { border: 1px solid #c8ced6; background: #fff; padding: 7px 12px; border-radius: 4px; cursor: pointer; }
 button:hover { background: #eaf1ff; } #status { min-width: 110px; color: #66717d; }
-main { display: flex; flex: 1; gap: 14px; padding: 16px; min-height: 0; }
-textarea, #preview { flex: 1; min-width: 0; min-height: 0; margin: 0; padding: 18px; overflow: auto; border: 1px solid #d6d9de; border-radius: 4px; background: #fff; }
-textarea { font: 15px/1.55 ui-monospace, monospace; white-space: pre-wrap; resize: none; }
-#preview { font: 15px/1.55 system-ui, sans-serif; }
-#preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 { margin: 0 0 10px; line-height: 1.2; }
-#preview h1 { font-size: 28px; } #preview h2 { font-size: 23px; } #preview h3 { font-size: 19px; }
-#preview p, #preview ul, #preview blockquote, #preview pre { margin: 0 0 10px; }
-#preview ul { padding-left: 24px; } #preview blockquote { border-left: 3px solid #7b8794; padding-left: 10px; color: #59636e; }
-#preview pre { padding: 10px; background: #f0f2f4; overflow-x: auto; } #preview code { font-family: ui-monospace, monospace; background: #eef0f2; padding: 1px 3px; }
-#preview pre code { padding: 0; background: transparent; }
+main { display: flex; flex: 1; padding: 16px; min-height: 0; }
+#editor { width: min(960px, 100%); min-height: 0; margin: 0 auto; overflow: auto; border: 1px solid #d6d9de; border-radius: 4px; background: #fff; }
+#virtual-spacer { position: relative; width: 100%; }
+#visible-blocks { position: absolute; inset: 0; }
+.block-row { position: absolute; left: 0; right: 0; height: 66px; overflow: hidden; padding: 8px 20px; }
+.block-row.preview { cursor: text; }
+.block-row.preview:hover { background: #f7f9fc; }
+.block-content { font: 16px/1.55 system-ui, sans-serif; }
+.block-content > :first-child { margin-top: 0; }
+.block-content > :last-child { margin-bottom: 0; }
+.block-row.active { padding: 2px 8px; border: 1px solid #a9bfe8; }
+.block-row .vditor { height: 60px !important; min-height: 60px !important; border: 0; }
+.block-row .vditor-content { min-height: 58px !important; padding: 8px 12px !important; font: 16px/1.55 system-ui, sans-serif; }
 footer { height: 34px; padding: 8px 18px; color: #66717d; background: #fff; border-top: 1px solid #d8dce2; }

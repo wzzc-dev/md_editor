@@ -2,12 +2,19 @@
 package "cross_framework/md_editor_moui/app"
 
 import {
+  "moonbitlang/core/debug",
   "wzzc-dev/moui/core",
   "wzzc-dev/moui/services",
 }
 
 // Values
+pub fn parse_markdown_blocks(String) -> Array[MarkdownBlockItem]
+
 pub fn program(environment? : @services.AppEnvironment) -> @core.Program[Model, Msg]
+
+pub fn program_with_source(String, environment? : @services.AppEnvironment) -> @core.Program[Model, Msg]
+
+pub fn serialize_markdown_blocks(Array[MarkdownBlockItem]) -> String
 
 pub fn update(Model, Msg) -> Model
 
@@ -16,15 +23,27 @@ pub fn view(Model) -> @core.View[Msg]
 // Errors
 
 // Types and methods
+pub(all) struct MarkdownBlockItem {
+  id : Int
+  markdown : String
+} derive(Eq, @debug.Debug)
+
 pub struct Model {
   mut source : String
   mut saved_source : String
   mut path : String
+  mut blocks : Array[MarkdownBlockItem]
+  mut active_block : Int
+  mut scroll : @core.Point
 }
 pub fn Model::new() -> Self
+pub fn Model::with_source(String) -> Self
 
 pub(all) enum Msg {
   Input(String)
+  BlockInput(Int, String)
+  EditBlock(Int)
+  ScrollChanged(@core.Point)
   NewDocument
   OpenDocument
   SaveDocument

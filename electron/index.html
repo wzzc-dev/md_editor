@@ -2,13 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Electron Markdown Editor</title><link rel="stylesheet" href="style.css">
+  <title>Electron Markdown Editor</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="node_modules/vditor/dist/index.css">
 </head>
 <body>
   <header><strong>Electron Markdown Editor</strong><span id="file">Untitled.md</span>
     <button id="new">New</button><button id="open">Open</button><button id="save">Save</button><span id="status">Saved</span></header>
-  <main><textarea id="source" spellcheck="false" placeholder="Write Markdown..."></textarea><pre id="preview"></pre></main>
+  <main>
+    <div id="editor" role="textbox" aria-label="Markdown document">
+      <div id="virtual-spacer"><div id="visible-blocks"></div></div>
+    </div>
+  </main>
   <footer id="metrics"></footer>
+  <script src="node_modules/vditor/dist/index.min.js"></script>
+  <script src="node_modules/vditor/dist/js/lute/lute.min.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

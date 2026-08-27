@@ -9,9 +9,7 @@
 ///     via `markdown_document`, MoUI's real framework render-preparation path.
 ///     This is a heavier workload than the split-only rows and is NOT
 ///     comparable to the `headless-render` rows of the other adapters.
-fn now_ms() -> Double {
-  @env.now().reinterpret_as_int64().to_double()
-}
+extern "C" fn now_ms() -> Double = "md_editor_benchmark_now_ms"
 
 ///|
 fn percentile(values : Array[Double], ratio : Double) -> Double {
@@ -82,7 +80,8 @@ fn split_blocks(source : String) -> Int {
     if i == n || bytes[i] == '\n' {
       // Skip leading spaces/tabs (the other adapters `trim` each line).
       let mut content_from = line_start
-      while content_from < i && (bytes[content_from] == ' ' || bytes[content_from] == '\t') {
+      while content_from < i &&
+            (bytes[content_from] == ' ' || bytes[content_from] == '\t') {
         content_from = content_from + 1
       }
       // `fence` checks a three-byte prefix at `content_from`.
@@ -117,8 +116,10 @@ fn split_blocks(source : String) -> Int {
           paragraph = 0
           count = count + 1
         } else if content_from + 1 < i &&
-          ((bytes[content_from] == '-' && bytes[content_from + 1] == ' ') ||
-           (bytes[content_from] == '*' && bytes[content_from + 1] == ' ')) {
+          (
+            (bytes[content_from] == '-' && bytes[content_from + 1] == ' ') ||
+            (bytes[content_from] == '*' && bytes[content_from + 1] == ' ')
+          ) {
           paragraph = 0
           count = count + 1
         } else {
@@ -126,7 +127,10 @@ fn split_blocks(source : String) -> Int {
           while content_from + hashes < i && bytes[content_from + hashes] == '#' {
             hashes = hashes + 1
           }
-          if hashes >= 1 && hashes <= 6 && content_from + hashes < i && bytes[content_from + hashes] == ' ' {
+          if hashes >= 1 &&
+            hashes <= 6 &&
+            content_from + hashes < i &&
+            bytes[content_from + hashes] == ' ' {
             paragraph = 0
             count = count + 1
           } else {
@@ -150,15 +154,21 @@ fn split_blocks(source : String) -> Int {
 ///|
 fn main {
   let args = @env.args()
+  if args.length() >= 4 && args[1] == "--ui-benchmark" {
+    run_ui_benchmark(args[2], args[3])
+    return
+  }
   if args.length() < 3 {
     println(
-      "usage: moon run moui/benchmark --target native -- <fixture> <open|input|scroll>",
+      "usage: moon run moui/benchmark --target native --release -- <fixture> <open|input|scroll>",
     )
     return
   }
   let source = @fs.read_file_to_string(args[1]) catch {
     _ => {
-      println("{\"adapter\":\"moui\",\"status\":\"error\",\"error\":\"fixture unreadable\"}")
+      println(
+        "{\"adapter\":\"moui\",\"status\":\"error\",\"error\":\"fixture unreadable\"}",
+      )
       return
     }
   }
@@ -202,11 +212,19 @@ fn main {
   } else {
     let count = if scenario == "scroll" { 120 } else { 10 }
     for index in 0..<count {
-      measure(if scenario == "input" { source + index.to_string() } else { source })
+      measure(
+        if scenario == "input" {
+          source + index.to_string()
+        } else {
+          source
+        },
+      )
     }
   }
   println(summarize(adapter, "headless-render", scenario, parse_samples))
   if rich_enabled {
-    println(summarize(adapter + "-full", "richtext-full", scenario, rich_samples))
+    println(
+      summarize(adapter + "-full", "richtext-full", scenario, rich_samples),
+    )
   }
 }

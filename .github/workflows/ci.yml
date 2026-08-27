@@ -1,0 +1,119 @@
+name: Cross-framework editor CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: md-editor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-and-smoke:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS hosted runner
+            os: macos-14
+          - name: Windows amd64
+            os: windows-2022
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MoonBit
+        uses: hustcer/setup-moonbit@v1
+        with:
+          version: latest
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: electron/package-lock.json
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Toolchain versions
+        run: |
+          moon version --all
+          rustc --version
+          cargo --version
+          node --version
+          npm --version
+          python3 --version
+          flutter --version
+
+      - name: Resolve MoonBit dependencies
+        run: moon update
+
+      - name: Generate deterministic fixtures
+        run: python3 scripts/generate_fixtures.py
+
+      - name: Python protocol tests
+        run: python3 -m unittest discover -s bench -v
+
+      - name: MoonBit checks and tests
+        run: |
+          moon check moui/app --target native
+          moon check gpui/app --target native
+          moon test moui/app --target native
+          moon test gpui/app --target native
+
+      - name: Rust GPUI check
+        run: cargo check --manifest-path gpui/Cargo.toml
+
+      - name: Flutter checks and tests
+        working-directory: flutter
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Small real-window benchmark smoke test
+        run: |
+          UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
+            UI_BENCHMARK_OUT="results/ci-ui-${RUNNER_OS}.json" \
+            ./scripts/run_ui_benchmark.sh --fixture small --fail-on-error
+
+      - name: Small benchmark smoke test
+        run: |
+          python3 bench/run_benchmark.py \
+            --fixture small --repetitions 1 --warmups 0 \
+            --adapter moui-skia-raster='MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
+            --adapter moui-skia-gpu='MOUI_SKIA_RENDERER=skia-gpu moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
+            --adapter gpui='python3 gpui/benchmark.py {fixture} {scenario}' \
+            --adapter flutter-skia='FLUTTER_RENDERER=skia dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
+            --adapter flutter-impeller='FLUTTER_RENDERER=impeller dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
+            --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \
+            --out "results/ci-headless-${RUNNER_OS}.json" --fail-on-error
+          python3 bench/report.py "results/ci-headless-${RUNNER_OS}.json" > "results/ci-headless-${RUNNER_OS}.md"
+
+      - name: Upload smoke results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ runner.os }}
+          path: |
+            results/ci-ui-${{ runner.os }}.json
+            results/ci-ui-${{ runner.os }}.md
+            results/ci-headless-${{ runner.os }}.json
+            results/ci-headless-${{ runner.os }}.md
+            data/MANIFEST.tsv

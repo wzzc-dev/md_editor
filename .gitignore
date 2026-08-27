@@ -1,10 +1,16 @@
 _build/
+.tools/
 target/
+gpui/dist/
 .dart_tool/
 build/
 node_modules/
 results/*.json
 results/*.md
+!results/macos-arm64-local.json
+!results/macos-arm64-local.md
+!results/macos-arm64-ui.json
+!results/macos-arm64-ui.md
 __pycache__/
 bench/__pycache__/
 scripts/__pycache__/

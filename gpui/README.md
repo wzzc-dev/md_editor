@@ -1,16 +1,23 @@
 # GPUI Markdown Editor
 
-This is the GPUI counterpart of the MoUI editor. It uses GPUI 0.2.2 for the
-window and `gpui-component`'s multi-line `InputState` for native editing,
-selection, clipboard, keyboard commands and scrolling. The right pane renders
-the same Markdown source as block-level headings, paragraphs, bullet items,
-quotes and fenced code, with lightweight inline emphasis and code styling. The
-parser intentionally covers only the subset needed by this comparison editor;
-unsupported Markdown remains editable source text. The command-line benchmark
-uses the same parser and reports `measurement_scope=headless-render`, so it is
-not a GPU-present or input-to-present measurement.
+This is the GPUI counterpart of the MoUI editor. The application layer is
+MoonBit (`app/` and `cmd/main/`), while a small Rust `staticlib` (`src/lib.rs`)
+owns the GPUI window and native input bridge. `gpui/build.py` compiles the
+static library, injects its platform linker flags into a temporary MoonBit
+manifest, and produces `dist/gpui-markdown-editor` (or a macOS `.app`).
+
+The editor uses a Velotype-style block WYSIWYG interaction: formatted blocks
+are shown by default; clicking a block overlays a native multiline input with
+transparent source glyphs while the formatted block stays visible. GPUI still
+paints the caret and selection, and changes serialize back to Markdown. Long
+documents use GPUI's `uniform_list` virtual list. The benchmark adapter uses
+the same MoonBit block counter as the app and emits the shared JSON protocol.
 
 ```sh
-cargo run --release --manifest-path gpui/Cargo.toml -- data/medium.md
-cargo run --release --manifest-path gpui/Cargo.toml -- --benchmark data/medium.md scroll
+./build.sh
+python3 ui_benchmark.py ../data/medium.md scroll
 ```
+
+Hidden Markdown markers still participate in GPUI input hit-testing, so caret
+position can be horizontally offset around syntax. This source/display mapping
+limit is documented in `docs/limitations.md`.
