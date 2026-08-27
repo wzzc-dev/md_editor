@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build once, then run all six real-window adapters through the shared harness.
+# Build once, then run all six desktop UI-process adapters through the harness.
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)

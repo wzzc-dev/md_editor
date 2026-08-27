@@ -6,6 +6,8 @@
   "scripts": {
     "postinstall": "install-electron",
     "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check benchmark.js",
+    "test": "npm run check",
     "benchmark": "node benchmark.js --benchmark",
     "benchmark:ui": "electron . --ui-benchmark"
   },

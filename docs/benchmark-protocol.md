@@ -18,10 +18,17 @@ repetitions. `action_count`, `frame_sample_count` and
 `warmup_action_count` make both layers auditable.
 
 The runner reports mean, P95, P99, dropped frames (`frame_ms > 16.667`), input
-latency, document-load, startup and first-interactive time. Raw JSON also records OS release,
-CPU, memory, best-effort GPU (`GPU_MODEL` overrides probing), renderer flags,
+latency, document-load, startup and first-interactive time. Aggregate frame
+percentiles and input latency are calculated from the pooled raw samples, not
+by averaging per-run percentiles. Raw JSON also records OS release, CPU,
+memory, best-effort GPU (`GPU_MODEL` overrides probing), renderer flags,
 toolchain versions and exact commands. Missing tools are `skipped`; crashes,
 timeouts and malformed output are `error` records.
+
+Before accepting a `ui-frame` record, the runner verifies the scenario, the
+1280x800 viewport, exact action/sample/warm-up counts, finite nonnegative timing
+values and valid dropped-frame counts. Input records must contain one finite
+latency sample per action. Adapter-emitted error status is preserved.
 
 Use the checked-in hardware command rather than reconstructing adapter strings:
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import platform
 import re
@@ -106,29 +107,64 @@ def percentile(values: list[float], ratio: float) -> float | None:
     return ordered[round((len(ordered) - 1) * ratio)]
 
 
+def validate_nonnegative_number(value: object, field: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"ui-frame {field} must be a number")
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(f"ui-frame {field} must be finite and nonnegative")
+
+
+def validate_sample_list(payload: dict, field: str, expected: int) -> list[float]:
+    values = payload.get(field)
+    if not isinstance(values, list) or len(values) != expected:
+        raise ValueError(f"ui-frame {field} must contain {expected} samples")
+    for index, value in enumerate(values):
+        validate_nonnegative_number(value, f"{field}[{index}]")
+    return values
+
+
+def validate_count(payload: dict, field: str, expected: int) -> None:
+    value = payload.get(field)
+    if isinstance(value, bool) or not isinstance(value, int) or value != expected:
+        raise ValueError(f"ui-frame {field} must be the integer {expected}")
+
+
 def validate_ui_payload(payload: dict, scenario: str) -> None:
     """Reject malformed UI records before they enter a comparison report."""
     if payload.get("measurement_scope") != "ui-frame":
         return
     expected = 1 if scenario == "open" else (120 if scenario == "scroll" else 10)
-    samples = payload.get("samples_ms")
-    if not isinstance(samples, list) or len(samples) != expected:
-        raise ValueError(f"ui-frame {scenario} must contain {expected} frame samples")
-    if payload.get("action_count") not in (None, expected):
-        raise ValueError(f"ui-frame {scenario} action_count must be {expected}")
-    if payload.get("frame_sample_count") not in (None, expected):
-        raise ValueError(f"ui-frame {scenario} frame_sample_count must be {expected}")
-    if payload.get("warmup_action_count") not in (None, 0 if scenario == "open" else 1):
-        raise ValueError(f"ui-frame {scenario} warmup_action_count is invalid")
+    validate_sample_list(payload, "samples_ms", expected)
+    validate_count(payload, "action_count", expected)
+    validate_count(payload, "frame_sample_count", expected)
+    expected_warmups = 0 if scenario == "open" else 1
+    validate_count(payload, "warmup_action_count", expected_warmups)
+    dropped = payload.get("dropped_frames")
+    if isinstance(dropped, bool) or not isinstance(dropped, int) or not 0 <= dropped <= expected:
+        raise ValueError(f"ui-frame {scenario} dropped_frames must be an integer in 0..{expected}")
     viewport = payload.get("viewport", {})
+    if not isinstance(viewport, dict):
+        raise ValueError("ui-frame viewport must be an object")
     if viewport.get("width") != 1280 or viewport.get("height") != 800:
         raise ValueError(f"ui-frame viewport must be 1280x800, got {viewport!r}")
-    if payload.get("scenario") not in (None, scenario):
+    if payload.get("scenario") != scenario:
         raise ValueError(f"ui-frame scenario mismatch: {payload.get('scenario')!r}")
+    for field in ("mean_ms", "p95_ms", "p99_ms", "document_load_ms", "first_interactive_ms"):
+        validate_nonnegative_number(payload.get(field), field)
+    if scenario == "open":
+        validate_nonnegative_number(payload.get("startup_ms"), "startup_ms")
+    elif payload.get("startup_ms") is not None:
+        raise ValueError(f"ui-frame {scenario} must not contain startup_ms")
     if scenario == "input":
-        latencies = payload.get("input_latency_samples_ms")
-        if not isinstance(latencies, list) or len(latencies) != expected:
-            raise ValueError("ui-frame input must contain one latency sample per action")
+        validate_sample_list(payload, "input_latency_samples_ms", expected)
+        validate_nonnegative_number(payload.get("input_latency_ms"), "input_latency_ms")
+    else:
+        if payload.get("input_latency_samples_ms") not in (None, []):
+            raise ValueError(f"ui-frame {scenario} must not contain input latency samples")
+        if payload.get("input_latency_ms") is not None:
+            raise ValueError(f"ui-frame {scenario} input_latency_ms must be null")
+    if payload.get("startup_ms") is not None:
+        validate_nonnegative_number(payload["startup_ms"], "startup_ms")
 
 
 def parse_adapters(values: list[str]) -> dict[str, str]:

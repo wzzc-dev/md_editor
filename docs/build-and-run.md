@@ -54,7 +54,7 @@ block model and input/window bridge.
 `cargo check --manifest-path gpui/Cargo.toml` is sufficient on CI hosts
 without a display server.
 
-The real-window benchmark directly invokes the built executable:
+The GPUI desktop-window benchmark directly invokes the built executable:
 
 ```sh
 python3 gpui/ui_benchmark.py data/small.md input
@@ -79,7 +79,8 @@ python3 flutter/ui_benchmark.py impeller data/small.md scroll
 A pure Dart headless adapter remains available as `dart run
 flutter/tool/benchmark.dart data/small.md scroll`. Electron requires Node
 22.12+ for Electron 44. `npm ci --prefix electron` runs the project's
-`postinstall` to fetch the platform runtime. Start it with `npm run --prefix
+`postinstall` to fetch the platform runtime. Run `npm run check --prefix
+electron` to validate the JavaScript entrypoints. Start it with `npm run --prefix
 electron start`; run the direct adapter with `python3 electron/ui_benchmark.py
 data/small.md scroll`. The editor is Vditor 3.11.3 in `mode: "wysiwyg"`, with
 all assets loaded locally from `electron/node_modules`.
@@ -91,6 +92,6 @@ feature-complete editors.
 ## Full UI matrix
 
 `scripts/run_ui_benchmark.sh` generates fixtures, builds each application once,
-runs all six real-window adapters, and writes a platform-specific JSON/Markdown
-pair under `results/`. Extra runner options are forwarded, for example
+runs all six desktop UI-process adapters, and writes a platform-specific
+JSON/Markdown pair under `results/`. Extra runner options are forwarded, for example
 `--fixture medium --repetitions 1 --warmups 0`.

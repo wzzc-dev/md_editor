@@ -88,6 +88,11 @@ jobs:
           flutter analyze
           flutter test
 
+      - name: Electron checks
+        run: |
+          npm ci --prefix electron
+          npm test --prefix electron
+
       - name: Small real-window benchmark smoke test
         run: |
           UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \

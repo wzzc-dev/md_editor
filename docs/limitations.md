@@ -81,12 +81,17 @@ blockquotes, fenced code, emphasis and inline code. Tables, images, raw HTML
 and advanced extensions remain editable source text. Electron/Vditor supports
 more syntax, but the shared benchmark fixtures stay within the common subset.
 
+The block-oriented implementations parse and serialize Markdown when saving.
+They retain the document's Markdown meaning and unsupported source text, but
+may normalize blank lines, trailing spaces and other insignificant whitespace;
+byte-for-byte source round trips are not part of this benchmark contract.
+
 ## Result sets
 
 `results/macos-arm64-local.json` and `.md` are the earlier renderer-neutral
 `headless-render` capture. They remain useful diagnostics and must not be
-renamed or interpreted as UI measurements. The real-window capture is written
-separately as `results/macos-arm64-ui.json` and `.md`.
+renamed or interpreted as UI measurements. The desktop UI-process capture is
+written separately as `results/macos-arm64-ui.json` and `.md`.
 
 The regenerated macOS UI-process capture is complete (216/216 measured, 0 errors) and
 retained as `results/macos-arm64-ui.json` plus its Markdown report. Windows
