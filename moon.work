@@ -1,3 +1,8 @@
 members = [
   "./moui",
+  "./vendor/MoUI/moui",
+  "./vendor/MoUI/moui_richtext",
+  "./vendor/MoUI/moui_skia",
+  "./vendor/MoUI/moui_skia_renderer",
+  "./vendor/MoUI/moui_wgpu_renderer",
 ]

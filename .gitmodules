@@ -1,3 +1,7 @@
 [submodule "gpui/vendor/gpui-moonbit"]
 	path = gpui/vendor/gpui-moonbit
 	url = https://github.com/nakake/gpui-moonbit
+[submodule "vendor/MoUI"]
+	path = vendor/MoUI
+	url = https://github.com/wzzc-dev/MoUI.git
+	branch = main
