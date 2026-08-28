@@ -142,6 +142,23 @@ class FixtureTests(unittest.TestCase):
         result = run_command(command, fixture, "open", "electron")
         self.assertEqual(result[0]["status"], "measured")
 
+    def test_ui_payload_rejects_input_latency_on_non_input_scenarios(self):
+        fixture = ROOT / "data" / "small.md"
+        command = (
+            "python3 -c 'import json; print(json.dumps({{"
+            "\"adapter\":\"gpui\",\"measurement_scope\":\"ui-frame\","
+            "\"scenario\":\"{scenario}\",\"samples_ms\":[1]*120,"
+            "\"mean_ms\":1,\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
+            "\"action_count\":120,\"frame_sample_count\":120,"
+            "\"warmup_action_count\":1,\"input_latency_ms\":None,"
+            "\"input_latency_samples_ms\":[1]*120,\"document_load_ms\":1,"
+            "\"first_interactive_ms\":1,\"viewport\":{{\"width\":1280,\"height\":800}}"
+            "}}))'"
+        )
+        result = run_command(command, fixture, "scroll", "gpui")
+        self.assertEqual(result[0]["status"], "error")
+        self.assertIn("must not contain input latency samples", result[0]["error"])
+
     def test_report_pools_raw_samples_for_percentiles(self):
         records = []
         for samples in ([0.0] * 9 + [100.0], [10.0] * 10):
