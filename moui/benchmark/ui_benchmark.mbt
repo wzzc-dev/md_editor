@@ -1,24 +1,32 @@
 ///|
 struct UiTimingSamples {
-  frame_ms : Array[Double]
+  work_ms : Array[Double]
+  interval_ms : Array[Double]
   build_ms : Array[Double]
   layout_ms : Array[Double]
   paint_ms : Array[Double]
   draw_ms : Array[Double]
   present_ms : Array[Double]
-  latency_ms : Array[Double]
+  input_to_visible_ms : Array[Double]
+  offscreen_ms : Array[Double]
+  readback_ms : Array[Double]
+  offscreen_readback_ms : Array[Double]
 }
 
 ///|
 fn ui_samples() -> UiTimingSamples {
   {
-    frame_ms: [],
+    work_ms: [],
+    interval_ms: [],
     build_ms: [],
     layout_ms: [],
     paint_ms: [],
     draw_ms: [],
-    present_ms: [],
-    latency_ms: [],
+  present_ms: [],
+    input_to_visible_ms: [],
+    offscreen_ms: [],
+    readback_ms: [],
+    offscreen_readback_ms: [],
   }
 }
 
@@ -29,7 +37,7 @@ struct UiBenchmarkRenderer {
   adapter : String
   timing_source : String
   surface_route : String
-  render : (@core.DrawFrame) -> Unit
+  render : (@core.DrawFrame) -> (Double, Double, Double)
   text_system : @core.TextSystem?
   unsupported_command_count : () -> Int
 }
@@ -128,12 +136,22 @@ fn ui_skia_benchmark_renderer(
     timing_source: "moui-profile_draw_frame-plus-skia-render_frame",
     surface_route: result.surface_route().label(),
     render: frame => {
+      let render_started = now_ms()
       let present = result.render_frame(frame)
       if !present.presented {
         abort("MoUI Skia renderer did not present the benchmark frame")
       }
+      let elapsed = (now_ms() - render_started).max(0.0)
+      // The explicit GPU route presents directly to the host drawable; there
+      // is no CPU readback in this benchmark. The raster route's measured
+      // render duration includes its Skia pixel readback.
+      if renderer == "skia-gpu" {
+        (elapsed, 0.0, 0.0)
+      } else {
+        (elapsed, 0.0, elapsed)
+      }
     },
-    text_system: None,
+    text_system: Some(result.text_system()),
     unsupported_command_count: () => result.unsupported_command_count(),
   }
 }
@@ -148,7 +166,11 @@ fn ui_wgpu_benchmark_renderer(
     adapter: "moui-wgpu",
     timing_source: "moui-profile_draw_frame-plus-wgpu-render",
     surface_route: renderer.backend_kind().short_label(),
-    render: frame => renderer.render(frame.commands),
+    render: frame => {
+      let render_started = now_ms()
+      renderer.render(frame.commands)
+      ((now_ms() - render_started).max(0.0), 0.0, 0.0)
+    },
     text_system: Some(renderer.text_system()),
     unsupported_command_count: () => renderer.unsupported_command_count(),
   }
@@ -160,24 +182,31 @@ fn ui_measure_frame(
   benchmark_renderer : UiBenchmarkRenderer,
   samples : UiTimingSamples,
   action_started : Double,
-) -> Unit {
+  previous_frame_end : Double,
+) -> Double {
   let profiled = runtime.profile_draw_frame(now_ms)
   let timing = profiled.timing()
-  let present_started = now_ms()
-  (benchmark_renderer.render)(profiled.frame())
-  let present_ms = (now_ms() - present_started).max(0.0)
-  let frame_ms = timing.build_ms() +
+  let (present_ms, offscreen_ms, readback_ms) =
+    (benchmark_renderer.render)(profiled.frame())
+  let frame_work_ms = timing.build_ms() +
     timing.layout_ms() +
     timing.paint_ms() +
     timing.draw_ms() +
-    present_ms
-  samples.frame_ms.push(frame_ms)
+    (present_ms - offscreen_ms - readback_ms).max(0.0)
+  let frame_end = now_ms()
+  samples.work_ms.push(frame_work_ms)
+  let interval_start = if previous_frame_end > 0.0 { previous_frame_end } else { action_started }
+  samples.interval_ms.push((frame_end - interval_start).max(0.0))
   samples.build_ms.push(timing.build_ms())
   samples.layout_ms.push(timing.layout_ms())
   samples.paint_ms.push(timing.paint_ms())
   samples.draw_ms.push(timing.draw_ms())
   samples.present_ms.push(present_ms)
-  samples.latency_ms.push((now_ms() - action_started).max(0.0))
+  samples.input_to_visible_ms.push((frame_end - action_started).max(0.0))
+  samples.offscreen_ms.push(offscreen_ms)
+  samples.readback_ms.push(readback_ms)
+  samples.offscreen_readback_ms.push(offscreen_ms + readback_ms)
+  frame_end
 }
 
 ///|
@@ -206,8 +235,9 @@ fn ui_json_array(values : Array[Double]) -> String {
   values.map(json_number).join(",")
 }
 
-///|
-fn ui_report(
+///|  v2 protocol report. Timing arrays retain the raw samples so the runner
+/// can pool repetitions without mixing work and display pacing semantics.
+fn ui_report_v2(
   adapter : String,
   scenario : String,
   timing_source : String,
@@ -216,58 +246,59 @@ fn ui_report(
   document_load_ms : Double,
   surface_route : String,
 ) -> String {
-  let total = samples.frame_ms.fold(init=0.0, fn(total, value) { total + value })
-  let mean = total / samples.frame_ms.length().to_double()
-  let dropped = samples.frame_ms.filter(value => value > 16.667).length()
-  let latency_total = samples.latency_ms.fold(init=0.0, fn(total, value) {
-    total + value
+  let work_mean = samples.work_ms.fold(init=0.0, fn(total, value) { total + value }) /
+    samples.work_ms.length().to_double()
+  let interval_mean = if samples.interval_ms.length() > 0 {
+    samples.interval_ms.fold(init=0.0, fn(total, value) { total + value }) /
+      samples.interval_ms.length().to_double()
+  } else {
+    0.0
+  }
+  let input_mean = if scenario == "input" {
+    samples.input_to_visible_ms.fold(init=0.0, fn(total, value) { total + value }) /
+      samples.input_to_visible_ms.length().to_double()
+  } else { 0.0 }
+  let offscreen_mean = samples.offscreen_ms.fold(init=0.0, fn(total, value) { total + value }) /
+    samples.offscreen_ms.length().to_double()
+  let readback_mean = samples.readback_ms.fold(init=0.0, fn(total, value) { total + value }) /
+    samples.readback_ms.length().to_double()
+  let offscreen_readback_mean = samples.offscreen_readback_ms.fold(init=0.0, fn(total, value) { total + value }) /
+    samples.offscreen_readback_ms.length().to_double()
+  let dropped = samples.interval_ms.fold(init=0, fn(total, value) {
+    total + ((value / 16.667).ceil().to_int() - 1).max(0)
   })
-  let latency_mean = latency_total / samples.latency_ms.length().to_double()
-  "{\"adapter\":\"" +
-  adapter +
+  "{\"adapter\":\"" + adapter +
   "\",\"measurement_scope\":\"ui-frame\",\"timing_source\":\"" +
-  timing_source +
-  "\",\"latency_source\":\"synchronous-action-to-render_frame-complete\",\"scenario\":\"" +
-  scenario +
-  "\",\"samples_ms\":[" +
-  ui_json_array(samples.frame_ms) +
-  "],\"mean_ms\":" +
-  json_number(mean) +
-  ",\"p95_ms\":" +
-  json_number(percentile(samples.frame_ms, 0.95)) +
-  ",\"p99_ms\":" +
-  json_number(percentile(samples.frame_ms, 0.99)) +
-  ",\"dropped_frames\":" +
-  dropped.to_string() +
-  ",\"dropped_frame_rate\":" +
-  json_number(dropped.to_double() / samples.frame_ms.length().to_double()) +
-  ",\"action_count\":" +
-  samples.frame_ms.length().to_string() +
-  ",\"frame_sample_count\":" +
-  samples.frame_ms.length().to_string() +
-  ",\"warmup_action_count\":" +
-  (if scenario == "open" { "0" } else { "1" }) +
-  ",\"input_latency_ms\":" +
-  (if scenario == "input" { json_number(latency_mean) } else { "null" }) +
-  ",\"input_latency_samples_ms\":[" +
-  (if scenario == "input" { ui_json_array(samples.latency_ms) } else { "" }) +
-  "],\"first_interactive_ms\":" +
-  json_number(first_interactive_ms) +
-  ",\"document_load_ms\":" +
-  json_number(document_load_ms) +
-  ",\"surface_route\":\"" +
-  surface_route +
-  "\",\"phase_samples_ms\":{\"build\":[" +
-  ui_json_array(samples.build_ms) +
-  "],\"layout\":[" +
-  ui_json_array(samples.layout_ms) +
-  "],\"paint\":[" +
-  ui_json_array(samples.paint_ms) +
-  "],\"draw\":[" +
-  ui_json_array(samples.draw_ms) +
-  "],\"present\":[" +
-  ui_json_array(samples.present_ms) +
-  "]},\"viewport\":{\"width\":1280,\"height\":800}}"
+  timing_source + "\",\"latency_source\":\"action-to-render-complete\",\"scenario\":\"" +
+  scenario + "\",\"frame_work_samples_ms\":[" + ui_json_array(samples.work_ms) +
+  "],\"frame_interval_samples_ms\":[" + ui_json_array(samples.interval_ms) +
+  "],\"input_to_visible_samples_ms\":[" +
+  (if scenario == "input" { ui_json_array(samples.input_to_visible_ms) } else { "" }) +
+  "],\"offscreen_samples_ms\":[" + ui_json_array(samples.offscreen_ms) +
+  "],\"readback_samples_ms\":[" + ui_json_array(samples.readback_ms) +
+  "],\"offscreen_readback_samples_ms\":[" + ui_json_array(samples.offscreen_readback_ms) +
+  "],\"frame_work_ms\":" + json_number(work_mean) +
+  ",\"frame_interval_ms\":" + (if samples.interval_ms.length() > 0 { json_number(interval_mean) } else { "null" }) +
+  ",\"input_to_visible_ms\":" + (if scenario == "input" { json_number(input_mean) } else { "null" }) +
+  ",\"offscreen_ms\":" + json_number(offscreen_mean) +
+  ",\"readback_ms\":" + json_number(readback_mean) +
+  ",\"offscreen_readback_ms\":" + json_number(offscreen_readback_mean) +
+  ",\"frame_work_p95_ms\":" + json_number(percentile(samples.work_ms, 0.95)) +
+  ",\"frame_interval_p95_ms\":" + (if samples.interval_ms.length() > 0 { json_number(percentile(samples.interval_ms, 0.95)) } else { "null" }) +
+  ",\"input_to_visible_p95_ms\":" + (if scenario == "input" { json_number(percentile(samples.input_to_visible_ms, 0.95)) } else { "null" }) +
+  ",\"dropped_display_frames\":" + dropped.to_string() +
+  ",\"action_count\":" + samples.work_ms.length().to_string() +
+  ",\"frame_sample_count\":" + samples.interval_ms.length().to_string() +
+  ",\"warmup_action_count\":" + (if scenario == "open" { "0" } else { "1" }) +
+  ",\"first_interactive_ms\":" + json_number(first_interactive_ms) +
+  ",\"document_load_ms\":" + json_number(document_load_ms) +
+  ",\"surface_route\":\"" + surface_route +
+  "\",\"phase_samples_ms\":{\"build\":[" + ui_json_array(samples.build_ms) +
+  "],\"layout\":[" + ui_json_array(samples.layout_ms) +
+  "],\"paint\":[" + ui_json_array(samples.paint_ms) +
+  "],\"draw\":[" + ui_json_array(samples.draw_ms) +
+  "],\"present\":[" + ui_json_array(samples.present_ms) +
+  "]},\"viewport\":{\"width\":1280,\"height\":800},\"font\":\"system-ui 16px\",\"line_height\":1.55,\"overscan\":3,\"virtual_row_height\":66}"
 }
 
 ///|
@@ -298,7 +329,16 @@ fn run_ui_benchmark(fixture : String, scenario : String) -> Unit {
   let samples = ui_samples()
   let mut first_interactive_ms = 0.0
   if scenario == "open" {
-    ui_measure_frame(runtime, benchmark_renderer, samples, started)
+    ignore(ui_measure_frame(runtime, benchmark_renderer, samples, started, 0.0))
+    // A first frame has no preceding display timestamp. Keep its work sample
+    // but leave interval/latency arrays empty for open, where they are not
+    // comparable to a paced sequence.
+    if samples.interval_ms.length() > 0 {
+      ignore(samples.interval_ms.pop())
+    }
+    if samples.input_to_visible_ms.length() > 0 {
+      ignore(samples.input_to_visible_ms.pop())
+    }
     first_interactive_ms = (now_ms() - started).max(0.0)
   } else {
     if scenario == "input" {
@@ -307,7 +347,7 @@ fn run_ui_benchmark(fixture : String, scenario : String) -> Unit {
       }
     }
     let warmup = ui_samples()
-    ui_measure_frame(runtime, benchmark_renderer, warmup, started)
+    let mut previous_frame_end = ui_measure_frame(runtime, benchmark_renderer, warmup, started, 0.0)
     first_interactive_ms = (now_ms() - started).max(0.0)
     let warmup_action_started = now_ms()
     if scenario == "input" {
@@ -315,7 +355,7 @@ fn run_ui_benchmark(fixture : String, scenario : String) -> Unit {
     } else {
       ui_drive_scroll(runtime, 0)
     }
-    ui_measure_frame(runtime, benchmark_renderer, warmup, warmup_action_started)
+    previous_frame_end = ui_measure_frame(runtime, benchmark_renderer, warmup, warmup_action_started, previous_frame_end)
     let count = if scenario == "scroll" { 120 } else { 10 }
     for index in 0..<count {
       let action_started = now_ms()
@@ -324,14 +364,14 @@ fn run_ui_benchmark(fixture : String, scenario : String) -> Unit {
       } else {
         ui_drive_scroll(runtime, index + 1)
       }
-      ui_measure_frame(runtime, benchmark_renderer, samples, action_started)
+      previous_frame_end = ui_measure_frame(runtime, benchmark_renderer, samples, action_started, previous_frame_end)
     }
   }
   if (benchmark_renderer.unsupported_command_count)() != 0 {
     abort("MoUI benchmark emitted unsupported renderer commands")
   }
   println(
-    ui_report(
+    ui_report_v2(
       benchmark_renderer.adapter,
       scenario,
       benchmark_renderer.timing_source,

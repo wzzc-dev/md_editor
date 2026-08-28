@@ -195,31 +195,42 @@ function mean(values) {
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
-function summarize(scenario, samples, latencies, config, firstInteractiveMs) {
-  const sorted = [...samples].sort((a, b) => a - b);
+function summarize(scenario, workSamples, intervals, latencies, config, firstInteractiveMs) {
+  const sorted = [...workSamples].sort((a, b) => a - b);
+  const sortedIntervals = [...intervals].sort((a, b) => a - b);
+  const sortedLatencies = [...latencies].sort((a, b) => a - b);
   const at = ratio => sorted[Math.round((sorted.length - 1) * ratio)];
-  const dropped = samples.filter(value => value > 16.667).length;
+  const dropped = intervals.reduce((total, value) => total + Math.max(0, Math.ceil(value / 16.667) - 1), 0);
   return {
     adapter: 'electron',
     measurement_scope: 'ui-frame',
     timing_source: 'chromium-requestAnimationFrame-interval',
     latency_source: 'action-to-next-animation-frame',
     scenario,
-    samples_ms: samples,
-    mean_ms: mean(samples),
-    p95_ms: at(0.95),
-    p99_ms: at(0.99),
-    dropped_frames: dropped,
-    dropped_frame_rate: dropped / samples.length,
+    frame_work_samples_ms: workSamples,
+    frame_interval_samples_ms: intervals,
+    input_to_visible_samples_ms: scenario === 'input' ? latencies : [],
+    offscreen_samples_ms: workSamples.map(() => 0),
+    readback_samples_ms: workSamples.map(() => 0),
+    offscreen_readback_samples_ms: workSamples.map(() => 0),
+    frame_work_ms: mean(workSamples),
+    frame_interval_ms: intervals.length ? mean(intervals) : null,
+    input_to_visible_ms: scenario === 'input' ? mean(latencies) : null,
+    offscreen_ms: 0,
+    readback_ms: 0,
+    offscreen_readback_ms: 0,
+    frame_work_p95_ms: at(0.95),
+    frame_interval_p95_ms: intervals.length ? sortedIntervals[Math.round((sortedIntervals.length - 1) * 0.95)] : null,
+    input_to_visible_p95_ms: scenario === 'input' && latencies.length ? sortedLatencies[Math.round((sortedLatencies.length - 1) * 0.95)] : null,
+    dropped_display_frames: dropped,
     action_count: scenario === 'open' ? 1 : (scenario === 'scroll' ? 120 : 10),
-    frame_sample_count: samples.length,
+    frame_sample_count: intervals.length,
     warmup_action_count: scenario === 'open' ? 0 : 1,
-    input_latency_ms: scenario === 'input' ? mean(latencies) : null,
-    input_latency_samples_ms: scenario === 'input' ? latencies : [],
     first_interactive_ms: firstInteractiveMs,
     document_load_ms: config.document_load_ms,
     viewport: { width: innerWidth, height: innerHeight },
     rendering_strategy: 'fixed-row-virtual-list-with-active-vditor-wysiwyg',
+    font: 'system-ui 16px', line_height: 1.55, overscan: 3, virtual_row_height: 66,
   };
 }
 
@@ -228,12 +239,13 @@ async function runUiBenchmark(config, initializedAt) {
   const firstInteractiveMs = performance.now() - initializedAt;
   if (config.scenario === 'open') {
     window.benchmarkApi.report(
-      summarize('open', [firstInteractiveMs], [], config, firstInteractiveMs),
+      summarize('open', [firstInteractiveMs], [], [], config, firstInteractiveMs),
     );
     return;
   }
 
   const count = config.scenario === 'scroll' ? 120 : 10;
+  const workSamples = [];
   const samples = [];
   const latencies = [];
   let previousFrame = firstFrame;
@@ -267,14 +279,16 @@ async function runUiBenchmark(config, initializedAt) {
   previousFrame = await nextFrame();
   for (let index = 0; index < count; index += 1) {
     const actionStarted = performance.now();
+    const workStarted = performance.now();
     driveAction(index + 1);
+    workSamples.push(Math.max(0, performance.now() - workStarted));
     const frame = await nextFrame();
     samples.push(Math.max(0, frame - previousFrame));
     latencies.push(Math.max(0, performance.now() - actionStarted));
     previousFrame = frame;
   }
   window.benchmarkApi.report(
-    summarize(config.scenario, samples, latencies, config, firstInteractiveMs),
+    summarize(config.scenario, workSamples, samples, latencies, config, firstInteractiveMs),
   );
 }
 

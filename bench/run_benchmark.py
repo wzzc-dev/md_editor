@@ -134,14 +134,23 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
     if payload.get("measurement_scope") != "ui-frame":
         return
     expected = 1 if scenario == "open" else (120 if scenario == "scroll" else 10)
-    validate_sample_list(payload, "samples_ms", expected)
+    interval_expected = 0 if scenario == "open" else expected
+    validate_sample_list(payload, "frame_work_samples_ms", expected)
+    validate_sample_list(payload, "frame_interval_samples_ms", interval_expected)
+    if scenario == "input":
+        validate_sample_list(payload, "input_to_visible_samples_ms", expected)
+    elif payload.get("input_to_visible_samples_ms") not in (None, []):
+        raise ValueError(f"ui-frame {scenario} must not contain input-to-visible samples")
+    validate_sample_list(payload, "offscreen_samples_ms", expected)
+    validate_sample_list(payload, "readback_samples_ms", expected)
+    validate_sample_list(payload, "offscreen_readback_samples_ms", expected)
     validate_count(payload, "action_count", expected)
-    validate_count(payload, "frame_sample_count", expected)
+    validate_count(payload, "frame_sample_count", interval_expected)
     expected_warmups = 0 if scenario == "open" else 1
     validate_count(payload, "warmup_action_count", expected_warmups)
-    dropped = payload.get("dropped_frames")
-    if isinstance(dropped, bool) or not isinstance(dropped, int) or not 0 <= dropped <= expected:
-        raise ValueError(f"ui-frame {scenario} dropped_frames must be an integer in 0..{expected}")
+    dropped = payload.get("dropped_display_frames")
+    if isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 0:
+        raise ValueError(f"ui-frame {scenario} dropped_display_frames must be a nonnegative integer")
     viewport = payload.get("viewport", {})
     if not isinstance(viewport, dict):
         raise ValueError("ui-frame viewport must be an object")
@@ -149,22 +158,29 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
         raise ValueError(f"ui-frame viewport must be 1280x800, got {viewport!r}")
     if payload.get("scenario") != scenario:
         raise ValueError(f"ui-frame scenario mismatch: {payload.get('scenario')!r}")
-    for field in ("mean_ms", "p95_ms", "p99_ms", "document_load_ms", "first_interactive_ms"):
+    for field in (
+        "frame_work_ms", "first_interactive_ms", "document_load_ms",
+        "offscreen_ms", "readback_ms",
+    ):
         validate_nonnegative_number(payload.get(field), field)
     if scenario == "open":
-        validate_nonnegative_number(payload.get("startup_ms"), "startup_ms")
-    elif payload.get("startup_ms") is not None:
-        raise ValueError(f"ui-frame {scenario} must not contain startup_ms")
-    if scenario == "input":
-        validate_sample_list(payload, "input_latency_samples_ms", expected)
-        validate_nonnegative_number(payload.get("input_latency_ms"), "input_latency_ms")
+        if payload.get("frame_interval_ms") is not None:
+            validate_nonnegative_number(payload.get("frame_interval_ms"), "frame_interval_ms")
     else:
-        if payload.get("input_latency_samples_ms") not in (None, []):
-            raise ValueError(f"ui-frame {scenario} must not contain input latency samples")
-        if payload.get("input_latency_ms") is not None:
-            raise ValueError(f"ui-frame {scenario} input_latency_ms must be null")
-    if payload.get("startup_ms") is not None:
-        validate_nonnegative_number(payload["startup_ms"], "startup_ms")
+        validate_nonnegative_number(payload.get("frame_interval_ms"), "frame_interval_ms")
+    if scenario == "input":
+        validate_nonnegative_number(payload.get("input_to_visible_ms"), "input_to_visible_ms")
+    else:
+        if payload.get("input_to_visible_samples_ms") not in (None, []):
+            raise ValueError(f"ui-frame {scenario} must not contain input-to-visible samples")
+        if payload.get("input_to_visible_ms") is not None:
+            raise ValueError(f"ui-frame {scenario} input_to_visible_ms must be null")
+    for field in (
+        "frame_work_samples_ms", "frame_interval_samples_ms", "input_to_visible_samples_ms",
+        "offscreen_samples_ms", "readback_samples_ms", "offscreen_readback_samples_ms",
+    ):
+        if field not in payload:
+            raise ValueError(f"ui-frame payload is missing {field}")
 
 
 def parse_adapters(values: list[str]) -> dict[str, str]:
@@ -177,7 +193,13 @@ def parse_adapters(values: list[str]) -> dict[str, str]:
     return adapters
 
 
-def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | None = None) -> list[dict]:
+def run_command(
+    command: str,
+    fixture: Path,
+    scenario: str,
+    adapter_name: str | None = None,
+    timeout_seconds: float = 1800.0,
+) -> list[dict]:
     """Run one adapter invocation and return a list of measured records.
 
     Adapters may print more than one JSON object (one per measurement scope, for
@@ -206,13 +228,13 @@ def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | 
     displayed_command = assignments + rendered
     started = time.perf_counter()
     try:
-        process = subprocess.run(rendered, cwd=ROOT, env=command_env, text=True, capture_output=True, timeout=1800)
+        process = subprocess.run(rendered, cwd=ROOT, env=command_env, text=True, capture_output=True, timeout=timeout_seconds)
     except FileNotFoundError as error:
         return [{"status": "skipped", "command": displayed_command, "elapsed_ms": 0.0,
                  "reason": f"adapter executable unavailable: {error}"}]
     except subprocess.TimeoutExpired:
-        return [{"status": "error", "command": displayed_command, "elapsed_ms": 1800000.0,
-                 "error": "adapter timed out after 1800 seconds"}]
+        return [{"status": "error", "command": displayed_command, "elapsed_ms": timeout_seconds * 1000,
+                 "error": f"adapter timed out after {timeout_seconds:g} seconds"}]
     elapsed = (time.perf_counter() - started) * 1000
     if process.returncode:
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
@@ -228,10 +250,8 @@ def run_command(command: str, fixture: Path, scenario: str, adapter_name: str | 
         payload.setdefault("status", "measured")
         payload.update({"command": displayed_command, "process_elapsed_ms": elapsed})
         payload.setdefault("action_count", 1 if scenario == "open" else (120 if scenario == "scroll" else 10))
-        payload.setdefault("frame_sample_count", len(payload.get("samples_ms", [])))
+        payload.setdefault("frame_sample_count", len(payload.get("frame_interval_samples_ms", payload.get("samples_ms", []))))
         payload.setdefault("warmup_action_count", 0)
-        if scenario == "open":
-            payload.setdefault("startup_ms", elapsed)
         if payload.get("status") == "measured":
             try:
                 validate_ui_payload(payload, scenario)
@@ -252,6 +272,7 @@ def main() -> None:
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--warmups", type=int, default=1)
     parser.add_argument("--fail-on-error", action="store_true")
+    parser.add_argument("--timeout", type=float, default=float(os.environ.get("BENCHMARK_TIMEOUT_SECONDS", "1800")))
     parser.add_argument("--out", type=Path, default=ROOT / "results" / "benchmark.json")
     args = parser.parse_args()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "generate_fixtures.py")], check=True)
@@ -269,8 +290,8 @@ def main() -> None:
                     records.append({**base, "status": "skipped", "reason": "no command supplied"})
                     continue
                 for _ in range(args.warmups):
-                    run_command(command, fixture, scenario, adapter)
-                runs = [run_command(command, fixture, scenario, adapter) for _ in range(args.repetitions)]
+                    run_command(command, fixture, scenario, adapter, args.timeout)
+                runs = [run_command(command, fixture, scenario, adapter, args.timeout) for _ in range(args.repetitions)]
                 for run in runs:
                     for record in run:
                         records.append({**base, **record})
@@ -279,13 +300,18 @@ def main() -> None:
         if key in os.environ:
             renderer_env[key] = os.environ[key]
     output: dict[str, Any] = {
-        "schema": "md-editor-benchmark/v1",
+        "schema": "md-editor-benchmark/v2",
         "generated_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "platform": platform.platform(), "os_release": platform.release(), "machine": platform.machine(),
         "cpu": platform.processor() or platform.uname().processor,
         "memory_gb": memory_gb(), "python": sys.version.split()[0],
         "gpu": gpu_model(), "renderer_env": renderer_env, "toolchains": toolchain_versions(),
         "viewport": {"width": 1280, "height": 800, "refresh_hz": 60, "frame_budget_ms": 16.667},
+        "gpu_backend": "Metal" if sys.platform == "darwin" else ("Direct3D" if sys.platform.startswith("win") else "unknown"),
+        "benchmark_config": {
+            "font": "system-ui 16px", "line_height": 1.55, "overscan": 3,
+            "virtual_row_height": 66, "virtualization": "fixed-height-window",
+        },
         "fixtures": {name: {"bytes": size, "path": str(Path("data") / f"{name}.md")} for name, size in FIXTURES.items()},
         "records": records,
     }

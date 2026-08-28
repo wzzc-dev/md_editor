@@ -24,7 +24,7 @@ class FixtureTests(unittest.TestCase):
         out = ROOT / "results" / "test.json"
         subprocess.run([sys.executable, str(ROOT / "bench" / "run_benchmark.py"), "--fixture", "small", "--out", str(out)], check=True)
         payload = json.loads(out.read_text(encoding="utf-8"))
-        self.assertEqual(payload["schema"], "md-editor-benchmark/v1")
+        self.assertEqual(payload["schema"], "md-editor-benchmark/v2")
         self.assertIn("os_release", payload)
         self.assertIn("gpu", payload)
         self.assertIn("renderer_env", payload)
@@ -36,9 +36,9 @@ class FixtureTests(unittest.TestCase):
             capture_output=True,
             text=True,
         ).stdout
-        self.assertIn("Drop rate", report)
-        self.assertIn("Document load ms", report)
-        self.assertIn("Timing sources remain framework-specific", report)
+        self.assertIn("Dropped display frames", report)
+        self.assertIn("First interactive", report)
+        self.assertIn("Metric definitions", report)
 
     def test_adapter_emitted_name_is_authoritative(self):
         fixture = ROOT / "data" / "small.md"
@@ -98,26 +98,36 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual(result[0]["status"], "error")
         self.assertEqual(result[0]["error"], "renderer failed")
 
+    def test_runner_timeout_is_configurable(self):
+        fixture = ROOT / "data" / "small.md"
+        result = run_command("python3 -c 'import time; time.sleep(1)'", fixture, "open", "slow", 0.01)
+        self.assertEqual(result[0]["status"], "error")
+        self.assertIn("0.01 seconds", result[0]["error"])
+
     def test_ui_payload_shape_is_validated(self):
         fixture = ROOT / "data" / "small.md"
         command = (
             "python3 -c 'import json; print(json.dumps({{"
             "\"adapter\":\"electron\",\"measurement_scope\":\"ui-frame\","
-            "\"scenario\":\"{scenario}\",\"samples_ms\":[1],\"mean_ms\":1,"
-            "\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
+            "\"scenario\":\"{scenario}\",\"frame_work_samples_ms\":[1]*120,\"frame_interval_samples_ms\":[1]*120,"
+            "\"input_to_visible_samples_ms\":[],\"offscreen_samples_ms\":[0]*120,\"readback_samples_ms\":[0]*120,\"offscreen_readback_samples_ms\":[0]*120,"
+            "\"frame_work_ms\":1,\"frame_interval_ms\":1,\"input_to_visible_ms\":None,\"offscreen_ms\":0,\"readback_ms\":0,"
+            "\"dropped_display_frames\":0,"
+            "\"document_load_ms\":1,\"first_interactive_ms\":1,"
             "\"viewport\":{{\"width\":1280,\"height\":800}}}}))'"
         )
         result = run_command(command, fixture, "scroll", "electron")
         self.assertEqual(result[0]["status"], "error")
-        self.assertIn("120 samples", result[0]["error"])
+        self.assertIn("warmup_action_count", result[0]["error"])
 
     def test_ui_payload_rejects_non_finite_samples(self):
         fixture = ROOT / "data" / "small.md"
         command = (
             "python3 -c 'import json; print(json.dumps({{"
             "\"adapter\":\"electron\",\"measurement_scope\":\"ui-frame\","
-            "\"scenario\":\"{scenario}\",\"samples_ms\":[float(\"nan\")],"
-            "\"mean_ms\":1,\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
+            "\"scenario\":\"{scenario}\",\"frame_work_samples_ms\":[float(\"nan\")],\"frame_interval_samples_ms\":[1],"
+            "\"input_to_visible_samples_ms\":[],\"offscreen_samples_ms\":[0],\"readback_samples_ms\":[0],\"offscreen_readback_samples_ms\":[0],"
+            "\"frame_work_ms\":1,\"frame_interval_ms\":1,\"input_to_visible_ms\":None,\"offscreen_ms\":0,\"readback_ms\":0,\"dropped_display_frames\":0,"
             "\"document_load_ms\":1,\"first_interactive_ms\":1,"
             "\"viewport\":{{\"width\":1280,\"height\":800}}}}))'"
         )
@@ -125,14 +135,15 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual(result[0]["status"], "error")
         self.assertIn("finite and nonnegative", result[0]["error"])
 
-    def test_ui_payload_requires_startup_only_for_open(self):
+    def test_ui_payload_does_not_require_startup_proxy(self):
         fixture = ROOT / "data" / "small.md"
         command = (
             "python3 -c 'import json; print(json.dumps({{"
             "\"adapter\":\"electron\",\"measurement_scope\":\"ui-frame\","
-            "\"scenario\":\"{scenario}\",\"samples_ms\":[1],\"mean_ms\":1,"
-            "\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
-            "\"action_count\":1,\"frame_sample_count\":1,\"warmup_action_count\":0,"
+            "\"scenario\":\"{scenario}\",\"frame_work_samples_ms\":[1],\"frame_interval_samples_ms\":[],"
+            "\"input_to_visible_samples_ms\":[],\"offscreen_samples_ms\":[0],\"readback_samples_ms\":[0],\"offscreen_readback_samples_ms\":[0],"
+            "\"frame_work_ms\":1,\"frame_interval_ms\":None,\"input_to_visible_ms\":None,\"offscreen_ms\":0,\"readback_ms\":0,\"dropped_display_frames\":0,"
+            "\"action_count\":1,\"frame_sample_count\":0,\"warmup_action_count\":0,"
             "\"document_load_ms\":1,\"first_interactive_ms\":1,"
             "\"startup_ms\":1,\"viewport\":{{\"width\":1280,\"height\":800}}}}))'"
         )
@@ -147,17 +158,18 @@ class FixtureTests(unittest.TestCase):
         command = (
             "python3 -c 'import json; print(json.dumps({{"
             "\"adapter\":\"gpui\",\"measurement_scope\":\"ui-frame\","
-            "\"scenario\":\"{scenario}\",\"samples_ms\":[1]*120,"
-            "\"mean_ms\":1,\"p95_ms\":1,\"p99_ms\":1,\"dropped_frames\":0,"
+            "\"scenario\":\"{scenario}\",\"frame_work_samples_ms\":[1]*120,\"frame_interval_samples_ms\":[1]*120,"
+            "\"input_to_visible_samples_ms\":[1]*120,\"offscreen_samples_ms\":[0]*120,\"readback_samples_ms\":[0]*120,\"offscreen_readback_samples_ms\":[0]*120,"
+            "\"frame_work_ms\":1,\"frame_interval_ms\":1,\"input_to_visible_ms\":None,\"offscreen_ms\":0,\"readback_ms\":0,\"dropped_display_frames\":0,"
             "\"action_count\":120,\"frame_sample_count\":120,"
             "\"warmup_action_count\":1,\"input_latency_ms\":None,"
-            "\"input_latency_samples_ms\":[1]*120,\"document_load_ms\":1,"
+            "\"document_load_ms\":1,"
             "\"first_interactive_ms\":1,\"viewport\":{{\"width\":1280,\"height\":800}}"
             "}}))'"
         )
         result = run_command(command, fixture, "scroll", "gpui")
         self.assertEqual(result[0]["status"], "error")
-        self.assertIn("must not contain input latency samples", result[0]["error"])
+        self.assertIn("must not contain input-to-visible samples", result[0]["error"])
 
     def test_report_pools_raw_samples_for_percentiles(self):
         records = []
@@ -168,14 +180,23 @@ class FixtureTests(unittest.TestCase):
                 "scenario": "scroll",
                 "measurement_scope": "ui-frame",
                 "status": "measured",
-                "samples_ms": samples,
-                "p95_ms": 55.0,
-                "p99_ms": 55.0,
+                "frame_work_samples_ms": samples,
+                "frame_interval_samples_ms": samples,
+                "input_to_visible_samples_ms": [],
+                "offscreen_samples_ms": [0.0] * 10,
+                "readback_samples_ms": [0.0] * 10,
+                "offscreen_readback_samples_ms": [0.0] * 10,
+                "frame_work_ms": 0.0,
+                "frame_interval_ms": 10.0,
+                "input_to_visible_ms": None,
+                "offscreen_ms": 0.0,
+                "readback_ms": 0.0,
+                "first_interactive_ms": 1.0,
                 "action_count": 10,
-                "dropped_frames": 1,
+                "dropped_display_frames": 1,
             })
         payload = {
-            "schema": "md-editor-benchmark/v1",
+            "schema": "md-editor-benchmark/v2",
             "platform": "test",
             "machine": "test",
             "memory_gb": 16,
@@ -193,13 +214,11 @@ class FixtureTests(unittest.TestCase):
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
         columns = [column.strip() for column in row.strip("|").split("|")]
-        self.assertEqual(columns[4], "10.000")
-        self.assertEqual(columns[5], "10.000")
-        self.assertEqual(columns[6], "100.000")
+        self.assertEqual(columns[4], "10.000/10.000")
 
     def test_report_error_rows_keep_the_table_shape(self):
         payload = {
-            "schema": "md-editor-benchmark/v1",
+            "schema": "md-editor-benchmark/v2",
             "platform": "test",
             "machine": "test",
             "memory_gb": 16,
@@ -222,7 +241,7 @@ class FixtureTests(unittest.TestCase):
                 text=True,
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
-        self.assertEqual(len(row.strip("|").split("|")), 16)
+        self.assertEqual(len(row.strip("|").split("|")), 12)
 
 
 if __name__ == "__main__":

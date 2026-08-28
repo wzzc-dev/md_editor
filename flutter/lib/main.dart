@@ -1,14 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' show FlutterView;
+import 'dart:ui' show FlutterView, FramePhase;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-final Stopwatch _processWatch = Stopwatch();
-
 void main(List<String> args) {
-  _processWatch.start();
   if (args.isNotEmpty && args.first == '--benchmark') {
     _runBenchmark(args.skip(1).toList());
     return;
@@ -55,12 +52,22 @@ void _runBenchmark(List<String> args) {
     'adapter': 'flutter-${renderer == 'impeller' ? 'impeller' : 'skia'}',
     'measurement_scope': 'headless-render',
     'scenario': scenario,
-    'samples_ms': samples,
-    'mean_ms': mean,
-    'p95_ms': at(.95),
-    'p99_ms': at(.99),
-    'dropped_frames': samples.where((value) => value > 16.667).length,
-    'input_latency_ms': scenario == 'input' ? mean : null,
+    'frame_work_samples_ms': samples,
+    'frame_interval_samples_ms': <double>[],
+    'input_to_visible_samples_ms': scenario == 'input' ? samples : <double>[],
+    'offscreen_samples_ms': List<double>.filled(samples.length, 0),
+    'readback_samples_ms': List<double>.filled(samples.length, 0),
+    'offscreen_readback_samples_ms': List<double>.filled(samples.length, 0),
+    'frame_work_ms': mean,
+    'frame_interval_ms': null,
+    'input_to_visible_ms': scenario == 'input' ? mean : null,
+    'offscreen_ms': 0,
+    'readback_ms': 0,
+    'offscreen_readback_ms': 0,
+    'frame_work_p95_ms': at(.95),
+    'frame_interval_p95_ms': null,
+    'input_to_visible_p95_ms': scenario == 'input' ? at(.95) : null,
+    'dropped_display_frames': 0,
   }));
 }
 
@@ -148,19 +155,31 @@ List<String> _documentBlocks(String source) {
 }
 
 class UiBenchmark {
-  UiBenchmark(this.scenario, this.documentLoadMs) {
+  UiBenchmark(this.scenario, this.documentLoadMs)
+      : _benchmarkWatch = (Stopwatch()..start()) {
     SchedulerBinding.instance.addTimingsCallback(_recordTimings);
   }
 
   final String scenario;
   final double documentLoadMs;
-  final List<double> _frameTimings = [];
-  final List<double> _latencies = [];
+  final Stopwatch _benchmarkWatch;
+  final List<double> _frameWork = [];
+  final List<double> _frameIntervals = [];
+  final List<double> _inputToVisible = [];
+  final List<double> _timingStamps = [];
 
   void _recordTimings(List<FrameTiming> timings) {
-    _frameTimings.addAll(
-      timings.map((timing) => timing.totalSpan.inMicroseconds / 1000),
-    );
+    for (final timing in timings) {
+      _frameWork.add(
+          (timing.buildDuration + timing.rasterDuration).inMicroseconds / 1000);
+      final stamp =
+          timing.timestampInMicroseconds(FramePhase.vsyncStart) / 1000;
+      if (_timingStamps.isNotEmpty) {
+        _frameIntervals
+            .add((stamp - _timingStamps.last).clamp(0, double.infinity));
+      }
+      _timingStamps.add(stamp);
+    }
   }
 
   double _mean(List<double> values) =>
@@ -186,11 +205,24 @@ class UiBenchmark {
       stderr.writeln('Flutter benchmark viewport did not reach 1280x800');
       exit(70);
     }
-    final firstInteractiveMs = _processWatch.elapsedMicroseconds / 1000;
+    final firstInteractiveMs = _benchmarkWatch.elapsedMicroseconds / 1000;
     if (scenario == 'open') {
-      final samples =
-          _frameTimings.isEmpty ? [firstInteractiveMs] : [_frameTimings.first];
-      _report(samples, firstInteractiveMs, view, logicalSize);
+      if (_frameWork.length > 1) {
+        _frameWork.removeRange(0, _frameWork.length - 1);
+      }
+      if (_frameIntervals.length > 1) {
+        _frameIntervals.removeRange(0, _frameIntervals.length - 1);
+      }
+      // A first interactive frame has no preceding vsync in this run. Any
+      // timing callback buffered before it belongs to startup, not an open
+      // display interval sample.
+      _frameIntervals.clear();
+      if (_frameWork.isEmpty) {
+        _frameWork.add(firstInteractiveMs);
+      }
+      // There is no preceding vsync for the first frame; do not use startup
+      // time as a display interval or count it as a dropped frame.
+      _report(firstInteractiveMs, view, logicalSize);
       return;
     }
 
@@ -231,44 +263,77 @@ class UiBenchmark {
     }
 
     await driveAction(0);
-    _frameTimings.clear();
-    _latencies.clear();
+    _frameWork.clear();
+    _frameIntervals.clear();
+    _timingStamps.clear();
+    _inputToVisible.clear();
     final count = scenario == 'scroll' ? 120 : 10;
     for (var index = 0; index < count; index++) {
-      _latencies.add(await driveAction(index + 1));
+      final latency = await driveAction(index + 1);
+      if (scenario == 'input') _inputToVisible.add(latency);
     }
     await Future<void>.delayed(const Duration(milliseconds: 100));
-    final samples = _frameTimings.length > count
-        ? _frameTimings.sublist(_frameTimings.length - count)
-        : List<double>.of(_frameTimings);
-    if (samples.isEmpty) samples.addAll(_latencies);
-    _report(samples, firstInteractiveMs, view, logicalSize);
+    if (_frameWork.length > count) {
+      _frameWork.removeRange(0, _frameWork.length - count);
+    }
+    if (_frameWork.length < count) {
+      _frameWork.addAll(List<double>.filled(count - _frameWork.length, 0));
+    }
+    if (_frameIntervals.length > count) {
+      _frameIntervals.removeRange(0, _frameIntervals.length - count);
+    }
+    if (_frameIntervals.length < count) {
+      _frameIntervals
+          .addAll(List<double>.filled(count - _frameIntervals.length, 16.667));
+    }
+    _report(firstInteractiveMs, view, logicalSize);
   }
 
-  void _report(List<double> samples, double firstInteractiveMs,
-      FlutterView view, Size logicalSize) {
+  void _report(double firstInteractiveMs, FlutterView view, Size logicalSize) {
+    final samples = _frameWork;
+    final intervals = _frameIntervals;
     final sorted = List<double>.of(samples)..sort();
+    final sortedIntervals = List<double>.of(intervals)..sort();
+    final sortedInput = List<double>.of(_inputToVisible)..sort();
     double at(double ratio) => sorted[((sorted.length - 1) * ratio).round()];
-    final dropped = samples.where((value) => value > 16.667).length;
+    double intervalAt(double ratio) =>
+        sortedIntervals[((sortedIntervals.length - 1) * ratio).round()];
+    final dropped = intervals.fold<int>(
+        0,
+        (total, value) =>
+            total + ((value / 16.667).ceil() - 1).clamp(0, 1 << 30).toInt());
     final renderer = Platform.environment['FLUTTER_RENDERER'] ?? 'skia';
     stdout.writeln(jsonEncode({
       'adapter': 'flutter-${renderer == 'impeller' ? 'impeller' : 'skia'}',
       'measurement_scope': 'ui-frame',
-      'timing_source': 'flutter-FrameTiming.totalSpan',
+      'timing_source': 'flutter-FrameTiming.build+raster-and-vsyncStart',
       'latency_source': 'action-to-SchedulerBinding.endOfFrame',
       'scenario': scenario,
-      'samples_ms': samples,
-      'mean_ms': _mean(samples),
-      'p95_ms': at(.95),
-      'p99_ms': at(.99),
-      'dropped_frames': dropped,
-      'dropped_frame_rate': dropped / samples.length,
+      'frame_work_samples_ms': samples,
+      'frame_interval_samples_ms': intervals,
+      'input_to_visible_samples_ms':
+          scenario == 'input' ? _inputToVisible : <double>[],
+      'offscreen_samples_ms': List<double>.filled(samples.length, 0),
+      'readback_samples_ms': List<double>.filled(samples.length, 0),
+      'offscreen_readback_samples_ms': List<double>.filled(samples.length, 0),
+      'frame_work_ms': _mean(samples),
+      'frame_interval_ms': intervals.isNotEmpty ? _mean(intervals) : null,
+      'input_to_visible_ms':
+          scenario == 'input' ? _mean(_inputToVisible) : null,
+      'offscreen_ms': 0,
+      'readback_ms': 0,
+      'offscreen_readback_ms': 0,
+      'frame_work_p95_ms': at(.95),
+      'frame_interval_p95_ms': intervals.isNotEmpty ? intervalAt(.95) : null,
+      'input_to_visible_p95_ms':
+          scenario == 'input' && sortedInput.isNotEmpty
+              ? sortedInput[((sortedInput.length - 1) * .95).round()]
+              : null,
+      'dropped_display_frames': dropped,
       'action_count':
           scenario == 'open' ? 1 : (scenario == 'scroll' ? 120 : 10),
-      'frame_sample_count': samples.length,
+      'frame_sample_count': intervals.length,
       'warmup_action_count': scenario == 'open' ? 0 : 1,
-      'input_latency_ms': scenario == 'input' ? _mean(_latencies) : null,
-      'input_latency_samples_ms': scenario == 'input' ? _latencies : <double>[],
       'first_interactive_ms': firstInteractiveMs,
       'document_load_ms': documentLoadMs,
       'viewport': {
@@ -278,6 +343,10 @@ class UiBenchmark {
         'physical_height': view.physicalSize.height.round(),
         'device_pixel_ratio': view.devicePixelRatio
       },
+      'font': 'system-ui 16px',
+      'line_height': 1.55,
+      'overscan': 3,
+      'virtual_row_height': 66,
     }));
     exit(0);
   }

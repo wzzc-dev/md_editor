@@ -4,10 +4,16 @@ An adapter receives a fixture path and one scenario (`open`, `input` or
 `scroll`) and prints one JSON object per line. The core payload is:
 
 ```json
-{"adapter":"name","measurement_scope":"ui-frame","scenario":"scroll","samples_ms":[1.2],"mean_ms":1.2,"p95_ms":1.2,"p99_ms":1.2,"dropped_frames":0,"action_count":120,"frame_sample_count":120,"warmup_action_count":1,"input_latency_ms":null}
+{"adapter":"name","measurement_scope":"ui-frame","scenario":"scroll","frame_work_samples_ms":[1.2],"frame_interval_samples_ms":[16.7],"input_to_visible_samples_ms":[],"offscreen_samples_ms":[0],"readback_samples_ms":[0],"offscreen_readback_samples_ms":[0],"frame_work_ms":1.2,"frame_interval_ms":16.7,"input_to_visible_ms":null,"dropped_display_frames":0,"first_interactive_ms":12.0,"action_count":120,"frame_sample_count":120,"warmup_action_count":1}
 ```
 
-`run_benchmark.py` adds process elapsed time, command and environment metadata.
+The v2 protocol keeps framework work (`frame_work_*`) separate from display
+pacing (`frame_interval_*`). Input actions use `input_to_visible_*`; dropped
+frames are inferred from display intervals. WGPU and Skia GPU adapters expose
+`offscreen_*` and `readback_*` independently. `first_interactive_ms` is the
+first usable frame, never the total process lifetime. `run_benchmark.py`
+adds process elapsed time, command and environment metadata but does not turn
+it into a startup metric.
 An adapter may emit multiple scopes; its emitted `adapter` field is
 authoritative. Missing executables become `skipped`, while non-zero exits,
 timeouts or absent JSON become `error`.

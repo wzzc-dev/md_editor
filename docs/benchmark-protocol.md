@@ -6,7 +6,8 @@ Each run uses `bench/run_benchmark.py` with deterministic fixtures from
 same three scenarios for every adapter:
 
 1. **open**: launch a fresh process, read the fixture and produce the first
-   interactive frame.
+   interactive frame. This records work and `first_interactive_ms`; there is
+   no preceding display timestamp, so its interval sample list is empty.
 2. **input**: perform one unrecorded input warm-up, then insert ten ASCII
    characters and wait for a frame after every character.
 3. **scroll**: perform one unrecorded scroll warm-up, then apply 120 alternating
@@ -17,13 +18,18 @@ default full run starts one discarded process and records three fresh-process
 repetitions. `action_count`, `frame_sample_count` and
 `warmup_action_count` make both layers auditable.
 
-The runner reports mean, P95, P99, dropped frames (`frame_ms > 16.667`), input
-latency, document-load, startup and first-interactive time. Aggregate frame
-percentiles and input latency are calculated from the pooled raw samples, not
-by averaging per-run percentiles. Raw JSON also records OS release, CPU,
+The v2 runner reports framework work (`frame_work_ms`), display pacing
+(`frame_interval_ms`), action-to-visible input latency
+(`input_to_visible_ms`), dropped display frames, document-load and
+`first_interactive_ms`. WGPU and Skia GPU offscreen/readback costs are
+reported independently. Aggregate percentiles are calculated from pooled raw
+samples, not by averaging per-run percentiles. Process elapsed time remains
+diagnostic metadata and is never used as startup. Raw JSON also records OS release, CPU,
 memory, best-effort GPU (`GPU_MODEL` overrides probing), renderer flags,
 toolchain versions and exact commands. Missing tools are `skipped`; crashes,
-timeouts and malformed output are `error` records.
+timeouts and malformed output are `error` records. The adapter timeout is
+configurable with `--timeout` or `BENCHMARK_TIMEOUT_SECONDS`; the UI wrapper
+defaults to 120 seconds per adapter invocation.
 
 Before accepting a `ui-frame` record, the runner verifies the scenario, the
 1280x800 viewport, exact action/sample/warm-up counts, finite nonnegative timing
@@ -38,17 +44,17 @@ Use the checked-in hardware command rather than reconstructing adapter strings:
 
 ## UI timing sources
 
-| Adapter | Frame source | Input latency endpoint |
+| Adapter | Work source | Display interval source | Input latency endpoint |
 | --- | --- | --- |
-| MoUI | `profile_draw_frame` phases plus synchronous Skia `render_frame` | `render_frame` completion |
-| GPUI | interval between `Window::on_next_frame` callbacks | next-frame callback |
-| Flutter | engine `FrameTiming.totalSpan` | `SchedulerBinding.endOfFrame` |
-| Electron | Chromium `requestAnimationFrame` interval | next animation-frame callback |
+| MoUI | `profile_draw_frame` phases plus renderer submission | synchronous render completion |
+| GPUI | action dispatch work | interval between `Window::on_next_frame` callbacks |
+| Flutter | `buildDuration + rasterDuration` | `FrameTiming.vsyncStart` deltas |
+| Electron | DOM/update work | Chromium `requestAnimationFrame` interval |
 
 These clocks answer related but not identical questions. In particular,
 Electron rAF is not compositor tracing, GPUI's callback is not an OS present
-timestamp, and MoUI's GPU route uses an offscreen/readback present target. The
-report's 2x table is therefore a screening calculation, not proof of
+timestamp, and MoUI's GPU route reports explicit offscreen/readback stages.
+The report is therefore a screening calculation, not proof of
 compositor-equivalent performance.
 
 Flutter Profile is launched twice with engine switches. The wrapper rejects a

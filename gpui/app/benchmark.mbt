@@ -24,26 +24,31 @@ fn summary(
 ) -> String {
   let mean = samples.fold(init=0.0, fn(total, value) { total + value }) /
     samples.length().to_double()
-  let dropped = samples.filter(value => value > 16.667).length()
+  let dropped = 0
   "{\"adapter\":\"gpui\",\"measurement_scope\":\"" +
   scope +
   "\",\"scenario\":\"" +
   scenario +
-  "\",\"samples_ms\":[" +
+  "\",\"frame_work_samples_ms\":[" +
   samples.map(value => value.to_string()).join(",") +
-  "],\"mean_ms\":" +
+  "],\"frame_interval_samples_ms\":[],\"input_to_visible_samples_ms\":[" +
+  (if scenario == "input" { samples.map(value => value.to_string()).join(",") } else { "" }) +
+  "],\"offscreen_samples_ms\":[" + samples.map(_ => "0").join(",") +
+  "],\"readback_samples_ms\":[" + samples.map(_ => "0").join(",") +
+  "],\"offscreen_readback_samples_ms\":[" + samples.map(_ => "0").join(",") +
+  "],\"frame_work_ms\":" +
   mean.to_string() +
-  ",\"p95_ms\":" +
-  percentile(samples, 0.95).to_string() +
-  ",\"p99_ms\":" +
-  percentile(samples, 0.99).to_string() +
-  ",\"dropped_frames\":" +
-  dropped.to_string() +
-  ",\"input_latency_ms\":" +
+  ",\"frame_interval_ms\":null,\"input_to_visible_ms\":" +
   (if scenario == "input" { mean.to_string() } else { "null" }) +
-  ",\"document_load_ms\":" +
+  ",\"offscreen_ms\":0,\"readback_ms\":0,\"offscreen_readback_ms\":0,\"frame_work_p95_ms\":" +
+  percentile(samples, 0.95).to_string() +
+  ",\"frame_interval_p95_ms\":null,\"input_to_visible_p95_ms\":" +
+  (if scenario == "input" { percentile(samples, 0.95).to_string() } else { "null" }) +
+  ",\"dropped_display_frames\":" +
+  dropped.to_string() +
+  ",\"first_interactive_ms\":null,\"document_load_ms\":" +
   document_load_ms.to_string() +
-  "}"
+  ",\"viewport\":{\"width\":1280,\"height\":800},\"font\":\"system-ui 16px\",\"line_height\":1.55,\"overscan\":3,\"virtual_row_height\":66}"
 }
 
 ///|

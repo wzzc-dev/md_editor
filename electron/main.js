@@ -4,7 +4,6 @@ const path = require('path');
 const { performance } = require('perf_hooks');
 
 const markdownFilter = [{ name: 'Markdown', extensions: ['md', 'markdown'] }];
-const processStarted = performance.now();
 
 function createWindow(benchmark = null) {
   const window = new BrowserWindow({
@@ -23,9 +22,6 @@ function createWindow(benchmark = null) {
   if (benchmark) {
     ipcMain.handle('benchmark:config', () => benchmark);
     ipcMain.once('benchmark:report', (_event, report) => {
-      if (report.scenario === 'open' && report.startup_ms == null) {
-        report.startup_ms = performance.now() - processStarted;
-      }
       process.stdout.write(`${JSON.stringify(report)}\n`, () => app.quit());
     });
   }
@@ -66,7 +62,7 @@ if (process.argv.includes('--benchmark')) {
     const fixture = path.resolve(process.cwd(), fixtureArg);
     const loadStarted = performance.now();
     const source = await fs.readFile(fixture, 'utf8');
-    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted });
+    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted, viewport: { width: 1280, height: 800 } });
   });
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' || process.argv.includes('--ui-benchmark')) app.quit();
