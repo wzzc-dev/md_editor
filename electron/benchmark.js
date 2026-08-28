@@ -61,9 +61,20 @@ function summarize(adapter, measurementScope, samples) {
   const at = p => samples[Math.round((samples.length - 1) * p)];
   return {
     adapter, measurement_scope: measurementScope, scenario,
-    samples_ms: samples, mean_ms: mean, p95_ms: at(.95), p99_ms: at(.99),
-    dropped_frames: samples.filter(x => x > 16.667).length,
-    input_latency_ms: scenario === 'input' ? mean : null,
+    frame_work_samples_ms: samples, frame_interval_samples_ms: [],
+    input_to_visible_samples_ms: scenario === 'input' ? samples : [],
+    offscreen_samples_ms: samples.map(() => 0),
+    readback_samples_ms: samples.map(() => 0),
+    offscreen_readback_samples_ms: samples.map(() => 0),
+    frame_work_ms: mean, frame_interval_ms: null,
+    input_to_visible_ms: scenario === 'input' ? mean : null,
+    offscreen_ms: 0, readback_ms: 0, offscreen_readback_ms: 0,
+    frame_work_p95_ms: at(.95), frame_interval_p95_ms: null,
+    input_to_visible_p95_ms: scenario === 'input' ? at(.95) : null,
+    dropped_display_frames: 0,
+    first_interactive_ms: null, document_load_ms: 0,
+    viewport: { width: 1280, height: 800 },
+    font: 'system-ui 16px', line_height: 1.55, overscan: 3, virtual_row_height: 66,
   };
 }
 

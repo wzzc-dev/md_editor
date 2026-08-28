@@ -264,7 +264,7 @@ pub fn view(model : Model) -> @moui.View[Msg] {
       item_height=64.0,
       viewport_height=650.0,
       spacing=2.0,
-      overscan=4,
+      overscan=3,
       offset=model.scroll,
       on_scroll=offset => ScrollChanged(offset),
     )

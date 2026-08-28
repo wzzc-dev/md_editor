@@ -27,6 +27,7 @@ esac
 OUT=${UI_BENCHMARK_OUT:-"$ROOT/results/$PLATFORM_SLUG-ui.json"}
 REPETITIONS=${UI_BENCHMARK_REPETITIONS:-3}
 WARMUPS=${UI_BENCHMARK_WARMUPS:-1}
+TIMEOUT=${UI_BENCHMARK_TIMEOUT_SECONDS:-120}
 
 python3 "$ROOT/scripts/generate_fixtures.py"
 moon build moui/benchmark --target native --release
@@ -48,6 +49,7 @@ MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --adapter electron='python3 electron/ui_benchmark.py {fixture} {scenario}' \
   --repetitions "$REPETITIONS" \
   --warmups "$WARMUPS" \
+  --timeout "$TIMEOUT" \
   --out "$OUT" \
   "$@"
 python3 "$ROOT/bench/report.py" "$OUT" > "${OUT%.json}.md"
