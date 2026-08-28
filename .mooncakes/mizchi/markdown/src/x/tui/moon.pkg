@@ -1,6 +1,0 @@
-supported_targets = "js+wasm"
-
-import {
-  "mizchi/markdown",
-  "mizchi/moomaid",
-}

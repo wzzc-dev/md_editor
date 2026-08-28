@@ -1,5 +1,0 @@
-import {
-  "mizchi/css/values" @types,
-  "mizchi/css/style",
-  "mizchi/crater-core/node",
-}

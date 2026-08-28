@@ -41,10 +41,10 @@ full-source character scan per block and scales super-linearly. Its
 
 ### GPUI
 
-The executable and document-facing package are MoonBit native code linked to a
-Rust GPUI static library over C FFI, following the architecture used by
-`gpui-moonbit`. The Rust side owns GPUI entities, `InputState` and the native
-window because those APIs are not C ABI types.
+The executable, UI command tree, document model, handlers and file operations
+are MoonBit native code linked to the vendored `gpui-moonbit` Rust static
+library over C FFI. Rust owns only the GPUI entities, native `InputState` and
+window resources that cannot cross the C ABI directly.
 
 On the audited host, the linker warns that several Rust static-library objects
 target macOS 26.2 while the MoonBit link targets macOS 26.0. The app links and
@@ -60,9 +60,10 @@ complete source-to-display offset map is outside this minimal benchmark.
 ### Flutter
 
 The document is parsed once into blocks and rendered with `ListView.builder`.
-Only the active block is a WYSIWYG `TextField`; visible inactive blocks use
-formatted `RichText`. Syntax stays in the controller for saving but marker
-spans have zero-size transparent styles. Profile runs are accepted only when
+Only the active block is an editable, syntax-highlighted `TextField`; visible
+inactive blocks use a separate WYSIWYG `RichText` formatter. Every active span
+preserves its source characters and text metrics, with muted Markdown markers,
+so caret and selection offsets match the controller text. Profile runs are accepted only when
 engine startup logs confirm the requested Skia or Impeller backend. The wrapper
 retries one signal/renderer-validation crash and records the retry count.
 

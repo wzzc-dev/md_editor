@@ -1,6 +1,0 @@
-import {
-  "mizchi/css/values" @types,
-}
-
-import {
-} for "wbtest"

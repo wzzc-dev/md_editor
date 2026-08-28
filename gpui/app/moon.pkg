@@ -1,4 +1,5 @@
 import {
+  "nakake/gpui-bindings" @gpui,
   "moonbitlang/core/env",
   "moonbitlang/x/fs",
 }

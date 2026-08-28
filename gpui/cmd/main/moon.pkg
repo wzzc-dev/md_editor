@@ -1,6 +1,7 @@
 import {
   "cross_framework/md_editor_gpui/app",
-  "moonbitlang/core/encoding/utf8",
+  "nakake/gpui-bindings" @gpui,
+  "nakake/gpui-bindings/link" @gpui_link,
   "moonbitlang/core/env",
   "moonbitlang/x/fs",
 }

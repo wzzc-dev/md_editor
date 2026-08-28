@@ -1,62 +1,21 @@
 #!/usr/bin/env python3
-"""Build the Rust GPUI staticlib and link the MoonBit native executable."""
+"""Build the MoonBit-authored GPUI application and create a runnable bundle."""
 
 from __future__ import annotations
 
-import json
+import os
 import platform
-import re
 import shutil
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-MANIFEST = ROOT / "cmd" / "main" / "moon.pkg"
+DEFAULT_CARGO_HOME = ROOT.parent / ".tools" / "gpui-cargo-home"
 
 
 def run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
     print("+", " ".join(command), flush=True)
     return subprocess.run(command, cwd=ROOT, text=True, check=True, **kwargs)
-
-
-def rust_staticlib() -> tuple[Path, str]:
-    process = run(
-        ["cargo", "rustc", "--release", "--manifest-path", "Cargo.toml", "--", "--print", "native-static-libs"],
-        capture_output=True,
-    )
-    output = process.stdout + process.stderr
-    matches = re.findall(r"native-static-libs:\s*(.+)", output)
-    if not matches:
-        raise SystemExit("cargo did not report native-static-libs")
-    system = platform.system()
-    if system == "Windows":
-        library = ROOT / "target" / "release" / "cross_framework_markdown_gpui.lib"
-    else:
-        library = ROOT / "target" / "release" / "libcross_framework_markdown_gpui.a"
-    if not library.exists():
-        raise SystemExit(f"Rust static library not found: {library}")
-    flags = matches[-1].strip()
-    if system == "Darwin":
-        flags = " ".join(flag for flag in flags.split() if flag not in {"-lc", "-lm"})
-    elif system == "Linux":
-        flags = " ".join(flag for flag in flags.split() if flag != "-lc")
-    return library, flags
-
-
-def linked_manifest(library: Path, native_flags: str) -> str:
-    link_flags = f'"{library.as_posix()}" {native_flags}'
-    return """import {
-  "cross_framework/md_editor_gpui/app" @app,
-  "moonbitlang/core/encoding/utf8",
-  "moonbitlang/core/env",
-  "moonbitlang/x/fs",
-}
-
-options(
-  "is-main": true,
-  link: { "native": { "cc-link-flags": %s } },
-)
-""" % json.dumps(link_flags)
 
 
 def bundle_macos(executable: Path) -> Path:
@@ -82,18 +41,17 @@ def bundle_macos(executable: Path) -> Path:
 
 
 def main() -> None:
-    library, native_flags = rust_staticlib()
-    original = MANIFEST.read_text(encoding="utf-8")
-    try:
-        MANIFEST.write_text(linked_manifest(library, native_flags), encoding="utf-8")
-        run(["moon", "build", "cmd/main", "--target", "native", "--release"])
-    finally:
-        MANIFEST.write_text(original, encoding="utf-8")
-    candidates = list((ROOT.parent / "_build" / "native" / "release" / "build").glob("**/md_editor_gpui/cmd/main/main.exe"))
-    candidates += list((ROOT / "_build" / "native" / "release" / "build").glob("**/cmd/main/main.exe"))
+    environment = os.environ.copy()
+    environment.setdefault("CARGO_HOME", str(DEFAULT_CARGO_HOME))
+    run(
+        ["moon", "build", "cmd/main", "--target", "native", "--release"],
+        env=environment,
+    )
+    candidates = list((ROOT / "_build" / "native" / "release" / "build").glob("**/cmd/main/main.exe"))
+    candidates += list((ROOT.parent / "_build" / "native" / "release" / "build").glob("**/md_editor_gpui/cmd/main/main.exe"))
     if not candidates:
         raise SystemExit("MoonBit executable not found under _build/native/release/build")
-    executable = candidates[0]
+    executable = max(candidates, key=lambda path: path.stat().st_mtime)
     if platform.system() == "Darwin":
         app = bundle_macos(executable)
         shutil.copy2(executable, ROOT / "dist" / "gpui-markdown-editor")

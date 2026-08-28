@@ -41,6 +41,7 @@ npm ci --prefix "$ROOT/electron"
 MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --adapter moui-skia-raster='python3 moui/ui_benchmark.py skia-raster {fixture} {scenario}' \
   --adapter moui-skia-gpu='python3 moui/ui_benchmark.py skia-gpu {fixture} {scenario}' \
+  --adapter moui-wgpu='python3 moui/ui_benchmark.py wgpu {fixture} {scenario}' \
   --adapter gpui='python3 gpui/ui_benchmark.py {fixture} {scenario}' \
   --adapter flutter-skia='python3 flutter/ui_benchmark.py skia {fixture} {scenario}' \
   --adapter flutter-impeller='python3 flutter/ui_benchmark.py impeller {fixture} {scenario}' \

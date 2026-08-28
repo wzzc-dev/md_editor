@@ -1,8 +1,0 @@
-import {
-  "moonbit-community/miniio/internal/io_buffer",
-  "moonbitlang/core/cmp",
-  "moonbitlang/core/encoding/utf8",
-  "moonbitlang/core/json",
-}
-
-supported_targets = "wasm"

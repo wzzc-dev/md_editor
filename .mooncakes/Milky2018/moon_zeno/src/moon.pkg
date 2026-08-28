@@ -1,5 +1,0 @@
-import {
-  "moonbitlang/core/prelude",
-  "moonbitlang/core/math" @coremath,
-  "moonbitlang/core/strconv",
-}

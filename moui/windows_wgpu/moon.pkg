@@ -1,8 +1,10 @@
 import {
   "cross_framework/md_editor_moui/app",
   "wzzc-dev/moui/runtime",
-  "wzzc-dev/moui_skia_renderer" @render_skia,
-  "wzzc-dev/moui/backend/macos" @macos_backend,
+  "wzzc-dev/moui/backend/windows" @windows_backend,
+  "wzzc-dev/moui_wgpu_renderer" @render_wgpu,
+  "wzzc-dev/moui_wgpu_renderer/directwrite" @wgpu_directwrite,
+  "wzzc-dev/moui_wgpu_renderer/cosmic_text" @wgpu_cosmic,
 }
 
 supported_targets = "native"

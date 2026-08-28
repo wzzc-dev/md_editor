@@ -1,5 +1,0 @@
-import {
-  "moonbitlang/core/math",
-  "mizchi/css/values",
-  "mizchi/css/style",
-}

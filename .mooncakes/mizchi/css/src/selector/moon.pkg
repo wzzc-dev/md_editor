@@ -1,7 +1,0 @@
-import {
-  "moonbitlang/core/string",
-  "mizchi/css/token",
-}
-
-import {
-} for "wbtest"

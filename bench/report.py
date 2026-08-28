@@ -108,7 +108,7 @@ def main() -> None:
         ("First interactive", "first_interactive_ms"),
         ("Startup", "startup_ms"),
     )
-    for target in ("moui-skia-raster", "moui-skia-gpu", "gpui"):
+    for target in ("moui-skia-raster", "moui-skia-gpu", "moui-wgpu", "gpui"):
         for baseline in ("flutter-skia", "flutter-impeller", "electron"):
             for label, field in metrics:
                 ratios = []

@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {"small": 5 * 1024, "medium": 50 * 1024, "large": 500 * 1024, "stress": 5 * 1024 * 1024}
 SCENARIOS = ("open", "input", "scroll")
 DEFAULT_ADAPTERS = (
-    "moui-skia-raster", "moui-skia-gpu", "gpui", "flutter-skia", "flutter-impeller", "electron"
+    "moui-skia-raster", "moui-skia-gpu", "moui-wgpu", "gpui", "flutter-skia", "flutter-impeller", "electron"
 )
 
 
