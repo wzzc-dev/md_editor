@@ -1,9 +1,0 @@
-import {
-  "mizchi/tui/stories",
-}
-
-supported_targets = "js"
-
-options(
-  "is-main": true,
-)

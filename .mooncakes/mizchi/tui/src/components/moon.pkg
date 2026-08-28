@@ -1,8 +1,0 @@
-import {
-  "mizchi/tui/core",
-  "mizchi/tui/vnode",
-  "mizchi/tui/headless",
-  "mizchi/tui/logics",
-}
-
-supported_targets = "js+native"

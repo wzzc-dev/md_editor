@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up MoonBit
         uses: hustcer/setup-moonbit@v1
@@ -74,12 +76,13 @@ jobs:
       - name: MoonBit checks and tests
         run: |
           moon check moui/app --target native
-          moon check gpui/app --target native
           moon test moui/app --target native
-          moon test gpui/app --target native
+          cd gpui
+          moon check app --target native
+          moon test app --target native
 
       - name: Rust GPUI check
-        run: cargo check --manifest-path gpui/Cargo.toml
+        run: cargo check --manifest-path gpui/vendor/gpui-moonbit/gpui-sys/Cargo.toml
 
       - name: Flutter checks and tests
         working-directory: flutter

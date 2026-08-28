@@ -1,1 +1,0 @@
-supported_targets = "js+wasm-gc+native"

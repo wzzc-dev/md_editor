@@ -4,6 +4,11 @@ import {
   "wzzc-dev/moui/runtime",
   "wzzc-dev/moui_richtext" @richtext,
   "wzzc-dev/moui_skia_renderer" @skia_renderer,
+  "wzzc-dev/moui_wgpu_renderer" @render_wgpu,
+  "wzzc-dev/moui_wgpu_renderer/coretext" @wgpu_coretext,
+  "wzzc-dev/moui_wgpu_renderer/cosmic_text" @wgpu_cosmic,
+  "Milky2018/wgpu_mbt" @wgpu,
+  "Milky2018/wgpu_mbt/c" @wgpu_c,
   "wzzc-dev/moui/text",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
@@ -14,5 +19,5 @@ supported_targets = "native"
 pkgtype(kind: "executable")
 
 options(
-  "native-stub": [ "benchmark_clock.c" ],
+  "native-stub": [ "benchmark_clock.c", "benchmark_metal_layer.c" ],
 )

@@ -19,7 +19,8 @@ from the registry. Then validate the toolchains:
 ```sh
 moon update
 moon check moui/app --target native
-cargo check --manifest-path gpui/Cargo.toml
+moon check gpui/app gpui/cmd/main --target native
+moon test gpui/app --target native
 npm ci --prefix electron
 flutter doctor -v
 ```

@@ -1,6 +1,0 @@
-options(
-  targets: {
-    "int128_int_set_js.mbt": [ "js" ],
-    "int128_int_set_nonjs.mbt": [ "not", "js" ],
-  },
-)

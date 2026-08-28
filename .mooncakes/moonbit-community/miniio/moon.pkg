@@ -1,6 +1,0 @@
-import {
-  "moonbit-community/miniio/io",
-  "moonbit-community/miniio/internal/raw",
-}
-
-supported_targets = "wasm"

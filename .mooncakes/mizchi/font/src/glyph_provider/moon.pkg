@@ -1,4 +1,0 @@
-import {
-  "mizchi/font" @font,
-  "mizchi/svg",
-}

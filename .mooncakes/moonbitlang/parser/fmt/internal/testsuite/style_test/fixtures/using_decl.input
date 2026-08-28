@@ -1,2 +1,0 @@
-using @pkg { foo, bar }
-pub using @pkg { type Foo, trait Bar }

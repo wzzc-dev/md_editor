@@ -34,7 +34,7 @@ pub struct Update {
 
 ///|
 pub fn Model::new() -> Model {
-  let source = "# MoUI Markdown Editor\n\nEdit **Markdown** and see the formatted page update live.\n\n- Open a .md file\n- Type with normal keyboard shortcuts\n- Scroll long documents with the wheel\n\n> The saved value is always Markdown source.\n\n```text\nlet renderer = \\\"Skia\\\"\n```\n"
+  let source = "# MoUI Markdown Editor\n\nEdit **Markdown** and see the formatted page update live.\n\n- Open a .md file\n- Type with normal keyboard shortcuts\n- Scroll long documents with the wheel\n\n> The saved value is always Markdown source.\n\n```text\nlet renderer = \\\"native GPU\\\"\n```\n"
   {
     source,
     saved_source: source,
@@ -283,9 +283,7 @@ pub fn view(model : Model) -> @moui.View[Msg] {
     row([
       text(status),
       spacer(weight=1.0),
-      text(
-        "\{model.blocks.length()} blocks | Skia | formatted virtual document",
-      ),
+      text("\{model.blocks.length()} blocks | formatted virtual document"),
     ]),
   ])
 }

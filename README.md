@@ -16,8 +16,8 @@ normalized. Unsupported constructs remain editable source text.
 
 | Directory | Implementation |
 | --- | --- |
-| `moui/` | MoonBit + MoUI rich-text editor, native Skia entrypoint |
-| `gpui/` | MoonBit document model + Rust GPUI native staticlib, block WYSIWYG editor |
+| `moui/` | MoonBit + local MoUI rich-text editor, native Skia and WGPU entrypoints |
+| `gpui/` | MoonBit GPUI application over the vendored Rust native binding |
 | `flutter/` | Flutter Material 3 WYSIWYG comparison editor |
 | `electron/` | Electron + Vditor WYSIWYG comparison editor |
 | `data/` | Deterministic Small/Medium/Large/Stress Markdown fixtures |
@@ -57,11 +57,10 @@ claims still require an instrumented GUI run.
 
 Electron uses Vditor 3.11.3 in `mode: "wysiwyg"` and loads all assets locally;
 its headless benchmark additionally emits a Small-only full Lute DOM row.
-GPUI's MoonBit
-executable links a small Rust GPUI static library through native FFI. Both
-editors expose a single formatted document surface and emit Markdown source
-on save. The GPUI MoonBit package owns the shared block counter and
-native process entrypoint; the Rust layer supplies the GPUI interactive host.
+GPUI's MoonBit executable links the vendored `gpui-moonbit` native binding.
+The MoonBit packages own the UI command tree, editor state, Markdown model,
+event handlers, file operations and process entrypoint; Rust is limited to the
+GPUI native capability bridge.
 
 ## Reproducibility
 

@@ -286,12 +286,13 @@ class UiBenchmark {
 class MarkdownEditingController extends TextEditingController {
   MarkdownEditingController({super.text});
 
-  // Keep syntax characters for selection/source fidelity, but hide them on
-  // the formatted editing surface so the control remains WYSIWYG.
-  static TextStyle _marker(TextStyle base) =>
-      base.copyWith(color: Colors.transparent, fontSize: 0, height: 0);
+  static TextStyle _marker(TextStyle base, {required bool sourceFidelity}) =>
+      sourceFidelity
+          ? base.copyWith(color: Colors.black38)
+          : base.copyWith(color: Colors.transparent, fontSize: 0, height: 0);
 
-  static List<InlineSpan> _inline(String value, TextStyle base) {
+  static List<InlineSpan> _inline(String value, TextStyle base,
+      {required bool sourceFidelity}) {
     final spans = <InlineSpan>[];
     final pattern = RegExp(r'(\*\*|__)(.+?)\1|(\*)(.+?)\3|(`)(.+?)\5');
     var cursor = 0;
@@ -311,9 +312,11 @@ class MarkdownEditingController extends TextEditingController {
               ? base.copyWith(fontStyle: FontStyle.italic)
               : base.copyWith(
                   fontFamily: 'monospace', backgroundColor: Colors.black12);
-      spans.add(TextSpan(text: marker, style: _marker(base)));
+      spans.add(TextSpan(
+          text: marker, style: _marker(base, sourceFidelity: sourceFidelity)));
       spans.add(TextSpan(text: content, style: contentStyle));
-      spans.add(TextSpan(text: marker, style: _marker(base)));
+      spans.add(TextSpan(
+          text: marker, style: _marker(base, sourceFidelity: sourceFidelity)));
       cursor = match.end;
     }
     if (cursor < value.length) {
@@ -323,9 +326,12 @@ class MarkdownEditingController extends TextEditingController {
   }
 
   static List<InlineSpan> _line(String line, TextStyle base,
-      {required bool inCode}) {
+      {required bool inCode, required bool sourceFidelity}) {
     if (line.trimLeft().startsWith('```')) {
-      return [TextSpan(text: line, style: _marker(base))];
+      return [
+        TextSpan(
+            text: line, style: _marker(base, sourceFidelity: sourceFidelity))
+      ];
     }
     if (inCode) {
       return [
@@ -349,44 +355,87 @@ class MarkdownEditingController extends TextEditingController {
       return [
         TextSpan(
             text: indent + heading.group(1)! + heading.group(2)!,
-            style: _marker(headingStyle)),
-        ..._inline(heading.group(3)!, headingStyle)
+            style: _marker(headingStyle, sourceFidelity: sourceFidelity)),
+        ..._inline(heading.group(3)!, headingStyle,
+            sourceFidelity: sourceFidelity)
       ];
     }
     final quote = RegExp(r'^(>)(\s+)(.*)$').firstMatch(value);
     if (quote != null) {
       final quoteStyle = base.copyWith(color: Colors.blueGrey.shade700);
       return [
-        TextSpan(text: '$indent│', style: quoteStyle),
-        TextSpan(text: quote.group(2)!, style: _marker(quoteStyle)),
-        ..._inline(quote.group(3)!, quoteStyle)
+        TextSpan(
+            text: sourceFidelity ? '$indent>' : '$indent│',
+            style: sourceFidelity
+                ? _marker(quoteStyle, sourceFidelity: true)
+                : quoteStyle),
+        TextSpan(
+            text: quote.group(2)!,
+            style: _marker(quoteStyle, sourceFidelity: sourceFidelity)),
+        ..._inline(quote.group(3)!, quoteStyle, sourceFidelity: sourceFidelity)
       ];
     }
     final list = RegExp(r'^([-*])(\s+)(.*)$').firstMatch(value);
     if (list != null) {
       return [
         TextSpan(
-            text: '$indent•',
-            style: base.copyWith(fontWeight: FontWeight.w700)),
-        TextSpan(text: list.group(2)!, style: _marker(base)),
-        ..._inline(list.group(3)!, base)
+            text: sourceFidelity ? '$indent${list.group(1)!}' : '$indent•',
+            style: sourceFidelity
+                ? _marker(base, sourceFidelity: true)
+                : base.copyWith(fontWeight: FontWeight.w700)),
+        TextSpan(
+            text: list.group(2)!,
+            style: _marker(base, sourceFidelity: sourceFidelity)),
+        ..._inline(list.group(3)!, base, sourceFidelity: sourceFidelity)
       ];
     }
-    return [TextSpan(text: indent), ..._inline(value, base)];
+    return [
+      TextSpan(text: indent, style: base),
+      ..._inline(value, base, sourceFidelity: sourceFidelity)
+    ];
   }
 
-  static TextSpan formattedSpan(String source, TextStyle base) {
+  static void _appendNewline(List<InlineSpan> spans, TextStyle base) {
+    if (spans.isEmpty) {
+      spans.add(TextSpan(text: '\n', style: base));
+      return;
+    }
+    final last = spans.last;
+    if (last is TextSpan && last.children == null) {
+      spans[spans.length - 1] = TextSpan(
+        text: '${last.text ?? ''}\n',
+        style: last.style ?? base,
+      );
+      return;
+    }
+    spans.add(TextSpan(text: '\n', style: base));
+  }
+
+  static TextSpan _span(String source, TextStyle base,
+      {required bool sourceFidelity}) {
     final lines = source.split('\n');
     final children = <InlineSpan>[];
     var inCode = false;
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
       if (line.trimLeft().startsWith('```')) inCode = !inCode;
-      children.addAll(_line(line, base, inCode: inCode));
-      if (i < lines.length - 1) children.add(const TextSpan(text: '\n'));
+      final lineSpans =
+          _line(line, base, inCode: inCode, sourceFidelity: sourceFidelity);
+      if (i < lines.length - 1) _appendNewline(lineSpans, base);
+      children.addAll(lineSpans);
     }
     return TextSpan(style: base, children: children);
   }
+
+  static TextSpan formattedSpan(String source, TextStyle base) {
+    final span = _span(source, base, sourceFidelity: true);
+    return span.toPlainText() == source
+        ? span
+        : TextSpan(text: source, style: base);
+  }
+
+  static TextSpan previewSpan(String source, TextStyle base) =>
+      _span(source, base, sourceFidelity: false);
 
   @override
   TextSpan buildTextSpan(
@@ -443,14 +492,19 @@ class _MarkdownAppState extends State<MarkdownApp> {
   void _installSource(String source) {
     if (_controllerReady) {
       _controller.removeListener(_activeBlockChanged);
-      _controller.dispose();
     }
     _blocks = _documentBlocks(source);
     _activeBlock = 0;
     _characterCount = source.length;
-    _controller = MarkdownEditingController(text: _blocks.first);
-    _controller.selection =
-        TextSelection.collapsed(offset: _controller.text.length);
+    final value = TextEditingValue(
+      text: _blocks.first,
+      selection: TextSelection.collapsed(offset: _blocks.first.length),
+    );
+    if (_controllerReady) {
+      _controller.value = value;
+    } else {
+      _controller = MarkdownEditingController()..value = value;
+    }
     _controller.addListener(_activeBlockChanged);
     _controllerReady = true;
   }
@@ -469,11 +523,11 @@ class _MarkdownAppState extends State<MarkdownApp> {
     if (index == _activeBlock) return;
     setState(() {
       _controller.removeListener(_activeBlockChanged);
-      _controller.dispose();
       _activeBlock = index;
-      _controller = MarkdownEditingController(text: _blocks[index]);
-      _controller.selection =
-          TextSelection.collapsed(offset: _controller.text.length);
+      _controller.value = TextEditingValue(
+        text: _blocks[index],
+        selection: TextSelection.collapsed(offset: _blocks[index].length),
+      );
       _controller.addListener(_activeBlockChanged);
     });
   }
@@ -544,7 +598,7 @@ class _MarkdownAppState extends State<MarkdownApp> {
         child: RichText(
           maxLines: 2,
           overflow: TextOverflow.clip,
-          text: MarkdownEditingController.formattedSpan(_blocks[index], style),
+          text: MarkdownEditingController.previewSpan(_blocks[index], style),
         ),
       ),
     );

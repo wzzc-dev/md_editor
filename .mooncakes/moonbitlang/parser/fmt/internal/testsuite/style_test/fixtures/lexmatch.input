@@ -1,6 +1,0 @@
-fn f(s : String) -> Unit {
-  lexmatch s {
-    "a" => ()
-    _ => ()
-  }
-}

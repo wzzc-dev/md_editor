@@ -1,8 +1,0 @@
-import {
-  "mizchi/css/selector",
-  "mizchi/css/media",
-}
-
-import {
-  "mizchi/css/parser",
-} for "wbtest"

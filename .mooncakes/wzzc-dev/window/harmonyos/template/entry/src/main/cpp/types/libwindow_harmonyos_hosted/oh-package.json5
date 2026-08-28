@@ -1,6 +1,0 @@
-{
-  "name": "libwindow_harmonyos_hosted.so",
-  "types": "./Index.d.ts",
-  "version": "1.0.0",
-  "description": "Window HarmonyOS HostCmd NAPI bridge"
-}
