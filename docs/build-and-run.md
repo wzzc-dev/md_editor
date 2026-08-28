@@ -2,13 +2,13 @@
 
 ## MoUI
 
-The checked-in project uses the local MoUI checkout at
-`/Volumes/Data/Code/moon/MoUI`. Its framework, rich-text, Skia, Skia renderer,
-and WGPU renderer modules are workspace members in `moon.work`, so their local
-sources override the versions recorded in `moui/moon.mod`.
+The checked-in project uses MoUI as the `vendor/MoUI` Git submodule. Its
+framework, rich-text, Skia, Skia renderer, and WGPU renderer modules are
+workspace members in `moon.work`, so their checked-out sources override the
+versions recorded in `moui/moon.mod`.
 
 ```sh
-git -C /Volumes/Data/Code/moon/MoUI submodule update --init --recursive
+git submodule update --init --recursive
 ```
 
 `moon check moui/app --target native` validates the app without a window. On
