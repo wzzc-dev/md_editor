@@ -94,10 +94,66 @@ pub fn run_benchmark(fixture : String, scenario : String) -> Unit {
 }
 
 ///|
+extern "C" fn gpui_run_window_benchmark_ffi(
+  view : Int,
+  width : Float,
+  height : Float,
+  scenario : Int,
+  target : Int,
+  stride : Float,
+  document_load_ms : Double,
+) -> Int = "gpui_run_window_benchmark"
+
+///|
+const BENCHMARK_VIEWPORT_WIDTH : Float = 1280.0
+
+///|
+const BENCHMARK_VIEWPORT_HEIGHT : Float = 800.0
+
+///|
+/// Wheel stride in logical px per scroll action, matching the deltas the
+/// MoUI/Electron adapters send.
+const BENCHMARK_SCROLL_STRIDE : Float = 480.0
+
+///|
+/// Real-window `ui-frame` benchmark: open a GPUI window on the committed
+/// tree and let the Rust-side frame loop measure every vsync-paced frame
+/// while driving one action per frame through the real input/scroll path.
+/// Same scope as the MoUI/Flutter/Electron adapters. The Rust loop prints
+/// the JSON report to stdout and then terminates the process (macOS quit
+/// does not unwind), so this function never returns on success.
 pub fn run_ui_benchmark(
   source : String,
   scenario : String,
   document_load_ms : Double,
 ) -> Unit {
-  benchmark_source(source, scenario, "moonbit-command-buffer", document_load_ms)
+  @gpui.register_dispatch(dispatch)
+  initialize(source, "")
+  @gpui.expect_ok(build_tree(0), "ui-benchmark initial build_tree")
+  let scenario_id = if scenario == "open" {
+    0
+  } else if scenario == "input" {
+    1
+  } else {
+    2
+  }
+  let target = if scenario == "open" {
+    1
+  } else if scenario == "scroll" {
+    120
+  } else {
+    10
+  }
+  let status = gpui_run_window_benchmark_ffi(
+    0,
+    BENCHMARK_VIEWPORT_WIDTH,
+    BENCHMARK_VIEWPORT_HEIGHT,
+    scenario_id,
+    target,
+    BENCHMARK_SCROLL_STRIDE,
+    document_load_ms,
+  )
+  // Reaching this line means the window failed to start: a successful run
+  // ends with the Rust-side report + process termination.
+  abort("GPUI benchmark window failed with status \{status}")
 }

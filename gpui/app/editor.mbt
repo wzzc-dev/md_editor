@@ -3,23 +3,25 @@ pub const SAMPLE : String = "# GPUI MoonBit Markdown Editor\n\nEdit **Markdown**
 
 ///|
 priv struct EditorModel {
-  mut source : String
-  mut saved_source : String
+  mut dirty : Bool
+  mut source_length : Int
   mut path : String
   blocks : Array[MarkdownBlock]
   mut active_block : Int
   mut status : String
+  mut scroll_y : Float
 }
 
 ///|
 fn EditorModel::from_source(source : String, path : String) -> EditorModel {
   {
-    source,
-    saved_source: source,
+    dirty: false,
+    source_length: source.length(),
     path,
     blocks: parse_markdown_blocks(source),
     active_block: 0,
     status: "",
+    scroll_y: 0.0,
   }
 }
 
@@ -40,6 +42,7 @@ let handlers : @gpui.HandlerRegistry = @gpui.HandlerRegistry::new()
 /// GPUI's native input is single-line and panics when asked to shape a
 /// newline, while Code blocks span lines. The input buffer therefore carries
 /// newlines as a private-use placeholder; the model always keeps real '\n'.
+
 ///|
 const NEWLINE_PLACEHOLDER : Char = '\u{E000}'
 
@@ -47,8 +50,8 @@ const NEWLINE_PLACEHOLDER : Char = '\u{E000}'
 fn input_text_of_markdown(markdown : String) -> String {
   String::from_array(
     markdown
-      .to_array()
-      .map(fn(c) { if c == '\n' { NEWLINE_PLACEHOLDER } else { c } }),
+    .to_array()
+    .map(fn(c) { if c == '\n' { NEWLINE_PLACEHOLDER } else { c } }),
   )
 }
 
@@ -56,8 +59,8 @@ fn input_text_of_markdown(markdown : String) -> String {
 fn markdown_of_input_text(value : String) -> String {
   String::from_array(
     value
-      .to_array()
-      .map(fn(c) { if c == NEWLINE_PLACEHOLDER { '\n' } else { c } }),
+    .to_array()
+    .map(fn(c) { if c == NEWLINE_PLACEHOLDER { '\n' } else { c } }),
   )
 }
 
@@ -91,8 +94,12 @@ let editor_input : @gpui.InputId = {
           ignore(@gpui.input_set_text(view, id.to_int(), sanitized))
         }
         let current = model.get(store)
+        let old_length = current.blocks[current.active_block].markdown.length()
         replace_block(current.blocks, current.active_block, model_text)
-        current.source = serialize_markdown_blocks(current.blocks)
+        current.source_length = current.source_length +
+          model_text.length() -
+          old_length
+        current.dirty = true
         current.status = ""
         model.set(store, current)
       }
@@ -114,17 +121,20 @@ fn activate_block(index : Int, view : Int) -> Unit {
 }
 
 ///|
-let block_handlers : Ref[Array[@gpui.HandlerId]] = { val: [] }
+// Keep handlers sparse: jumping to a distant row must not allocate one
+// closure for every block between the old and new viewport.
+let block_handlers : Ref[Map[Int, @gpui.HandlerId]] = { val: Map([]) }
 
 ///|
 fn block_handler(index : Int) -> @gpui.HandlerId {
-  while block_handlers.val.length() <= index {
-    let captured = block_handlers.val.length()
-    block_handlers.val.push(
-      handlers.on_click(fn(view) { activate_block(captured, view) }),
-    )
+  match block_handlers.val.get(index) {
+    Some(handler) => handler
+    None => {
+      let handler = handlers.on_click(fn(view) { activate_block(index, view) })
+      block_handlers.val[index] = handler
+      handler
+    }
   }
-  block_handlers.val[index]
 }
 
 ///|
@@ -156,15 +166,17 @@ let open_document : @gpui.HandlerId = handlers.on_click(fn(view) {
 let save_document : @gpui.HandlerId = handlers.on_click(fn(_view) {
   let current = model.get(store)
   let target = if current.path == "" { "untitled.md" } else { current.path }
-  try @fs.write_string_to_file(target, current.source) catch {
+  let serialized = serialize_markdown_blocks(current.blocks)
+  try @fs.write_string_to_file(target, serialized) catch {
     _ => {
       current.status = "Could not save " + target
       model.set(store, current)
     }
   } noraise {
     _ => {
+      current.source_length = serialized.length()
+      current.dirty = false
       current.path = target
-      current.saved_source = current.source
       current.status = "Saved " + target
       model.set(store, current)
     }
@@ -172,7 +184,36 @@ let save_document : @gpui.HandlerId = handlers.on_click(fn(_view) {
 })
 
 ///|
-let scroll_id : @gpui.ScrollId = handlers.new_scroll_id()
+/// Fixed-height rows keep the scroll extent predictable while allowing the
+/// renderer to submit only the rows around the current viewport.
+const BLOCK_HEIGHT : Float = 78.0
+
+///|
+const DOCUMENT_VIEWPORT_HEIGHT : Float = 650.0
+
+///|
+const VIEWPORT_OVERSCAN : Int = 6
+
+///|
+/// Convert the GPUI scroll-space offset (negative while scrolled down) into
+/// the non-negative model coordinate used for virtualization.
+let scroll_id : @gpui.ScrollId = {
+  let id = handlers.new_scroll_id()
+  handlers.on_scroll(id, fn(view) {
+    match @gpui.scroll_state(view, id.to_int()) {
+      Ok(state) => {
+        let next : Float = (-state.offset_y).max(0.0)
+        let current = model.get(store)
+        if current.scroll_y != next {
+          current.scroll_y = next
+          model.set(store, current)
+        }
+      }
+      Err(_) => ()
+    }
+  })
+  id
+}
 
 ///|
 let ctx : @gpui.RenderCtx = { view: 0, store, handlers }
@@ -251,6 +292,7 @@ fn build_preview(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit {
   cb.set_key("block-\{block.id}")
   cb.set_on_click(block_handler(block.id).to_int())
   cb.set_cursor(@gpui.CURSOR_TEXT)
+  cb.set_size(940.0, BLOCK_HEIGHT)
   cb.set_min_size(900, 58)
   cb.set_padding_sides(10, 20, 10, 20)
   cb.set_font_weight(weight)
@@ -277,6 +319,7 @@ fn build_active_editor(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit 
   cb.div()
   cb.set_key("active-block-\{block.id}")
   cb.set_position(@gpui.POSITION_RELATIVE)
+  cb.set_size(940.0, BLOCK_HEIGHT)
   cb.set_min_size(920, 58)
   cb.set_bg_color(@gpui.Color::rgb(250, 251, 253))
 
@@ -315,14 +358,36 @@ fn build_active_editor(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit 
 fn build_document(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
   cb.div()
   cb.set_key("document-scroll")
-  cb.set_size(960.0, 650.0)
+  cb.set_size(960.0, DOCUMENT_VIEWPORT_HEIGHT)
   cb.set_flex_col()
   cb.set_overflow(@gpui.OVERFLOW_HIDDEN, @gpui.OVERFLOW_SCROLL)
   cb.set_scroll_id(scroll_id.to_int())
   cb.set_bg_color(@gpui.Color::white())
   cb.set_border_color(1.0, @gpui.Color::rgb(214, 217, 222))
   cb.set_rounded(4.0)
-  for block in current.blocks {
+  let block_count = current.blocks.length()
+  let mut start = (current.scroll_y / BLOCK_HEIGHT).to_int() - VIEWPORT_OVERSCAN
+  if start < 0 {
+    start = 0
+  }
+  let mut end = ((current.scroll_y + DOCUMENT_VIEWPORT_HEIGHT) / BLOCK_HEIGHT).to_int() +
+    1 +
+    VIEWPORT_OVERSCAN
+  if end > block_count {
+    end = block_count
+  }
+  if end < start {
+    end = start
+  }
+
+  // Preserve the full scroll extent with two cheap, non-text spacer nodes.
+  cb.div()
+  cb.set_size(940.0, Float::from_int(start) * BLOCK_HEIGHT)
+  cb.set_flex(0.0, 0.0, Float::from_int(start) * BLOCK_HEIGHT)
+  cb.add_child()
+
+  for index in start..<end {
+    let block = current.blocks[index]
     if block.id == current.active_block {
       build_active_editor(cb, block)
       cb.add_child()
@@ -331,13 +396,18 @@ fn build_document(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
       cb.add_child()
     }
   }
+
+  cb.div()
+  cb.set_size(940.0, Float::from_int(block_count - end) * BLOCK_HEIGHT)
+  cb.set_flex(0.0, 0.0, Float::from_int(block_count - end) * BLOCK_HEIGHT)
+  cb.add_child()
 }
 
 ///|
 fn build_footer(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
   let status = if current.status != "" {
     current.status
-  } else if current.source == current.saved_source {
+  } else if !current.dirty {
     "Saved"
   } else {
     "Unsaved changes"
@@ -355,7 +425,7 @@ fn build_footer(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
   cb.set_flex(1.0, 1.0, -1.0)
   cb.add_child()
   cb.text(
-    "{current.source.length()} chars | {current.blocks.length()} blocks | MoonBit UI + GPUI",
+    "{current.source_length} chars | {current.blocks.length()} blocks | MoonBit UI + GPUI",
     102, 113, 125, 13.0,
   )
   cb.add_child()
