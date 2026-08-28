@@ -20,8 +20,10 @@ void *md_editor_benchmark_u64_to_ptr(uint64_t value) {
 
 #if defined(__APPLE__)
 typedef void *(*md_benchmark_send0)(void *, void *);
+typedef void *(*md_benchmark_send_obj)(void *, void *, void *);
 typedef void (*md_benchmark_send_cgsize)(void *, void *, CGSize);
 typedef void (*md_benchmark_send_double)(void *, void *, double);
+typedef void *(*md_benchmark_create_device)(void);
 typedef void *(*md_benchmark_lookup)(const char *);
 #endif
 
@@ -35,12 +37,18 @@ uint64_t md_editor_benchmark_offscreen_metal_layer(int32_t width,
       (md_benchmark_lookup)dlsym(RTLD_DEFAULT, "sel_registerName");
   md_benchmark_send0 send =
       (md_benchmark_send0)dlsym(RTLD_DEFAULT, "objc_msgSend");
+  md_benchmark_send_obj send_obj =
+      (md_benchmark_send_obj)dlsym(RTLD_DEFAULT, "objc_msgSend");
   md_benchmark_send_cgsize send_cgsize =
       (md_benchmark_send_cgsize)dlsym(RTLD_DEFAULT, "objc_msgSend");
   md_benchmark_send_double send_double =
       (md_benchmark_send_double)dlsym(RTLD_DEFAULT, "objc_msgSend");
+  md_benchmark_create_device create_device =
+      (md_benchmark_create_device)dlsym(RTLD_DEFAULT,
+                                        "MTLCreateSystemDefaultDevice");
   if (get_class == NULL || sel_register == NULL || send == NULL ||
-      send_cgsize == NULL || send_double == NULL) {
+      send_obj == NULL || send_cgsize == NULL || send_double == NULL ||
+      create_device == NULL) {
     return 0;
   }
   void *layer_class = get_class("CAMetalLayer");
@@ -52,6 +60,11 @@ uint64_t md_editor_benchmark_offscreen_metal_layer(int32_t width,
   if (layer == NULL) {
     return 0;
   }
+  void *device = create_device();
+  if (device == NULL) {
+    return 0;
+  }
+  send_obj(layer, sel_register("setDevice:"), device);
   send_cgsize(layer, sel_register("setDrawableSize:"),
               CGSizeMake((CGFloat)width, (CGFloat)height));
   send_double(layer, sel_register("setContentsScale:"), scale_factor);

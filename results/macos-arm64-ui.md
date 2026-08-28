@@ -1,164 +1,100 @@
 # Markdown editor benchmark report
 
-- Schema: `md-editor-benchmark/v1`
+- Schema: `md-editor-benchmark/v2`
 - Host: `macOS-26.3-arm64-arm-64bit` / `arm64` / `16.0 GiB`
 - OS release: `25.3.0`; GPU: `Apple M4`
 - Toolchains: `python=3.12.11, moon=moon 0.1.20260824 (dae026a 2026-08-24), rustc=rustc 1.94.0 (4a4ef493e 2026-03-02), cargo=cargo 1.94.0 (85eff7c80 2026-01-15), node=v25.2.1, npm=11.6.2, flutter=Flutter 3.47.1 • channel stable • https://github.com/flutter/flutter.git`
-- Viewport: `1280x800 @ 60 Hz`
+- Viewport: `1280x800 @ 60 Hz`; font: `system-ui 16px`; line height: `1.55`; overscan: `3`; list: `fixed 66px`; GPU: `Metal`
 
-| Adapter | Fixture | Scenario | Scope | Mean ms | P95 ms | P99 ms | Input ms | Document load ms | Interactive ms | Startup ms | Actions | Frames | Dropped | Drop rate | Status |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| electron | large | input | ui-frame | 10.013 | 10.600 | 10.800 | 9.707 | 2.915 | 86.167 | - | 30 | 30 | 0 | 0.000% | measured |
-| electron | large | open | ui-frame | 85.300 | 85.600 | 85.600 | - | 2.784 | 85.300 | 293.070 | 3 | 3 | 3 | 100.000% | measured |
-| electron | large | scroll | ui-frame | 10.001 | 10.600 | 10.900 | - | 3.618 | 85.833 | - | 360 | 360 | 0 | 0.000% | measured |
-| electron | medium | input | ui-frame | 10.000 | 11.000 | 11.000 | 9.430 | 2.732 | 90.100 | - | 30 | 30 | 0 | 0.000% | measured |
-| electron | medium | open | ui-frame | 84.033 | 85.000 | 85.000 | - | 2.618 | 84.033 | 286.814 | 3 | 3 | 3 | 100.000% | measured |
-| electron | medium | scroll | ui-frame | 10.005 | 10.700 | 11.000 | - | 2.804 | 87.767 | - | 360 | 360 | 0 | 0.000% | measured |
-| electron | small | input | ui-frame | 10.000 | 11.000 | 11.000 | 9.297 | 2.125 | 83.533 | - | 30 | 30 | 0 | 0.000% | measured |
-| electron | small | open | ui-frame | 83.933 | 86.300 | 86.300 | - | 2.902 | 83.933 | 298.068 | 3 | 3 | 3 | 100.000% | measured |
-| electron | small | scroll | ui-frame | 9.999 | 10.800 | 11.000 | - | 2.250 | 83.133 | - | 360 | 360 | 0 | 0.000% | measured |
-| electron | stress | input | ui-frame | 9.980 | 10.800 | 11.000 | 9.397 | 4.275 | 110.067 | - | 30 | 30 | 0 | 0.000% | measured |
-| electron | stress | open | ui-frame | 107.033 | 114.500 | 114.500 | - | 4.453 | 107.033 | 321.533 | 3 | 3 | 3 | 100.000% | measured |
-| electron | stress | scroll | ui-frame | 10.000 | 10.900 | 11.000 | - | 4.796 | 104.733 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-impeller | large | input | ui-frame | 2.185 | 3.808 | 6.177 | 9.561 | 0.361 | 64.462 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-impeller | large | open | ui-frame | 37.339 | 67.089 | 67.089 | - | 0.375 | 60.924 | 232.248 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-impeller | large | scroll | ui-frame | 2.636 | 4.374 | 4.654 | - | 0.552 | 68.720 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-impeller | medium | input | ui-frame | 2.080 | 3.031 | 7.081 | 9.934 | 0.128 | 58.948 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-impeller | medium | open | ui-frame | 48.805 | 64.430 | 64.430 | - | 0.106 | 61.058 | 241.417 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-impeller | medium | scroll | ui-frame | 2.611 | 4.347 | 4.974 | - | 0.126 | 65.361 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-impeller | small | input | ui-frame | 2.044 | 3.085 | 6.527 | 9.825 | 0.082 | 60.427 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-impeller | small | open | ui-frame | 33.630 | 59.431 | 59.431 | - | 0.086 | 58.280 | 226.050 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-impeller | small | scroll | ui-frame | 2.226 | 3.308 | 4.452 | - | 0.080 | 63.225 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-impeller | stress | input | ui-frame | 2.354 | 5.016 | 7.330 | 9.636 | 2.851 | 95.810 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-impeller | stress | open | ui-frame | 98.758 | 99.784 | 99.784 | - | 2.833 | 98.758 | 266.546 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-impeller | stress | scroll | ui-frame | 2.604 | 4.142 | 4.487 | - | 2.963 | 97.030 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-skia | large | input | ui-frame | 2.011 | 3.633 | 4.191 | 9.349 | 0.368 | 68.043 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-skia | large | open | ui-frame | 66.906 | 68.740 | 68.740 | - | 0.376 | 66.906 | 228.106 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-skia | large | scroll | ui-frame | 2.525 | 4.211 | 5.470 | - | 0.475 | 66.100 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-skia | medium | input | ui-frame | 2.223 | 2.825 | 10.246 | 9.740 | 0.111 | 66.310 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-skia | medium | open | ui-frame | 64.341 | 66.108 | 66.108 | - | 0.104 | 64.341 | 229.385 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-skia | medium | scroll | ui-frame | 2.615 | 4.274 | 6.036 | - | 0.117 | 62.455 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-skia | small | input | ui-frame | 2.270 | 5.134 | 10.751 | 9.681 | 0.083 | 61.470 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-skia | small | open | ui-frame | 104.121 | 178.592 | 178.592 | - | 0.096 | 104.121 | 286.375 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-skia | small | scroll | ui-frame | 2.244 | 3.095 | 3.425 | - | 0.086 | 67.144 | - | 360 | 360 | 0 | 0.000% | measured |
-| flutter-skia | stress | input | ui-frame | 2.587 | 7.600 | 8.341 | 9.390 | 3.001 | 96.871 | - | 30 | 30 | 0 | 0.000% | measured |
-| flutter-skia | stress | open | ui-frame | 97.400 | 99.073 | 99.073 | - | 3.092 | 97.400 | 265.296 | 3 | 3 | 3 | 100.000% | measured |
-| flutter-skia | stress | scroll | ui-frame | 2.583 | 4.094 | 4.422 | - | 3.125 | 96.442 | - | 360 | 360 | 0 | 0.000% | measured |
-| gpui | large | input | moonbit-command-buffer | 36.200 | 38.000 | 38.000 | 36.200 | 2.667 | - | - | 30 | 30 | 30 | 100.000% | measured |
-| gpui | large | open | moonbit-command-buffer | 37.333 | 38.000 | 38.000 | - | 2.667 | - | 64.754 | 3 | 3 | 3 | 100.000% | measured |
-| gpui | large | scroll | moonbit-command-buffer | 36.492 | 38.000 | 44.000 | - | 2.667 | - | - | 360 | 360 | 360 | 100.000% | measured |
-| gpui | medium | input | moonbit-command-buffer | 3.500 | 4.000 | 4.000 | 3.500 | 0.333 | - | - | 30 | 30 | 0 | 0.000% | measured |
-| gpui | medium | open | moonbit-command-buffer | 4.000 | 4.000 | 4.000 | - | 0.000 | - | 27.788 | 3 | 3 | 0 | 0.000% | measured |
-| gpui | medium | scroll | moonbit-command-buffer | 3.539 | 4.000 | 4.000 | - | 0.333 | - | - | 360 | 360 | 0 | 0.000% | measured |
-| gpui | small | input | moonbit-command-buffer | 0.367 | 1.000 | 1.000 | 0.367 | 0.333 | - | - | 30 | 30 | 0 | 0.000% | measured |
-| gpui | small | open | moonbit-command-buffer | 0.667 | 1.000 | 1.000 | - | 0.000 | - | 30.894 | 3 | 3 | 0 | 0.000% | measured |
-| gpui | small | scroll | moonbit-command-buffer | 0.350 | 1.000 | 1.000 | - | 0.000 | - | - | 360 | 360 | 0 | 0.000% | measured |
-| gpui | stress | input | moonbit-command-buffer | 372.600 | 382.000 | 383.000 | 372.600 | 22.667 | - | - | 30 | 30 | 30 | 100.000% | measured |
-| gpui | stress | open | moonbit-command-buffer | 373.000 | 375.000 | 375.000 | - | 25.000 | - | 432.579 | 3 | 3 | 3 | 100.000% | measured |
-| gpui | stress | scroll | moonbit-command-buffer | 369.694 | 381.000 | 389.000 | - | 24.667 | - | - | 360 | 360 | 360 | 100.000% | measured |
-| moui-skia-gpu | large | input | ui-frame | 7.604 | 10.022 | 11.041 | 8.091 | 2.375 | 39.965 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-gpu | large | open | ui-frame | 30.425 | 32.833 | 32.833 | - | 1.846 | 38.991 | 86.564 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-gpu | large | scroll | ui-frame | 12.029 | 16.140 | 16.685 | - | 2.446 | 39.106 | - | 360 | 360 | 6 | 1.667% | measured |
-| moui-skia-gpu | medium | input | ui-frame | 6.863 | 9.991 | 10.214 | 7.204 | 0.270 | 36.882 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-gpu | medium | open | ui-frame | 30.033 | 33.633 | 33.633 | - | 0.283 | 36.355 | 85.749 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-gpu | medium | scroll | ui-frame | 12.113 | 16.205 | 17.112 | - | 0.286 | 36.738 | - | 360 | 360 | 10 | 2.778% | measured |
-| moui-skia-gpu | small | input | ui-frame | 6.866 | 10.410 | 17.441 | 7.185 | 0.068 | 36.574 | - | 30 | 30 | 1 | 3.333% | measured |
-| moui-skia-gpu | small | open | ui-frame | 27.949 | 28.283 | 28.283 | - | 0.058 | 33.994 | 78.408 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-gpu | small | scroll | ui-frame | 12.139 | 15.769 | 16.967 | - | 0.064 | 35.653 | - | 360 | 360 | 7 | 1.944% | measured |
-| moui-skia-gpu | stress | input | ui-frame | 7.512 | 8.778 | 8.798 | 9.930 | 25.646 | 60.180 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-gpu | stress | open | ui-frame | 27.917 | 27.963 | 27.963 | - | 25.636 | 58.796 | 133.706 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-gpu | stress | scroll | ui-frame | 12.073 | 16.035 | 16.685 | - | 24.894 | 59.044 | - | 360 | 360 | 5 | 1.389% | measured |
-| moui-skia-raster | large | input | ui-frame | 4.221 | 4.692 | 5.181 | 4.701 | 2.232 | 34.077 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-raster | large | open | ui-frame | 24.958 | 26.349 | 26.349 | - | 2.160 | 33.775 | 63.913 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-raster | large | scroll | ui-frame | 11.593 | 15.444 | 16.349 | - | 2.218 | 33.005 | - | 360 | 360 | 2 | 0.556% | measured |
-| moui-skia-raster | medium | input | ui-frame | 4.275 | 4.783 | 4.886 | 4.606 | 0.303 | 32.230 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-raster | medium | open | ui-frame | 24.431 | 24.667 | 24.667 | - | 0.299 | 30.779 | 57.792 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-raster | medium | scroll | ui-frame | 11.514 | 15.361 | 16.041 | - | 0.309 | 31.600 | - | 360 | 360 | 3 | 0.833% | measured |
-| moui-skia-raster | small | input | ui-frame | 4.217 | 4.882 | 5.345 | 4.536 | 0.062 | 32.327 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-raster | small | open | ui-frame | 23.836 | 24.167 | 24.167 | - | 0.066 | 29.899 | 56.592 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-raster | small | scroll | ui-frame | 11.529 | 15.255 | 15.817 | - | 0.066 | 30.814 | - | 360 | 360 | 1 | 0.278% | measured |
-| moui-skia-raster | stress | input | ui-frame | 4.232 | 4.419 | 4.420 | 6.668 | 21.740 | 55.943 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-skia-raster | stress | open | ui-frame | 23.971 | 24.307 | 24.307 | - | 25.587 | 54.395 | 107.100 | 3 | 3 | 3 | 100.000% | measured |
-| moui-skia-raster | stress | scroll | ui-frame | 11.555 | 15.266 | 16.375 | - | 22.893 | 54.985 | - | 360 | 360 | 4 | 1.111% | measured |
-| moui-wgpu | large | input | ui-frame | 12.721 | 13.347 | 13.504 | 13.281 | 2.404 | 90.931 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-wgpu | large | open | ui-frame | 71.476 | 72.571 | 72.571 | - | 2.414 | 80.135 | 128.528 | 3 | 3 | 3 | 100.000% | measured |
-| moui-wgpu | large | scroll | ui-frame | 38.388 | 46.687 | 48.097 | - | 2.461 | 81.098 | - | 360 | 360 | 360 | 100.000% | measured |
-| moui-wgpu | medium | input | ui-frame | 12.568 | 13.277 | 13.325 | 12.942 | 0.281 | 88.800 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-wgpu | medium | open | ui-frame | 74.086 | 75.006 | 75.006 | - | 0.287 | 80.472 | 127.963 | 3 | 3 | 3 | 100.000% | measured |
-| moui-wgpu | medium | scroll | ui-frame | 38.559 | 47.174 | 49.661 | - | 0.259 | 78.537 | - | 360 | 360 | 360 | 100.000% | measured |
-| moui-wgpu | small | input | ui-frame | 12.998 | 14.325 | 14.438 | 13.383 | 0.054 | 89.281 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-wgpu | small | open | ui-frame | 78.239 | 82.618 | 82.618 | - | 0.060 | 84.569 | 134.946 | 3 | 3 | 3 | 100.000% | measured |
-| moui-wgpu | small | scroll | ui-frame | 38.400 | 47.294 | 49.059 | - | 0.068 | 79.204 | - | 360 | 360 | 360 | 100.000% | measured |
-| moui-wgpu | stress | input | ui-frame | 13.079 | 13.856 | 14.148 | 15.855 | 25.169 | 116.420 | - | 30 | 30 | 0 | 0.000% | measured |
-| moui-wgpu | stress | open | ui-frame | 74.544 | 78.083 | 78.083 | - | 26.819 | 105.777 | 180.086 | 3 | 3 | 3 | 100.000% | measured |
-| moui-wgpu | stress | scroll | ui-frame | 38.431 | 47.131 | 49.244 | - | 24.614 | 105.800 | - | 360 | 360 | 360 | 100.000% | measured |
+- Fixtures: `small=5KB/100 blocks`; `medium=50KB/1,000 blocks`; `large=500KB/10,000 blocks`; `stress=5MB/100,000 blocks`
 
-## Matching UI 2x screen
+- Skia GPU benchmark route: `metal-gpu` with `HostGpuPresentTarget` direct drawable present; CPU `readback_ms` is expected to be zero.
 
-| Target | Baseline | Metric | Worst ratio | Fixture / scenario | Screen |
-| --- | --- | --- | ---: | --- | --- |
-| moui-skia-raster | flutter-skia | Frame mean | 5.138x | small / scroll | over 2x |
-| moui-skia-raster | flutter-skia | Frame P95 | 4.929x | small / scroll | over 2x |
-| moui-skia-raster | flutter-skia | Frame P99 | 4.618x | small / scroll | over 2x |
-| moui-skia-raster | flutter-skia | Input latency | 0.710x | stress / input | within 2x |
-| moui-skia-raster | flutter-skia | Document load | 8.276x | stress / open | over 2x |
-| moui-skia-raster | flutter-skia | First interactive | 0.577x | stress / input | within 2x |
-| moui-skia-raster | flutter-skia | Startup | 0.404x | stress / open | within 2x |
-| moui-skia-raster | flutter-impeller | Frame mean | 5.180x | small / scroll | over 2x |
-| moui-skia-raster | flutter-impeller | Frame P95 | 4.612x | small / scroll | over 2x |
-| moui-skia-raster | flutter-impeller | Frame P99 | 3.649x | stress / scroll | over 2x |
-| moui-skia-raster | flutter-impeller | Input latency | 0.692x | stress / input | within 2x |
-| moui-skia-raster | flutter-impeller | Document load | 9.032x | stress / open | over 2x |
-| moui-skia-raster | flutter-impeller | First interactive | 0.584x | stress / input | within 2x |
-| moui-skia-raster | flutter-impeller | Startup | 0.402x | stress / open | within 2x |
-| moui-skia-raster | electron | Frame mean | 1.159x | large / scroll | within 2x |
-| moui-skia-raster | electron | Frame P95 | 1.457x | large / scroll | within 2x |
-| moui-skia-raster | electron | Frame P99 | 1.500x | large / scroll | within 2x |
-| moui-skia-raster | electron | Input latency | 0.710x | stress / input | within 2x |
-| moui-skia-raster | electron | Document load | 5.746x | stress / open | over 2x |
-| moui-skia-raster | electron | First interactive | 0.525x | stress / scroll | within 2x |
-| moui-skia-raster | electron | Startup | 0.333x | stress / open | within 2x |
-| moui-skia-gpu | flutter-skia | Frame mean | 5.409x | small / scroll | over 2x |
-| moui-skia-gpu | flutter-skia | Frame P95 | 5.095x | small / scroll | over 2x |
-| moui-skia-gpu | flutter-skia | Frame P99 | 4.954x | small / scroll | over 2x |
-| moui-skia-gpu | flutter-skia | Input latency | 1.058x | stress / input | within 2x |
-| moui-skia-gpu | flutter-skia | Document load | 8.546x | stress / input | over 2x |
-| moui-skia-gpu | flutter-skia | First interactive | 0.621x | stress / input | within 2x |
-| moui-skia-gpu | flutter-skia | Startup | 0.504x | stress / open | within 2x |
-| moui-skia-gpu | flutter-impeller | Frame mean | 5.454x | small / scroll | over 2x |
-| moui-skia-gpu | flutter-impeller | Frame P95 | 4.767x | small / scroll | over 2x |
-| moui-skia-gpu | flutter-impeller | Frame P99 | 3.811x | small / scroll | over 2x |
-| moui-skia-gpu | flutter-impeller | Input latency | 1.030x | stress / input | within 2x |
-| moui-skia-gpu | flutter-impeller | Document load | 9.049x | stress / open | over 2x |
-| moui-skia-gpu | flutter-impeller | First interactive | 0.640x | large / open | within 2x |
-| moui-skia-gpu | flutter-impeller | Startup | 0.502x | stress / open | within 2x |
-| moui-skia-gpu | electron | Frame mean | 1.214x | small / scroll | within 2x |
-| moui-skia-gpu | electron | Frame P95 | 1.523x | large / scroll | within 2x |
-| moui-skia-gpu | electron | Frame P99 | 1.586x | small / input | within 2x |
-| moui-skia-gpu | electron | Input latency | 1.057x | stress / input | within 2x |
-| moui-skia-gpu | electron | Document load | 6.000x | stress / input | over 2x |
-| moui-skia-gpu | electron | First interactive | 0.564x | stress / scroll | within 2x |
-| moui-skia-gpu | electron | Startup | 0.416x | stress / open | within 2x |
-| moui-wgpu | flutter-skia | Frame mean | 17.112x | small / scroll | over 2x |
-| moui-wgpu | flutter-skia | Frame P95 | 15.281x | small / scroll | over 2x |
-| moui-wgpu | flutter-skia | Frame P99 | 14.324x | small / scroll | over 2x |
-| moui-wgpu | flutter-skia | Input latency | 1.688x | stress / input | within 2x |
-| moui-wgpu | flutter-skia | Document load | 8.675x | stress / open | over 2x |
-| moui-wgpu | flutter-skia | First interactive | 1.452x | small / input | within 2x |
-| moui-wgpu | flutter-skia | Startup | 0.679x | stress / open | within 2x |
-| moui-wgpu | flutter-impeller | Frame mean | 17.253x | small / scroll | over 2x |
-| moui-wgpu | flutter-impeller | Frame P95 | 14.297x | small / scroll | over 2x |
-| moui-wgpu | flutter-impeller | Frame P99 | 11.020x | small / scroll | over 2x |
-| moui-wgpu | flutter-impeller | Input latency | 1.645x | stress / input | within 2x |
-| moui-wgpu | flutter-impeller | Document load | 9.467x | stress / open | over 2x |
-| moui-wgpu | flutter-impeller | First interactive | 1.506x | medium / input | within 2x |
-| moui-wgpu | flutter-impeller | Startup | 0.676x | stress / open | within 2x |
-| moui-wgpu | electron | Frame mean | 3.854x | medium / scroll | over 2x |
-| moui-wgpu | electron | Frame P95 | 4.409x | medium / scroll | over 2x |
-| moui-wgpu | electron | Frame P99 | 4.515x | medium / scroll | over 2x |
-| moui-wgpu | electron | Input latency | 1.687x | stress / input | within 2x |
-| moui-wgpu | electron | Document load | 6.023x | stress / open | over 2x |
-| moui-wgpu | electron | First interactive | 1.069x | small / input | within 2x |
-| moui-wgpu | electron | Startup | 0.560x | stress / open | within 2x |
+| Adapter | Fixture | Scenario | Scope | Route / present | Work mean/P95 | Interval mean/P95 | Input->visible mean/P95 | Offscreen mean | Readback mean | First interactive | Dropped display frames | Status |
+| --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| electron | large | input | ui-frame | - | 2.230/4.100 | 10.237/12.000 | 9.617/11.900 | 0.000 | 0.000 | 101.400 | 1 | measured |
+| electron | large | open | ui-frame | - | 96.367/98.300 | -/- | -/- | 0.000 | 0.000 | 96.367 | 0 | measured |
+| electron | large | scroll | ui-frame | - | 1.876/2.500 | 10.022/11.600 | -/- | 0.000 | 0.000 | 100.267 | 1 | measured |
+| electron | medium | input | ui-frame | - | 2.070/2.900 | 10.337/12.000 | 9.690/12.100 | 0.000 | 0.000 | 91.333 | 1 | measured |
+| electron | medium | open | ui-frame | - | 90.700/93.900 | -/- | -/- | 0.000 | 0.000 | 90.700 | 0 | measured |
+| electron | medium | scroll | ui-frame | - | 1.853/2.500 | 10.000/11.500 | -/- | 0.000 | 0.000 | 93.833 | 0 | measured |
+| electron | small | input | ui-frame | - | 2.120/3.200 | 10.003/11.100 | 9.593/11.500 | 0.000 | 0.000 | 97.700 | 0 | measured |
+| electron | small | open | ui-frame | - | 90.467/91.500 | -/- | -/- | 0.000 | 0.000 | 90.467 | 0 | measured |
+| electron | small | scroll | ui-frame | - | 1.851/2.600 | 10.001/10.300 | -/- | 0.000 | 0.000 | 92.167 | 0 | measured |
+| electron | stress | input | ui-frame | - | 2.027/4.200 | 9.987/10.900 | 9.583/11.100 | 0.000 | 0.000 | 125.167 | 0 | measured |
+| electron | stress | open | ui-frame | - | 120.400/128.800 | -/- | -/- | 0.000 | 0.000 | 120.400 | 0 | measured |
+| electron | stress | scroll | ui-frame | - | 1.896/2.500 | 9.993/10.900 | -/- | 0.000 | 0.000 | 119.467 | 0 | measured |
+| flutter-impeller | large | input | ui-frame | - | 2.043/3.279 | 11.667/20.002 | 9.806/16.323 | 0.000 | 0.000 | 100.296 | 4 | measured |
+| flutter-impeller | large | open | ui-frame | - | 93.719/96.924 | -/- | -/- | 0.000 | 0.000 | 93.719 | 0 | measured |
+| flutter-impeller | large | scroll | ui-frame | - | 2.070/4.058 | 10.000/10.002 | -/- | 0.000 | 0.000 | 106.710 | 0 | measured |
+| flutter-impeller | medium | input | ui-frame | - | 1.945/2.676 | 12.334/30.001 | 10.224/13.016 | 0.000 | 0.000 | 94.057 | 5 | measured |
+| flutter-impeller | medium | open | ui-frame | - | 99.978/108.579 | -/- | -/- | 0.000 | 0.000 | 99.978 | 0 | measured |
+| flutter-impeller | medium | scroll | ui-frame | - | 2.191/4.074 | 10.028/10.003 | -/- | 0.000 | 0.000 | 101.654 | 1 | measured |
+| flutter-impeller | small | input | ui-frame | - | 1.990/2.829 | 14.223/50.005 | 10.416/18.036 | 0.000 | 0.000 | 101.771 | 9 | measured |
+| flutter-impeller | small | open | ui-frame | - | 101.214/109.792 | -/- | -/- | 0.000 | 0.000 | 101.214 | 0 | measured |
+| flutter-impeller | small | scroll | ui-frame | - | 1.825/3.393 | 10.000/10.003 | -/- | 0.000 | 0.000 | 99.238 | 0 | measured |
+| flutter-impeller | stress | input | ui-frame | - | 2.258/3.382 | 17.485/50.007 | 11.296/19.475 | 0.000 | 0.000 | 122.032 | 15 | measured |
+| flutter-impeller | stress | open | ui-frame | - | 136.104/140.509 | -/- | -/- | 0.000 | 0.000 | 136.104 | 0 | measured |
+| flutter-impeller | stress | scroll | ui-frame | - | 2.010/3.765 | 10.000/10.002 | -/- | 0.000 | 0.000 | 118.961 | 0 | measured |
+| flutter-skia | large | input | ui-frame | - | 2.179/4.187 | 14.001/50.004 | 11.086/22.990 | 0.000 | 0.000 | 106.479 | 9 | measured |
+| flutter-skia | large | open | ui-frame | - | 97.726/101.432 | -/- | -/- | 0.000 | 0.000 | 97.726 | 0 | measured |
+| flutter-skia | large | scroll | ui-frame | - | 2.021/4.025 | 10.000/10.002 | -/- | 0.000 | 0.000 | 102.539 | 0 | measured |
+| flutter-skia | medium | input | ui-frame | - | 2.086/3.022 | 14.000/50.004 | 10.177/16.301 | 0.000 | 0.000 | 114.223 | 8 | measured |
+| flutter-skia | medium | open | ui-frame | - | 100.056/106.260 | -/- | -/- | 0.000 | 0.000 | 100.056 | 0 | measured |
+| flutter-skia | medium | scroll | ui-frame | - | 2.144/4.328 | 10.056/10.002 | -/- | 0.000 | 0.000 | 106.195 | 1 | measured |
+| flutter-skia | small | input | ui-frame | - | 2.038/3.110 | 12.000/30.004 | 10.287/18.391 | 0.000 | 0.000 | 94.224 | 4 | measured |
+| flutter-skia | small | open | ui-frame | - | 104.694/113.712 | -/- | -/- | 0.000 | 0.000 | 104.694 | 0 | measured |
+| flutter-skia | small | scroll | ui-frame | - | 1.770/3.255 | 10.000/10.003 | -/- | 0.000 | 0.000 | 112.652 | 0 | measured |
+| flutter-skia | stress | input | ui-frame | - | 2.098/3.341 | 15.788/30.004 | 10.497/19.098 | 0.000 | 0.000 | 118.171 | 11 | measured |
+| flutter-skia | stress | open | ui-frame | - | 119.998/133.269 | -/- | -/- | 0.000 | 0.000 | 119.998 | 0 | measured |
+| flutter-skia | stress | scroll | ui-frame | - | 2.090/3.994 | 10.056/10.002 | -/- | 0.000 | 0.000 | 128.357 | 1 | measured |
+| gpui | large | input | ui-frame | - | 0.179/0.281 | 10.685/24.491 | 10.682/24.483 | 0.000 | 0.000 | 240.169 | 3 | measured |
+| gpui | large | open | ui-frame | - | 0.000/0.000 | -/- | -/- | 0.000 | 0.000 | 217.373 | 0 | measured |
+| gpui | large | scroll | ui-frame | - | 0.003/0.007 | 10.079/10.644 | -/- | 0.000 | 0.000 | 213.288 | 3 | measured |
+| gpui | medium | input | ui-frame | - | 0.167/0.215 | 11.263/34.599 | 11.260/34.589 | 0.000 | 0.000 | 216.853 | 5 | measured |
+| gpui | medium | open | ui-frame | - | 0.000/0.000 | -/- | -/- | 0.000 | 0.000 | 223.648 | 0 | measured |
+| gpui | medium | scroll | ui-frame | - | 0.003/0.006 | 10.115/11.920 | -/- | 0.000 | 0.000 | 240.723 | 4 | measured |
+| gpui | small | input | ui-frame | - | 0.161/0.218 | 10.788/27.016 | 10.784/27.011 | 0.000 | 0.000 | 249.123 | 3 | measured |
+| gpui | small | open | ui-frame | - | 0.000/0.000 | -/- | -/- | 0.000 | 0.000 | 241.303 | 0 | measured |
+| gpui | small | scroll | ui-frame | - | 0.003/0.006 | 10.070/11.622 | -/- | 0.000 | 0.000 | 226.067 | 3 | measured |
+| gpui | stress | input | ui-frame | - | 0.178/0.305 | 10.664/25.825 | 10.660/25.806 | 0.000 | 0.000 | 226.356 | 3 | measured |
+| gpui | stress | open | ui-frame | - | 0.000/0.000 | -/- | -/- | 0.000 | 0.000 | 197.181 | 0 | measured |
+| gpui | stress | scroll | ui-frame | - | 0.003/0.007 | 10.069/10.762 | -/- | 0.000 | 0.000 | 220.007 | 3 | measured |
+| moui-skia-gpu | large | input | ui-frame | metal-gpu / host-gpu-surface | 9.283/11.980 | 9.956/12.656 | 9.955/12.655 | 0.000 | 0.000 | 69.530 | 0 | measured |
+| moui-skia-gpu | large | open | ui-frame | metal-gpu / host-gpu-surface | 64.983/70.322 | -/- | -/- | 0.000 | 0.000 | 69.217 | 0 | measured |
+| moui-skia-gpu | large | scroll | ui-frame | metal-gpu / host-gpu-surface | 8.201/9.633 | 8.918/11.031 | -/- | 0.000 | 0.000 | 70.616 | 1 | measured |
+| moui-skia-gpu | medium | input | ui-frame | metal-gpu / host-gpu-surface | 9.365/13.068 | 9.822/13.507 | 9.820/13.506 | 0.000 | 0.000 | 66.051 | 0 | measured |
+| moui-skia-gpu | medium | open | ui-frame | metal-gpu / host-gpu-surface | 64.603/65.073 | -/- | -/- | 0.000 | 0.000 | 66.578 | 0 | measured |
+| moui-skia-gpu | medium | scroll | ui-frame | metal-gpu / host-gpu-surface | 8.093/9.283 | 8.791/10.677 | -/- | 0.000 | 0.000 | 70.083 | 0 | measured |
+| moui-skia-gpu | small | input | ui-frame | metal-gpu / host-gpu-surface | 9.341/12.280 | 9.770/12.729 | 9.769/12.729 | 0.000 | 0.000 | 65.501 | 0 | measured |
+| moui-skia-gpu | small | open | ui-frame | metal-gpu / host-gpu-surface | 64.787/66.001 | -/- | -/- | 0.000 | 0.000 | 66.483 | 0 | measured |
+| moui-skia-gpu | small | scroll | ui-frame | metal-gpu / host-gpu-surface | 8.069/9.212 | 8.779/10.603 | -/- | 0.000 | 0.000 | 65.459 | 0 | measured |
+| moui-skia-gpu | stress | input | ui-frame | metal-gpu / host-gpu-surface | 6.895/10.176 | 10.578/13.606 | 10.577/13.604 | 0.000 | 0.000 | 91.560 | 0 | measured |
+| moui-skia-gpu | stress | open | ui-frame | metal-gpu / host-gpu-surface | 64.443/66.008 | -/- | -/- | 0.000 | 0.000 | 91.519 | 0 | measured |
+| moui-skia-gpu | stress | scroll | ui-frame | metal-gpu / host-gpu-surface | 8.062/9.274 | 8.760/10.668 | -/- | 0.000 | 0.000 | 91.962 | 0 | measured |
+| moui-skia-raster | large | input | ui-frame | raster / cpu-pixel-frame | 0.583/0.767 | 5.759/6.392 | 5.758/6.392 | 0.000 | 4.537 | 63.381 | 0 | measured |
+| moui-skia-raster | large | open | ui-frame | raster / cpu-pixel-frame | 50.613/51.366 | -/- | -/- | 0.000 | 6.286 | 61.354 | 0 | measured |
+| moui-skia-raster | large | scroll | ui-frame | raster / cpu-pixel-frame | 2.276/4.967 | 7.636/11.306 | -/- | 0.000 | 4.673 | 64.058 | 0 | measured |
+| moui-skia-raster | medium | input | ui-frame | raster / cpu-pixel-frame | 0.546/0.641 | 5.385/5.788 | 5.384/5.787 | 0.000 | 4.434 | 60.741 | 0 | measured |
+| moui-skia-raster | medium | open | ui-frame | raster / cpu-pixel-frame | 52.474/55.776 | -/- | -/- | 0.000 | 7.153 | 61.607 | 0 | measured |
+| moui-skia-raster | medium | scroll | ui-frame | raster / cpu-pixel-frame | 2.307/5.083 | 7.598/11.208 | -/- | 0.000 | 4.600 | 60.997 | 0 | measured |
+| moui-skia-raster | small | input | ui-frame | raster / cpu-pixel-frame | 0.601/0.721 | 5.961/6.572 | 5.960/6.571 | 0.000 | 4.894 | 62.698 | 0 | measured |
+| moui-skia-raster | small | open | ui-frame | raster / cpu-pixel-frame | 53.204/53.771 | -/- | -/- | 0.000 | 6.650 | 61.613 | 0 | measured |
+| moui-skia-raster | small | scroll | ui-frame | raster / cpu-pixel-frame | 2.297/5.039 | 7.878/11.652 | -/- | 0.000 | 4.876 | 65.208 | 0 | measured |
+| moui-skia-raster | stress | input | ui-frame | raster / cpu-pixel-frame | 0.668/0.902 | 8.876/10.156 | 8.875/10.155 | 0.000 | 4.513 | 85.416 | 0 | measured |
+| moui-skia-raster | stress | open | ui-frame | raster / cpu-pixel-frame | 51.711/51.949 | -/- | -/- | 0.000 | 6.322 | 84.913 | 0 | measured |
+| moui-skia-raster | stress | scroll | ui-frame | raster / cpu-pixel-frame | 2.274/5.005 | 7.528/11.031 | -/- | 0.000 | 4.565 | 84.210 | 0 | measured |
+| moui-wgpu | large | input | ui-frame | wgpu / host-gpu-surface | 7.449/8.978 | 8.137/9.558 | 8.136/9.557 | 0.000 | 0.000 | 75.084 | 0 | measured |
+| moui-wgpu | large | open | ui-frame | wgpu / host-gpu-surface | 71.523/73.210 | -/- | -/- | 0.000 | 0.000 | 75.995 | 0 | measured |
+| moui-wgpu | large | scroll | ui-frame | wgpu / host-gpu-surface | 7.647/8.905 | 8.332/9.592 | -/- | 0.000 | 0.000 | 74.027 | 0 | measured |
+| moui-wgpu | medium | input | ui-frame | wgpu / host-gpu-surface | 7.709/8.560 | 8.179/9.006 | 8.179/9.005 | 0.000 | 0.000 | 72.881 | 0 | measured |
+| moui-wgpu | medium | open | ui-frame | wgpu / host-gpu-surface | 70.558/71.302 | -/- | -/- | 0.000 | 0.000 | 72.590 | 0 | measured |
+| moui-wgpu | medium | scroll | ui-frame | wgpu / host-gpu-surface | 7.655/8.920 | 8.330/9.546 | -/- | 0.000 | 0.000 | 70.785 | 0 | measured |
+| moui-wgpu | small | input | ui-frame | wgpu / host-gpu-surface | 7.736/9.138 | 8.160/9.635 | 8.159/9.635 | 0.000 | 0.000 | 73.619 | 0 | measured |
+| moui-wgpu | small | open | ui-frame | wgpu / host-gpu-surface | 71.764/73.443 | -/- | -/- | 0.000 | 0.000 | 73.548 | 0 | measured |
+| moui-wgpu | small | scroll | ui-frame | wgpu / host-gpu-surface | 7.722/8.934 | 8.426/9.582 | -/- | 0.000 | 0.000 | 72.607 | 1 | measured |
+| moui-wgpu | stress | input | ui-frame | wgpu / host-gpu-surface | 4.514/6.480 | 8.289/9.987 | 8.288/9.986 | 0.000 | 0.000 | 97.320 | 0 | measured |
+| moui-wgpu | stress | open | ui-frame | wgpu / host-gpu-surface | 69.715/70.540 | -/- | -/- | 0.000 | 0.000 | 97.026 | 0 | measured |
+| moui-wgpu | stress | scroll | ui-frame | wgpu / host-gpu-surface | 7.649/8.975 | 8.330/9.604 | -/- | 0.000 | 0.000 | 96.525 | 0 | measured |
 
-Raw samples are retained in the input JSON. The screen above uses only matching `ui-frame` rows with the same fixture and scenario. Verify viewport, repetitions and warm-ups in the raw records before treating a ratio as comparable. Timing sources remain framework-specific and are not compositor-equivalent.
+Metric definitions: `frame_work_ms` is framework build/layout/paint/draw work; `frame_interval_ms` is the interval between displayed frames; `input_to_visible_ms` is action-to-visible completion; `dropped_display_frames` counts refresh slots missed from displayed intervals. WGPU and Skia GPU report offscreen and CPU readback separately. `first_interactive_ms` is measured from adapter initialization to the first interactive frame; process lifetime is not used as a startup proxy.
