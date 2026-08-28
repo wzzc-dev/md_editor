@@ -7,6 +7,7 @@ import os
 import platform
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -18,12 +19,36 @@ def run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=ROOT, text=True, check=True, **kwargs)
 
 
+def install_atomic(source: Path, target: Path) -> None:
+    """Install a binary without truncating an executable held by an old run.
+
+    macOS keeps the vnode/code-signature state of a running Mach-O alive. An
+    in-place ``copy2`` can therefore leave later launches stuck in dyld while
+    an older benchmark process still has the destination open. Writing a new
+    sibling and replacing the directory entry gives each launch a complete,
+    stable inode; existing processes continue to use their old file safely.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    os.close(fd)
+    temporary = Path(temporary_name)
+    try:
+        shutil.copy2(source, temporary)
+        os.replace(temporary, target)
+    except BaseException:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
 def bundle_macos(executable: Path) -> Path:
     app = ROOT / "dist" / "GPUI Markdown Editor.app"
     macos = app / "Contents" / "MacOS"
     macos.mkdir(parents=True, exist_ok=True)
     target = macos / "gpui-markdown-editor"
-    shutil.copy2(executable, target)
+    install_atomic(executable, target)
     (app / "Contents" / "Info.plist").write_text(
         """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -54,12 +79,12 @@ def main() -> None:
     executable = max(candidates, key=lambda path: path.stat().st_mtime)
     if platform.system() == "Darwin":
         app = bundle_macos(executable)
-        shutil.copy2(executable, ROOT / "dist" / "gpui-markdown-editor")
+        install_atomic(executable, ROOT / "dist" / "gpui-markdown-editor")
         print(f"Built {app}\nRun: open '{app}'")
     else:
         dist = ROOT / "dist"
         dist.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(executable, dist / ("gpui-markdown-editor.exe" if platform.system() == "Windows" else "gpui-markdown-editor"))
+        install_atomic(executable, dist / ("gpui-markdown-editor.exe" if platform.system() == "Windows" else "gpui-markdown-editor"))
         print(f"Built {executable}")
 
 
