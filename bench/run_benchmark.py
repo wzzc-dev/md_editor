@@ -10,6 +10,7 @@ import os
 import platform
 import re
 import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -114,11 +115,15 @@ def validate_nonnegative_number(value: object, field: str) -> None:
         raise ValueError(f"ui-frame {field} must be finite and nonnegative")
 
 
-def validate_sample_list(payload: dict, field: str, expected: int) -> list[float]:
+def validate_sample_list(
+    payload: dict, field: str, expected: int, *, allow_null: bool = False
+) -> list[float | None]:
     values = payload.get(field)
     if not isinstance(values, list) or len(values) != expected:
         raise ValueError(f"ui-frame {field} must contain {expected} samples")
     for index, value in enumerate(values):
+        if value is None and allow_null:
+            continue
         validate_nonnegative_number(value, f"{field}[{index}]")
     return values
 
@@ -141,9 +146,30 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
         validate_sample_list(payload, "input_to_visible_samples_ms", expected)
     elif payload.get("input_to_visible_samples_ms") not in (None, []):
         raise ValueError(f"ui-frame {scenario} must not contain input-to-visible samples")
-    validate_sample_list(payload, "offscreen_samples_ms", expected)
-    validate_sample_list(payload, "readback_samples_ms", expected)
-    validate_sample_list(payload, "offscreen_readback_samples_ms", expected)
+    # A null sample means the adapter did not instrument that stage. It is
+    # deliberately distinct from numeric zero (a measured zero-cost stage).
+    offscreen_samples = validate_sample_list(
+        payload, "offscreen_samples_ms", expected, allow_null=True
+    )
+    readback_samples = validate_sample_list(
+        payload, "readback_samples_ms", expected, allow_null=True
+    )
+    offscreen_readback_samples = validate_sample_list(
+        payload, "offscreen_readback_samples_ms", expected, allow_null=True
+    )
+    for field, values in (
+        ("offscreen_ms", offscreen_samples),
+        ("readback_ms", readback_samples),
+        ("offscreen_readback_ms", offscreen_readback_samples),
+    ):
+        if field not in payload:
+            continue
+        aggregate = payload.get(field)
+        has_numeric = any(value is not None for value in values)
+        if has_numeric and aggregate is None:
+            raise ValueError(f"ui-frame {field} aggregate is missing for measured samples")
+        if not has_numeric and aggregate is not None:
+            raise ValueError(f"ui-frame {field} must be null when all samples are unmeasured")
     validate_count(payload, "action_count", expected)
     validate_count(payload, "frame_sample_count", interval_expected)
     expected_warmups = 0 if scenario == "open" else 1
@@ -158,11 +184,12 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
         raise ValueError(f"ui-frame viewport must be 1280x800, got {viewport!r}")
     if payload.get("scenario") != scenario:
         raise ValueError(f"ui-frame scenario mismatch: {payload.get('scenario')!r}")
-    for field in (
-        "frame_work_ms", "first_interactive_ms", "document_load_ms",
-        "offscreen_ms", "readback_ms",
-    ):
+    for field in ("frame_work_ms", "first_interactive_ms", "document_load_ms"):
         validate_nonnegative_number(payload.get(field), field)
+    for field in ("offscreen_ms", "readback_ms", "offscreen_readback_ms"):
+        value = payload.get(field)
+        if value is not None:
+            validate_nonnegative_number(value, field)
     if scenario == "open":
         if payload.get("frame_interval_ms") is not None:
             validate_nonnegative_number(payload.get("frame_interval_ms"), "frame_interval_ms")
@@ -227,20 +254,57 @@ def run_command(
         rendered.append(scenario)
     displayed_command = assignments + rendered
     started = time.perf_counter()
+    process: subprocess.Popen[str] | None = None
+
+    def stop_process() -> None:
+        if process is None or process.poll() is not None:
+            return
+        try:
+            if os.name == "nt":
+                process.terminate()
+            else:
+                os.killpg(process.pid, signal.SIGTERM)
+        except (OSError, ProcessLookupError):
+            pass
+        try:
+            process.communicate(timeout=2)
+        except subprocess.TimeoutExpired:
+            try:
+                if os.name == "nt":
+                    process.kill()
+                else:
+                    os.killpg(process.pid, signal.SIGKILL)
+            except (OSError, ProcessLookupError):
+                pass
+            process.communicate()
+
     try:
-        process = subprocess.run(rendered, cwd=ROOT, env=command_env, text=True, capture_output=True, timeout=timeout_seconds)
+        process = subprocess.Popen(
+            rendered,
+            cwd=ROOT,
+            env=command_env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=os.name != "nt",
+        )
+        stdout, stderr = process.communicate(timeout=timeout_seconds)
     except FileNotFoundError as error:
         return [{"status": "skipped", "command": displayed_command, "elapsed_ms": 0.0,
                  "reason": f"adapter executable unavailable: {error}"}]
     except subprocess.TimeoutExpired:
+        stop_process()
         return [{"status": "error", "command": displayed_command, "elapsed_ms": timeout_seconds * 1000,
                  "error": f"adapter timed out after {timeout_seconds:g} seconds"}]
+    except KeyboardInterrupt:
+        stop_process()
+        raise
     elapsed = (time.perf_counter() - started) * 1000
     if process.returncode:
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
-                 "error": process.stderr[-4000:] or f"exit {process.returncode}"}]
+                 "error": stderr[-4000:] or f"exit {process.returncode}"}]
     records: list[dict] = []
-    for line in process.stdout.splitlines():
+    for line in stdout.splitlines():
         if not line.strip():
             continue
         try:
@@ -261,7 +325,7 @@ def run_command(
         records.append(payload)
     if not records:
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
-                 "error": "adapter did not print any JSON object", "stdout": process.stdout[-4000:]}]
+                 "error": "adapter did not print any JSON object", "stdout": stdout[-4000:]}]
     return records
 
 

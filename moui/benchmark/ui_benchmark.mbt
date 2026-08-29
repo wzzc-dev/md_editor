@@ -198,7 +198,7 @@ fn ui_skia_benchmark_renderer(
     } else {
       "moui-skia-raster"
     },
-    timing_source: "moui-profile_draw_frame-plus-skia-render_frame",
+    timing_source: "moui-headless-profile_draw_frame-plus-skia-render_frame",
     surface_route: result.surface_route().label(),
     presentation_kind,
     render: frame => {
@@ -230,7 +230,7 @@ fn ui_wgpu_benchmark_renderer(
   let renderer = ui_renderer_wgpu(width, height)
   {
     adapter: "moui-wgpu",
-    timing_source: "moui-profile_draw_frame-plus-wgpu-render",
+    timing_source: "moui-headless-profile_draw_frame-plus-wgpu-render",
     surface_route: renderer.backend_kind().short_label(),
     presentation_kind: "host-gpu-surface",
     render: frame => {
@@ -308,6 +308,12 @@ fn ui_json_array(values : Array[Double]) -> String {
 }
 
 ///|
+///  A null sample means that the stage was not instrumented for this route.
+fn ui_null_array(length : Int) -> String {
+  Array::make(length, "null").join(",")
+}
+
+///|
 ///  v2 protocol report. Timing arrays retain the raw samples so the runner
 /// can pool repetitions without mixing work and display pacing semantics.
 fn ui_report_v2(
@@ -338,6 +344,7 @@ fn ui_report_v2(
   } else {
     0.0
   }
+  let direct_gpu = presentation_kind == "host-gpu-surface"
   let offscreen_mean = samples.offscreen_ms.fold(init=0.0, fn(total, value) {
       total + value
     }) /
@@ -346,13 +353,6 @@ fn ui_report_v2(
       total + value
     }) /
     samples.readback_ms.length().to_double()
-  let offscreen_readback_mean = samples.offscreen_readback_ms.fold(init=0.0, fn(
-      total,
-      value,
-    ) {
-      total + value
-    }) /
-    samples.offscreen_readback_ms.length().to_double()
   let dropped = samples.interval_ms.fold(init=0, fn(total, value) {
     total + ((value / 16.667).ceil().to_int() - 1).max(0)
   })
@@ -373,11 +373,15 @@ fn ui_report_v2(
     ""
   }) +
   "],\"offscreen_samples_ms\":[" +
-  ui_json_array(samples.offscreen_ms) +
+  (if direct_gpu {
+    ui_null_array(samples.work_ms.length())
+  } else {
+    ui_json_array(samples.offscreen_ms)
+  }) +
   "],\"readback_samples_ms\":[" +
   ui_json_array(samples.readback_ms) +
   "],\"offscreen_readback_samples_ms\":[" +
-  ui_json_array(samples.offscreen_readback_ms) +
+  ui_null_array(samples.work_ms.length()) +
   "],\"frame_work_ms\":" +
   json_number(work_mean) +
   ",\"frame_interval_ms\":" +
@@ -389,11 +393,11 @@ fn ui_report_v2(
   ",\"input_to_visible_ms\":" +
   (if scenario == "input" { json_number(input_mean) } else { "null" }) +
   ",\"offscreen_ms\":" +
-  json_number(offscreen_mean) +
+  (if direct_gpu { "null" } else { json_number(offscreen_mean) }) +
   ",\"readback_ms\":" +
   json_number(readback_mean) +
   ",\"offscreen_readback_ms\":" +
-  json_number(offscreen_readback_mean) +
+  "null" +
   ",\"frame_work_p95_ms\":" +
   json_number(percentile(samples.work_ms, 0.95)) +
   ",\"frame_interval_p95_ms\":" +
@@ -424,7 +428,7 @@ fn ui_report_v2(
   surface_route +
   "\",\"presentation_kind\":\"" +
   presentation_kind +
-  "\",\"phase_samples_ms\":{\"build\":[" +
+  "\",\"window_mode\":\"headless-host-surface\",\"work_scope\":\"moui-build-layout-paint-draw-plus-render-submit\",\"display_timestamp_source\":\"synchronous-render-completion-no-compositor-timestamp\",\"phase_samples_ms\":{\"build\":[" +
   ui_json_array(samples.build_ms) +
   "],\"layout\":[" +
   ui_json_array(samples.layout_ms) +

@@ -33,14 +33,14 @@ fn summary(
   samples.map(value => value.to_string()).join(",") +
   "],\"frame_interval_samples_ms\":[],\"input_to_visible_samples_ms\":[" +
   (if scenario == "input" { samples.map(value => value.to_string()).join(",") } else { "" }) +
-  "],\"offscreen_samples_ms\":[" + samples.map(_ => "0").join(",") +
-  "],\"readback_samples_ms\":[" + samples.map(_ => "0").join(",") +
-  "],\"offscreen_readback_samples_ms\":[" + samples.map(_ => "0").join(",") +
+  "],\"offscreen_samples_ms\":[" + samples.map(_ => "null").join(",") +
+  "],\"readback_samples_ms\":[" + samples.map(_ => "null").join(",") +
+  "],\"offscreen_readback_samples_ms\":[" + samples.map(_ => "null").join(",") +
   "],\"frame_work_ms\":" +
   mean.to_string() +
   ",\"frame_interval_ms\":null,\"input_to_visible_ms\":" +
   (if scenario == "input" { mean.to_string() } else { "null" }) +
-  ",\"offscreen_ms\":0,\"readback_ms\":0,\"offscreen_readback_ms\":0,\"frame_work_p95_ms\":" +
+  ",\"offscreen_ms\":null,\"readback_ms\":null,\"offscreen_readback_ms\":null,\"frame_work_p95_ms\":" +
   percentile(samples, 0.95).to_string() +
   ",\"frame_interval_p95_ms\":null,\"input_to_visible_p95_ms\":" +
   (if scenario == "input" { percentile(samples, 0.95).to_string() } else { "null" }) +
