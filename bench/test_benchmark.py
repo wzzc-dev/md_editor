@@ -36,9 +36,15 @@ class FixtureTests(unittest.TestCase):
             capture_output=True,
             text=True,
         ).stdout
-        self.assertIn("Dropped display frames", report)
-        self.assertIn("First interactive", report)
+        self.assertIn("丢帧数", report)
+        self.assertIn("首次可交互", report)
+        self.assertIn("工作均值（ms）", report)
         self.assertIn("Metric definitions", report)
+        for heading in (
+            "## small / medium / large",
+            "## stress 5MB",
+        ):
+            self.assertEqual(report.count(heading), 4)
 
     def test_adapter_emitted_name_is_authoritative(self):
         fixture = ROOT / "data" / "small.md"
@@ -241,7 +247,7 @@ class FixtureTests(unittest.TestCase):
                 text=True,
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
-        self.assertEqual(len(row.strip("|").split("|")), 12)
+        self.assertEqual(len(row.strip("|").split("|")), 13)
 
 
 if __name__ == "__main__":

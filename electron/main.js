@@ -5,6 +5,14 @@ const { performance } = require('perf_hooks');
 
 const markdownFilter = [{ name: 'Markdown', extensions: ['md', 'markdown'] }];
 
+// Keep Electron on the same native GPU path as MoUI and GPUI on macOS. The
+// switch is applied before app.ready so Chromium cannot initialize a software
+// ANGLE device first.
+if (process.platform === 'darwin') {
+  app.commandLine.appendSwitch('use-angle', 'metal');
+  app.commandLine.appendSwitch('enable-gpu-rasterization');
+}
+
 function createWindow(benchmark = null) {
   const window = new BrowserWindow({
     width: 1280,
@@ -62,7 +70,7 @@ if (process.argv.includes('--benchmark')) {
     const fixture = path.resolve(process.cwd(), fixtureArg);
     const loadStarted = performance.now();
     const source = await fs.readFile(fixture, 'utf8');
-    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted, viewport: { width: 1280, height: 800 } });
+    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted, viewport: { width: 1280, height: 800 }, gpu_backend: process.platform === 'darwin' ? 'Metal' : 'native' });
   });
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' || process.argv.includes('--ui-benchmark')) app.quit();

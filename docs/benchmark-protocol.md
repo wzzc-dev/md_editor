@@ -22,8 +22,10 @@ The v2 runner reports framework work (`frame_work_ms`), display pacing
 (`frame_interval_ms`), action-to-visible input latency
 (`input_to_visible_ms`), dropped display frames, document-load and
 `first_interactive_ms`. WGPU and Skia GPU offscreen/readback costs are
-reported independently. Aggregate percentiles are calculated from pooled raw
-samples, not by averaging per-run percentiles. Process elapsed time remains
+reported independently when instrumented. A stage that was not instrumented
+is represented by `null` samples and `null` aggregate values; numeric `0`
+means that the route measured that stage and observed no CPU work. Aggregate
+percentiles are calculated from pooled raw samples, not by averaging per-run percentiles. Process elapsed time remains
 diagnostic metadata and is never used as startup. Raw JSON also records OS release, CPU,
 memory, best-effort GPU (`GPU_MODEL` overrides probing), renderer flags,
 toolchain versions and exact commands. Missing tools are `skipped`; crashes,
@@ -45,17 +47,18 @@ Use the checked-in hardware command rather than reconstructing adapter strings:
 ## UI timing sources
 
 | Adapter | Work source | Display interval source | Input latency endpoint |
-| --- | --- | --- |
-| MoUI | `profile_draw_frame` phases plus renderer submission | synchronous render completion |
-| GPUI | action dispatch work | interval between `Window::on_next_frame` callbacks |
-| Flutter | `buildDuration + rasterDuration` | `FrameTiming.vsyncStart` deltas |
-| Electron | DOM/update work | Chromium `requestAnimationFrame` interval |
+| --- | --- | --- | --- |
+| MoUI | `profile_draw_frame` phases plus renderer submission | synchronous render completion on a headless host surface | action-to-render completion |
+| GPUI | action dispatch work (not GPUI draw/paint) | interval between `Window::on_next_frame` callbacks | action-to-`on_next_frame` |
+| Flutter | `buildDuration + rasterDuration` | `FrameTiming.vsyncStart` deltas | action-to-`SchedulerBinding.endOfFrame` |
+| Electron | DOM/update work | Chromium `requestAnimationFrame` interval | action-to-next animation frame |
 
 These clocks answer related but not identical questions. In particular,
 Electron rAF is not compositor tracing, GPUI's callback is not an OS present
-timestamp, and MoUI's GPU route reports explicit offscreen/readback stages.
-The report is therefore a screening calculation, not proof of
-compositor-equivalent performance.
+timestamp, and the MoUI UI benchmark uses a headless host surface rather than
+an AppKit display window. The report keeps values real and auditable but does
+not claim compositor-equivalent cross-framework ranking. `n/a` means
+unmeasured, never zero.
 
 Flutter Profile is launched twice with engine switches. The wrapper rejects a
 row unless startup output contains the matching `Using the Skia rendering
