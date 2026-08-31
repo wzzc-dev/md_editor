@@ -1,9 +1,24 @@
 import 'dart:convert';
+import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:ui' show FlutterView, FramePhase;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
+typedef _SignpostNative = ffi.Void Function(ffi.Int32);
+typedef _SignpostDart = void Function(int);
+
+_SignpostDart? _loadSignpost() {
+  if (!Platform.isMacOS) return null;
+  try {
+    return ffi.DynamicLibrary.process()
+        .lookupFunction<_SignpostNative, _SignpostDart>(
+            'md_editor_benchmark_signpost_event');
+  } on Object {
+    return null;
+  }
+}
 
 void main(List<String> args) {
   if (args.isNotEmpty && args.first == '--benchmark') {
@@ -167,6 +182,12 @@ class UiBenchmark {
   final List<double> _frameIntervals = [];
   final List<double> _inputToVisible = [];
   final List<double> _timingStamps = [];
+  final List<double> _actionTimestampsEpochMs = [];
+  double? _actionWindowEndEpochMs;
+  final _SignpostDart? _signpost = _loadSignpost();
+
+  double _epochNowMs() =>
+      DateTime.now().microsecondsSinceEpoch.toDouble() / 1000.0;
 
   void _recordTimings(List<FrameTiming> timings) {
     for (final timing in timings) {
@@ -222,7 +243,7 @@ class UiBenchmark {
       }
       // There is no preceding vsync for the first frame; do not use startup
       // time as a display interval or count it as a dropped frame.
-      _report(firstInteractiveMs, view, logicalSize);
+          await _report(firstInteractiveMs, view, logicalSize);
       return;
     }
 
@@ -267,11 +288,15 @@ class UiBenchmark {
     _frameIntervals.clear();
     _timingStamps.clear();
     _inputToVisible.clear();
+    _actionTimestampsEpochMs.clear();
     final count = scenario == 'scroll' ? 120 : 10;
     for (var index = 0; index < count; index++) {
+      _signpost?.call(index);
+      _actionTimestampsEpochMs.add(_epochNowMs());
       final latency = await driveAction(index + 1);
       if (scenario == 'input') _inputToVisible.add(latency);
     }
+    _actionWindowEndEpochMs = _epochNowMs();
     await Future<void>.delayed(const Duration(milliseconds: 100));
     if (_frameWork.length > count) {
       _frameWork.removeRange(0, _frameWork.length - count);
@@ -286,10 +311,10 @@ class UiBenchmark {
       _frameIntervals
           .addAll(List<double>.filled(count - _frameIntervals.length, 16.667));
     }
-    _report(firstInteractiveMs, view, logicalSize);
+    await _report(firstInteractiveMs, view, logicalSize);
   }
 
-  void _report(double firstInteractiveMs, FlutterView view, Size logicalSize) {
+  Future<void> _report(double firstInteractiveMs, FlutterView view, Size logicalSize) async {
     final samples = _frameWork;
     final intervals = _frameIntervals;
     final sorted = List<double>.of(samples)..sort();
@@ -339,6 +364,11 @@ class UiBenchmark {
           scenario == 'open' ? 1 : (scenario == 'scroll' ? 120 : 10),
       'frame_sample_count': intervals.length,
       'warmup_action_count': scenario == 'open' ? 0 : 1,
+      'action_timestamps_epoch_ms': _actionTimestampsEpochMs,
+      'action_window_start_epoch_ms': _actionTimestampsEpochMs.isEmpty
+          ? null
+          : _actionTimestampsEpochMs.first,
+      'action_window_end_epoch_ms': _actionWindowEndEpochMs,
       'first_interactive_ms': firstInteractiveMs,
       'document_load_ms': documentLoadMs,
       'viewport': {
@@ -353,6 +383,13 @@ class UiBenchmark {
       'overscan': 3,
       'virtual_row_height': 66,
     }));
+    if (Platform.environment['UI_BENCHMARK_SYSTEM_PRESENT'] == '1') {
+      final tailMs = int.tryParse(
+            Platform.environment['UI_BENCHMARK_TRACE_TAIL_MS'] ?? '',
+          ) ??
+          15000;
+      await Future<void>.delayed(Duration(milliseconds: tailMs.clamp(0, 120000)));
+    }
     exit(0);
   }
 }

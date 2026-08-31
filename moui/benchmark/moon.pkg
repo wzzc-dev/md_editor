@@ -3,6 +3,9 @@ import {
   "wzzc-dev/moui/core",
   "wzzc-dev/moui/render",
   "wzzc-dev/moui/runtime",
+  "wzzc-dev/moui/backend",
+  "wzzc-dev/moui/backend/common/lifecycle" @window_lifecycle,
+  "wzzc-dev/moui/backend/macos" @macos_backend,
   "wzzc-dev/moui_richtext" @richtext,
   "wzzc-dev/moui_skia",
   "wzzc-dev/moui_skia/native" @skia_native,
@@ -15,6 +18,7 @@ import {
   "wzzc-dev/moui/text",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
+  "moonbitlang/async",
 }
 
 supported_targets = "native"

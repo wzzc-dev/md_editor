@@ -12,6 +12,9 @@
 extern "C" fn now_ms() -> Double = "md_editor_benchmark_now_ms"
 
 ///|
+extern "C" fn epoch_ms() -> Double = "md_editor_benchmark_epoch_ms"
+
+///|
 fn percentile(values : Array[Double], ratio : Double) -> Double {
   let sorted = values.copy()
   sorted.sort()
@@ -152,10 +155,14 @@ fn split_blocks(source : String) -> Int {
 }
 
 ///|
-fn main {
+async fn main {
   let args = @env.args()
   if args.length() >= 4 && args[1] == "--ui-benchmark" {
-    run_ui_benchmark(args[2], args[3])
+    if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
+      run_macos_native_ui_benchmark(args[2], args[3])
+    } else {
+      run_ui_benchmark(args[2], args[3])
+    }
     return
   }
   if args.length() < 3 {

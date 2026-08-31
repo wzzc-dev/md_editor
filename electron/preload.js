@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('documentApi', {
 
 contextBridge.exposeInMainWorld('benchmarkApi', {
   config: () => ipcRenderer.invoke('benchmark:config').catch(() => null),
+  action: index => ipcRenderer.send('benchmark:action', index),
   report: report => ipcRenderer.send('benchmark:report', report),
 });

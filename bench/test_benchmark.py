@@ -5,12 +5,109 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from run_benchmark import run_command
+from run_benchmark import run_command, validate_system_trace_payload
+from macos_display_trace import _SurfaceRow, _dropped_slots, _match_action_presents, parse_exported_xml
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class FixtureTests(unittest.TestCase):
+    def test_system_trace_parser_filters_target_surface_and_counts_drops(self):
+        xml = '''<?xml version="1.0"?>
+<trace-query-result>
+  <node><schema name="hitches-updates">
+    <col><mnemonic>start</mnemonic></col><col><mnemonic>swap-id</mnemonic></col>
+    <col><mnemonic>surface-id</mnemonic></col><col><mnemonic>process</mnemonic></col>
+  </schema>
+  <row><start-time id="1">100000000</start-time><uint32 id="2">11</uint32><uint32 id="3">7</uint32><process id="4"><pid>42</pid></process></row>
+  <row><start-time id="5">200000000</start-time><uint32 id="6">12</uint32><uint32 id="7">7</uint32><process ref="4"/></row>
+  <row><start-time id="8">300000000</start-time><uint32 id="9">99</uint32><uint32 id="10">8</uint32><process><pid>99</pid></process></row>
+  </node>
+  <node><schema name="display-surface-swap">
+    <col><mnemonic>timestamp</mnemonic></col><col><mnemonic>surface-id</mnemonic></col><col><mnemonic>swap-id</mnemonic></col>
+  </schema>
+  <row><start-time id="20">110000000</start-time><displayed-surface-swap id="21">7</displayed-surface-swap><displayed-surface-swap id="22">11</displayed-surface-swap></row>
+  <row><start-time id="23">280000000</start-time><displayed-surface-swap ref="21"/><displayed-surface-swap id="24">12</displayed-surface-swap></row>
+  <row><start-time id="25">390000000</start-time><displayed-surface-swap id="26">8</displayed-surface-swap><displayed-surface-swap id="27">99</displayed-surface-swap></row>
+  </node>
+  <node><schema name="display-vsyncs-interval">
+    <col><mnemonic>timestamp</mnemonic></col><col><mnemonic>display-name</mnemonic></col>
+  </schema>
+  <row><start-time>0</start-time><display-name id="30" fmt="main">main</display-name></row>
+  <row><start-time>16667000</start-time><display-name ref="30"/></row>
+  <row><start-time>33334000</start-time><display-name ref="30"/></row>
+  </node>
+</trace-query-result>'''
+        result = parse_exported_xml(xml, pid=42)
+        self.assertEqual(result.status, "captured")
+        self.assertEqual(result.surface_ids, [7])
+        self.assertEqual(result.swap_ids, [11, 12])
+        self.assertEqual(result.present_timestamps_ms, [110.0, 280.0])
+        self.assertEqual(result.present_interval_samples_ms, [170.0])
+        self.assertEqual(result.dropped_display_frames, 9)
+        self.assertAlmostEqual(result.frame_budget_ms, 16.667, places=3)
+        self.assertAlmostEqual(result.refresh_hz, 59.9988, places=3)
+
+    def test_system_trace_uses_traced_vsync_budget_and_accepts_missing_presents(self):
+        xml = '''<trace-query-result><start-date>1970-01-01T00:00:00+00:00</start-date>
+        <node><schema name="hitches-updates">
+          <col><mnemonic>start</mnemonic></col><col><mnemonic>swap-id</mnemonic></col>
+          <col><mnemonic>surface-id</mnemonic></col><col><mnemonic>process</mnemonic></col>
+        </schema>
+        <row><start-time>1</start-time><uint32>10</uint32><uint32>7</uint32><process id="p"><pid>42</pid></process></row>
+        <row><start-time>2</start-time><uint32>11</uint32><uint32>7</uint32><process ref="p"/></row>
+        </node>
+        <node><schema name="display-surface-swap">
+          <col><mnemonic>timestamp</mnemonic></col><col><mnemonic>surface-id</mnemonic></col><col><mnemonic>swap-id</mnemonic></col>
+        </schema>
+        <row><start-time>100000000</start-time><uint32>7</uint32><uint32>10</uint32></row>
+        <row><start-time>130000000</start-time><uint32>7</uint32><uint32>11</uint32></row>
+        </node>
+        <node><schema name="displayed-surfaces-interval">
+          <col><mnemonic>start</mnemonic></col><col><mnemonic>surface-id</mnemonic></col>
+          <col><mnemonic>display-name</mnemonic></col>
+        </schema>
+        <row><start-time>100000000</start-time><uint32>7</uint32><display-name id="display" fmt="main">main</display-name></row>
+        <row><start-time>110000000</start-time><uint32>7</uint32><display-name ref="display"/></row>
+        <row><start-time>130000000</start-time><uint32>7</uint32><display-name ref="display"/></row>
+        </node>
+        <node><schema name="display-vsyncs-interval">
+          <col><mnemonic>timestamp</mnemonic></col><col><mnemonic>display-name</mnemonic></col>
+        </schema>
+        <row><start-time>0</start-time><display-name id="d" fmt="main">main</display-name></row>
+        <row><start-time>10000000</start-time><display-name ref="d"/></row>
+        <row><start-time>20000000</start-time><display-name ref="d"/></row>
+        <row><start-time>30000000</start-time><display-name ref="d"/></row>
+        </node></trace-query-result>'''
+        result = parse_exported_xml(
+            xml,
+            pid=42,
+            expected_samples=3,
+            action_window_start_epoch_ms=100.0,
+            action_window_end_epoch_ms=130.0,
+        )
+        self.assertEqual(result.status, "captured")
+        self.assertEqual(result.present_interval_samples_ms, [10.0, 20.0])
+        self.assertEqual(result.frame_budget_ms, 10.0)
+        self.assertEqual(result.dropped_display_frames, 1)
+
+    def test_system_trace_parser_rejects_unassociated_surface(self):
+        xml = '''<trace-query-result><node><schema name="display-surface-swap">
+          <col><mnemonic>timestamp</mnemonic></col><col><mnemonic>surface-id</mnemonic></col><col><mnemonic>swap-id</mnemonic></col>
+        </schema><row><start-time>1</start-time><displayed-surface-swap>7</displayed-surface-swap><displayed-surface-swap>1</displayed-surface-swap></row></node></trace-query-result>'''
+        result = parse_exported_xml(xml, pid=42, expected_samples=1)
+        self.assertEqual(result.status, "no-target-surface")
+
+    def test_system_trace_drop_count_tolerates_timestamp_jitter(self):
+        self.assertEqual(_dropped_slots(10.00017, 10.00008), 0)
+        self.assertEqual(_dropped_slots(20.00017, 10.00008), 1)
+        self.assertEqual(_dropped_slots(30.00017, 10.00008), 2)
+
+    def test_action_present_matching_allows_refresh_coalescing(self):
+        rows = [_SurfaceRow(timestamp_ns=20_000_000, surface_id=1, swap_id=1)]
+        matched = _match_action_presents([10.0, 15.0], rows, 0.0)
+        self.assertEqual(matched, [10.0, 5.0])
+
     def test_fixtures_have_contract_sizes(self):
         subprocess.run([sys.executable, str(ROOT / "scripts/generate_fixtures.py")], check=True)
         manifest = (ROOT / "data" / "MANIFEST.tsv").read_text(encoding="utf-8").splitlines()[1:]
@@ -248,6 +345,63 @@ class FixtureTests(unittest.TestCase):
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
         self.assertEqual(len(row.strip("|").split("|")), 13)
+
+    def test_strict_report_never_falls_back_to_framework_intervals(self):
+        record = {
+            "adapter": "electron",
+            "fixture": "small",
+            "scenario": "scroll",
+            "measurement_scope": "ui-frame",
+            "status": "measured",
+            "frame_work_samples_ms": [1.0],
+            "frame_interval_samples_ms": [999.0],
+            "input_to_visible_samples_ms": [],
+            "offscreen_samples_ms": [None],
+            "readback_samples_ms": [None],
+            "offscreen_readback_samples_ms": [None],
+            "dropped_display_frames": 58,
+            "system_trace_status": "no-target-surface",
+            "system_present_interval_samples_ms": [],
+            "system_input_to_present_samples_ms": [],
+            "system_dropped_display_frames": None,
+        }
+        payload = {
+            "schema": "md-editor-benchmark/v2",
+            "comparison_mode": "strict-system-present",
+            "platform": "test",
+            "machine": "test",
+            "memory_gb": 16,
+            "viewport": {"width": 1280, "height": 800, "refresh_hz": 60},
+            "records": [record],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "benchmark.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            report = subprocess.run(
+                [sys.executable, str(ROOT / "bench" / "report.py"), str(path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+        self.assertIn("系统帧间隔均值（ms）", report)
+        row = next(
+            line for line in report.splitlines()
+            if line.startswith("| Electron |") and "n/a" in line
+        )
+        self.assertNotIn("999.00", row)
+        self.assertNotIn("58", row)
+
+    def test_strict_scroll_requires_action_to_present_samples(self):
+        payload = {
+            "scenario": "scroll",
+            "system_trace_status": "captured",
+            "system_present_timestamps_ms": [1.0, 2.0],
+            "system_present_interval_samples_ms": [1.0],
+            "system_input_to_present_samples_ms": [],
+            "system_dropped_display_frames": 0,
+        }
+        with self.assertRaisesRegex(ValueError, "120 action-to-present samples"):
+            validate_system_trace_payload(payload)
 
 
 if __name__ == "__main__":
