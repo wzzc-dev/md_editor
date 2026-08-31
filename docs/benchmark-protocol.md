@@ -21,7 +21,9 @@ repetitions. `action_count`, `frame_sample_count` and
 The v2 runner reports framework work (`frame_work_ms`), display pacing
 (`frame_interval_ms`), action-to-visible input latency
 (`input_to_visible_ms`), dropped display frames, document-load and
-`first_interactive_ms`. WGPU and Skia GPU offscreen/readback costs are
+`first_interactive_ms`. In strict macOS mode, startup is instead measured from
+the same wrapper epoch marker (written before the trace gate) to the first
+target-surface compositor present for every adapter. WGPU and Skia GPU offscreen/readback costs are
 reported independently when instrumented. A stage that was not instrumented
 is represented by `null` samples and `null` aggregate values; numeric `0`
 means that the route measured that stage and observed no CPU work. Aggregate
@@ -55,10 +57,29 @@ Use the checked-in hardware command rather than reconstructing adapter strings:
 
 These clocks answer related but not identical questions. In particular,
 Electron rAF is not compositor tracing, GPUI's callback is not an OS present
-timestamp, and the MoUI UI benchmark uses a headless host surface rather than
-an AppKit display window. The report keeps values real and auditable but does
-not claim compositor-equivalent cross-framework ranking. `n/a` means
-unmeasured, never zero.
+timestamp, and the default MoUI UI benchmark uses a headless host surface
+rather than an AppKit display window. For a strict macOS comparison, run
+`./scripts/run_ui_benchmark.sh` with `UI_BENCHMARK_SYSTEM_TRACE=1`. The runner
+holds each adapter behind a trace gate, launches it under `xctrace`'s
+`Animation Hitches` template (plus Points of Interest), and reports
+`system_present_*` fields from the target
+process's associated surface IDs plus the compositor's
+`displayed-surfaces-interval` rows. `display-surface-swap` is only an
+association/indexing source, not a frame clock. It filters by target process
+swap or Metal surface IDs; it never mixes another window's compositor events.
+If a target surface cannot be associated (for example, when an implementation
+is run through its headless adapter), strict columns are `n/a` rather than
+framework-callback fallbacks.
+`n/a` means unmeasured, never zero.
+The runner also stops before recording when the macOS console session is
+locked; WindowServer cannot scan out application surfaces at the lock screen.
+
+Adapter wall-clock action timestamps only delimit the compositor trace window;
+they are not used as latency endpoints. Each native adapter also emits the
+same `md_editor_action` os_signpost, and strict input/scroll latency matches
+that signpost to the next target-surface compositor present in the same
+xctrace clock. If either side is missing, the strict sample is rejected or
+reported as `n/a` rather than falling back to a framework callback.
 
 Flutter Profile is launched twice with engine switches. The wrapper rejects a
 row unless startup output contains the matching `Using the Skia rendering

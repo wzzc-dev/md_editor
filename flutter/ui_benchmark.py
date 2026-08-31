@@ -9,6 +9,7 @@ import os
 import platform
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -57,6 +58,27 @@ def main() -> None:
     if not fixture.is_file():
         raise SystemExit(f"fixture is unreadable: {fixture}")
 
+    gate = os.environ.get("UI_BENCHMARK_TRACE_GATE")
+    pid_file = os.environ.get("UI_BENCHMARK_TRACE_PID_FILE")
+    if pid_file:
+        try:
+            Path(pid_file).write_text(str(os.getpid()), encoding="ascii")
+        except OSError:
+            pass
+    start_path = os.environ.get("UI_BENCHMARK_TRACE_START_FILE")
+    if start_path:
+        try:
+            Path(start_path).write_text(str(time.time() * 1000.0), encoding="ascii")
+        except OSError:
+            pass
+    if gate:
+        timeout = float(os.environ.get("UI_BENCHMARK_TRACE_GATE_TIMEOUT_SECONDS", "120"))
+        deadline = time.monotonic() + max(timeout, 1.0)
+        while not os.path.exists(gate) and time.monotonic() < deadline:
+            time.sleep(0.01)
+        if not os.path.exists(gate):
+            raise SystemExit("system trace gate was not released")
+
     env = os.environ.copy()
     env.update(
         {
@@ -71,6 +93,15 @@ def main() -> None:
             "FLUTTER_RENDERER": args.renderer,
         }
     )
+    if gate:
+        # Preserve the PID that the runner attached xctrace to. Renderer
+        # verification is performed by run_benchmark.py from the same engine
+        # startup log in strict mode.
+        os.execve(
+            str(binary),
+            [str(binary), "--ui-benchmark", str(fixture), args.scenario],
+            env,
+        )
     process: subprocess.CompletedProcess[str] | None = None
     attempt = 0
     for attempt in (1, 2):

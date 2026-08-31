@@ -19,6 +19,30 @@ An adapter may emit multiple scopes; its emitted `adapter` field is
 authoritative. Missing executables become `skipped`, while non-zero exits,
 timeouts or absent JSON become `error`.
 
+## Strict macOS display timing
+
+Use `--system-present-trace` for a compositor-backed run. On macOS the runner
+launches each adapter under `xctrace`'s `Animation Hitches` template (with the
+Points of Interest instrument), releases it only after recording starts, and
+keeps the target alive while Instruments saves the deferred stores. It adds
+`system_present_timestamps_ms`,
+`system_present_interval_samples_ms`, `system_input_to_present_samples_ms`,
+`system_dropped_display_frames` and `system_first_present_ms`. The report uses
+these fields for pacing, drop and first-present columns and does not fall back
+to framework callback timestamps. Trace packages are ephemeral by default;
+set `--system-trace-dir` to retain them. On non-macOS hosts, or when a native
+surface cannot be associated, strict fields are rendered as `n/a`.
+All wrappers write the same epoch start marker before the trace gate and
+before native process handoff. Strict startup is measured from that marker to
+the first target-surface compositor present, so the gate wait is included
+consistently for every implementation; framework work remains diagnostic.
+`display-surface-swap` is used only to identify target
+surface IDs; per-refresh timing comes from `displayed-surfaces-interval`, never
+from sparse swap events.
+The runner refuses to claim strict samples while the macOS console session is
+locked, because WindowServer does not scan out application surfaces in that
+state.
+
 ## Real-window run
 
 Use the build-once wrapper for comparable UI records:

@@ -18,3 +18,5 @@ data/*.md
 data/.generated
 .DS_Store
 .mooncakes
+results/*
+Launch_sleep_*

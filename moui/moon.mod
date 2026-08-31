@@ -11,5 +11,6 @@ import {
   "wzzc-dev/moui_skia@0.1.10",
   "wzzc-dev/moui_skia_renderer@0.1.11",
   "wzzc-dev/moui_wgpu_renderer@0.1.10",
+  "moonbitlang/async@0.21.0",
   "moonbitlang/x@0.5.1",
 }

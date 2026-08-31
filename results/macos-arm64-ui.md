@@ -49,18 +49,18 @@
 | moui-wgpu | stress | open | ui-frame | 55.114/55.256 | - | - | - | n/a | 0.00 ms | 82.14 ms | 0 | measured |
 | moui-wgpu | stress | input | ui-frame | 5.482/6.688 | - | 8.327/9.231 | 8.326/9.230 | n/a | 0.00 ms | 103.54 ms | 0 | measured |
 | moui-wgpu | stress | scroll | ui-frame | 7.672/8.890 | - | 8.331/9.365 | - | n/a | 0.00 ms | 81.33 ms | 0 | measured |
-| gpui | small | open | ui-frame | - | 0.000/0.000 | - | - | n/a | n/a | 170.91 ms | 0 | measured |
-| gpui | small | input | ui-frame | - | 0.145/0.171 | 10.372/17.218 | 10.369/17.216 | n/a | n/a | 152.51 ms | 3 | measured |
-| gpui | small | scroll | ui-frame | - | 0.003/0.004 | 10.010/11.612 | - | n/a | n/a | 141.68 ms | 2 | measured |
-| gpui | medium | open | ui-frame | - | 0.000/0.000 | - | - | n/a | n/a | 149.14 ms | 0 | measured |
-| gpui | medium | input | ui-frame | - | 0.144/0.187 | 10.585/17.450 | 10.582/17.449 | n/a | n/a | 139.20 ms | 2 | measured |
-| gpui | medium | scroll | ui-frame | - | 0.003/0.005 | 10.036/11.977 | - | n/a | n/a | 136.11 ms | 3 | measured |
-| gpui | large | open | ui-frame | - | 0.000/0.000 | - | - | n/a | n/a | 135.13 ms | 0 | measured |
-| gpui | large | input | ui-frame | - | 0.151/0.206 | 10.286/18.014 | 10.284/18.013 | n/a | n/a | 132.91 ms | 3 | measured |
-| gpui | large | scroll | ui-frame | - | 0.003/0.004 | 9.964/11.817 | - | n/a | n/a | 137.05 ms | 2 | measured |
-| gpui | stress | open | ui-frame | - | 0.000/0.000 | - | - | n/a | n/a | 125.06 ms | 0 | measured |
-| gpui | stress | input | ui-frame | - | 0.138/0.164 | 10.182/16.357 | 10.180/16.354 | n/a | n/a | 124.77 ms | 2 | measured |
-| gpui | stress | scroll | ui-frame | - | 0.003/0.004 | 9.963/11.998 | - | n/a | n/a | 128.37 ms | 2 | measured |
+| gpui | small | open | ui-frame | 0.000/0.000 | - | - | - | n/a | n/a | 170.91 ms | 0 | measured |
+| gpui | small | input | ui-frame | 0.145/0.171 | - | 10.372/17.218 | 10.369/17.216 | n/a | n/a | 152.51 ms | 3 | measured |
+| gpui | small | scroll | ui-frame | 0.003/0.004 | - | 10.010/11.612 | - | n/a | n/a | 141.68 ms | 2 | measured |
+| gpui | medium | open | ui-frame | 0.000/0.000 | - | - | - | n/a | n/a | 149.14 ms | 0 | measured |
+| gpui | medium | input | ui-frame | 0.144/0.187 | - | 10.585/17.450 | 10.582/17.449 | n/a | n/a | 139.20 ms | 2 | measured |
+| gpui | medium | scroll | ui-frame | 0.003/0.005 | - | 10.036/11.977 | - | n/a | n/a | 136.11 ms | 3 | measured |
+| gpui | large | open | ui-frame | 0.000/0.000 | - | - | - | n/a | n/a | 135.13 ms | 0 | measured |
+| gpui | large | input | ui-frame | 0.151/0.206 | - | 10.286/18.014 | 10.284/18.013 | n/a | n/a | 132.91 ms | 3 | measured |
+| gpui | large | scroll | ui-frame | 0.003/0.004 | - | 9.964/11.817 | - | n/a | n/a | 137.05 ms | 2 | measured |
+| gpui | stress | open | ui-frame | 0.000/0.000 | - | - | - | n/a | n/a | 125.06 ms | 0 | measured |
+| gpui | stress | input | ui-frame | 0.138/0.164 | - | 10.182/16.357 | 10.180/16.354 | n/a | n/a | 124.77 ms | 2 | measured |
+| gpui | stress | scroll | ui-frame | 0.003/0.004 | - | 9.963/11.998 | - | n/a | n/a | 128.37 ms | 2 | measured |
 | flutter-skia | small | open | ui-frame | 65.230/67.412 | - | - | - | n/a | n/a | 65.23 ms | 0 | measured |
 | flutter-skia | small | input | ui-frame | 1.751/2.734 | - | 11.333/30.001 | 10.027/14.764 | n/a | n/a | 64.04 ms | 2 | measured |
 | flutter-skia | small | scroll | ui-frame | 1.898/2.619 | - | 10.111/10.002 | - | n/a | n/a | 59.73 ms | 3 | measured |
@@ -111,7 +111,7 @@
 | MoUI Skia Raster CPU | 2.11/2.16/2.14 | 4.66/4.90/4.94 | 6.83/6.84/6.81 | 10.13/10.52/10.48 | 0/0/0 |
 | MoUI Skia GPU | 7.96/7.99/7.98 | 8.97/9.00/9.04 | 8.58/8.61/8.61 | 9.71/9.96/9.86 | 0/0/0 |
 | MoUI WGPU | 7.69/7.68/7.67 | 9.01/8.97/8.98 | 8.33/8.33/8.33 | 9.44/9.44/9.43 | 0/0/0 |
-| GPUI | n/a/n/a/n/a | n/a/n/a/n/a | 10.01/10.04/9.96 | 11.61/11.98/11.82 | 2/3/2 |
+| GPUI | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 10.01/10.04/9.96 | 11.61/11.98/11.82 | 2/3/2 |
 | Flutter Skia | 1.90/2.33/2.23 | 2.62/3.72/3.79 | 10.11/10.06/10.06 | 10.00/10.00/10.00 | 3/2/2 |
 | Flutter Impeller | 2.01/2.31/2.33 | 2.76/3.74/3.81 | 10.11/10.06/10.06 | 10.00/10.00/10.00 | 3/2/2 |
 | Electron | 1.76/1.91/1.91 | 2.40/2.40/2.40 | 10.00/9.99/10.00 | 11.90/12.00/11.90 | 0/0/0 |
@@ -123,7 +123,7 @@
 | MoUI Skia Raster CPU | 2.23 | 4.95 | 7.05 | 10.40 | 4 |
 | MoUI Skia GPU | 8.00 | 8.98 | 8.62 | 9.88 | 0 |
 | MoUI WGPU | 7.67 | 8.89 | 8.33 | 9.36 | 0 |
-| GPUI | n/a | n/a | 9.96 | 12.00 | 2 |
+| GPUI | 0.00 | 0.00 | 9.96 | 12.00 | 2 |
 | Flutter Skia | 2.32 | 3.67 | 10.00 | 10.00 | 0 |
 | Flutter Impeller | 2.34 | 3.79 | 10.03 | 10.00 | 1 |
 | Electron | 1.91 | 2.40 | 10.00 | 12.00 | 0 |
@@ -139,7 +139,7 @@
 | MoUI Skia Raster CPU | 5.02/4.85/4.99 | 5.76/5.23/5.33 | 0.51/0.51/0.50 | 0.62/0.61/0.53 |
 | MoUI Skia GPU | 8.56/8.75/8.78 | 9.59/10.71/10.71 | 8.21/8.38/8.22 | 9.27/10.35/10.14 |
 | MoUI WGPU | 8.17/8.14/8.17 | 9.52/9.53/9.63 | 7.79/7.77/7.61 | 9.14/9.16/9.06 |
-| GPUI | 10.37/10.58/10.28 | 17.22/17.45/18.01 | n/a/n/a/n/a | n/a/n/a/n/a |
+| GPUI | 10.37/10.58/10.28 | 17.22/17.45/18.01 | 0.14/0.14/0.15 | 0.17/0.19/0.21 |
 | Flutter Skia | 10.03/9.95/9.98 | 14.76/10.37/12.95 | 1.75/1.77/1.85 | 2.73/2.77/3.45 |
 | Flutter Impeller | 10.04/9.90/9.82 | 13.24/13.73/13.55 | 1.69/1.75/1.78 | 2.42/2.49/2.84 |
 | Electron | 9.63/9.65/9.51 | 11.90/12.10/12.00 | 1.60/1.59/1.56 | 2.00/1.90/1.90 |
@@ -151,7 +151,7 @@
 | MoUI Skia Raster CPU | 7.31 | 8.44 | 0.56 | 0.63 |
 | MoUI Skia GPU | 9.38 | 10.36 | 6.72 | 8.11 |
 | MoUI WGPU | 8.33 | 9.23 | 5.48 | 6.69 |
-| GPUI | 10.18 | 16.35 | n/a | n/a |
+| GPUI | 10.18 | 16.35 | 0.14 | 0.16 |
 | Flutter Skia | 10.57 | 15.06 | 1.79 | 2.94 |
 | Flutter Impeller | 10.07 | 14.73 | 1.83 | 2.69 |
 | Electron | 9.89 | 12.00 | 1.62 | 2.00 |
@@ -167,7 +167,7 @@
 | MoUI Skia Raster CPU | 54.51/54.62/57.36 | 55.00/55.74/57.86 | 46.78/46.46/47.13 | 47.42/47.44/47.73 | 0.07/0.30/1.83 | 0.08/0.33/2.55 |
 | MoUI Skia GPU | 61.01/59.60/64.11 | 64.12/63.78/66.19 | 59.36/57.72/59.98 | 62.51/61.92/62.14 | 0.06/0.31/2.53 | 0.07/0.32/2.61 |
 | MoUI WGPU | 57.62/57.27/59.41 | 59.10/58.62/59.75 | 55.99/55.39/55.16 | 57.45/56.75/55.53 | 0.07/0.29/2.46 | 0.08/0.31/2.51 |
-| GPUI | 170.91/149.14/135.13 | 208.36/183.06/139.86 | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/4.33 | 0.00/0.00/6.00 |
+| GPUI | 170.91/149.14/135.13 | 208.36/183.06/139.86 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/4.33 | 0.00/0.00/6.00 |
 | Flutter Skia | 65.23/60.74/62.72 | 67.41/62.94/65.72 | 65.23/60.74/62.72 | 67.41/62.94/65.72 | 0.09/0.12/0.49 | 0.12/0.12/0.72 |
 | Flutter Impeller | 66.99/64.97/64.07 | 68.69/65.36/65.52 | 66.99/45.63/64.07 | 68.69/64.83/65.52 | 0.10/0.18/0.40 | 0.14/0.22/0.42 |
 | Electron | 87.63/86.33/86.73 | 92.40/89.90/89.70 | 87.63/86.33/86.73 | 92.40/89.90/89.70 | 2.83/2.45/2.39 | 2.87/2.93/2.89 |
@@ -179,7 +179,7 @@
 | MoUI Skia Raster CPU | 79.33 | 80.33 | 46.81 | 47.46 | 23.33 | 26.27 |
 | MoUI Skia GPU | 82.07 | 82.86 | 55.75 | 56.26 | 21.06 | 26.55 |
 | MoUI WGPU | 82.14 | 83.39 | 55.11 | 55.26 | 25.58 | 25.93 |
-| GPUI | 125.06 | 130.55 | n/a | n/a | 29.00 | 32.00 |
+| GPUI | 125.06 | 130.55 | 0.00 | 0.00 | 29.00 | 32.00 |
 | Flutter Skia | 92.95 | 95.96 | 92.95 | 95.96 | 3.10 | 3.33 |
 | Flutter Impeller | 96.20 | 102.74 | 96.20 | 102.74 | 3.35 | 3.50 |
 | Electron | 97.33 | 97.90 | 97.33 | 97.90 | 4.57 | 5.01 |
@@ -195,7 +195,7 @@
 | MoUI Skia Raster CPU | 2.11/2.16/2.14 | 4.66/4.90/4.94 | 6.83/6.84/6.81 | 10.13/10.52/10.48 | 0/0/0 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 4.14/4.08/4.08 | 4.62/4.59/4.60 |
 | MoUI Skia GPU | 7.96/7.99/7.98 | 8.97/9.00/9.04 | 8.58/8.61/8.61 | 9.71/9.96/9.86 | 0/0/0 | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 |
 | MoUI WGPU | 7.69/7.68/7.67 | 9.01/8.97/8.98 | 8.33/8.33/8.33 | 9.44/9.44/9.43 | 0/0/0 | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 |
-| GPUI | n/a/n/a/n/a | n/a/n/a/n/a | 10.01/10.04/9.96 | 11.61/11.98/11.82 | 2/3/2 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
+| GPUI | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 10.01/10.04/9.96 | 11.61/11.98/11.82 | 2/3/2 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
 | Flutter Skia | 1.90/2.33/2.23 | 2.62/3.72/3.79 | 10.11/10.06/10.06 | 10.00/10.00/10.00 | 3/2/2 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
 | Flutter Impeller | 2.01/2.31/2.33 | 2.76/3.74/3.81 | 10.11/10.06/10.06 | 10.00/10.00/10.00 | 3/2/2 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
 | Electron | 1.76/1.91/1.91 | 2.40/2.40/2.40 | 10.00/9.99/10.00 | 11.90/12.00/11.90 | 0/0/0 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
@@ -207,15 +207,15 @@
 | MoUI Skia Raster CPU | 2.23 | 4.95 | 7.05 | 10.40 | 4 | 0.00 | 0.00 | 4.21 | 5.01 |
 | MoUI Skia GPU | 8.00 | 8.98 | 8.62 | 9.88 | 0 | n/a | n/a | 0.00 | 0.00 |
 | MoUI WGPU | 7.67 | 8.89 | 8.33 | 9.36 | 0 | n/a | n/a | 0.00 | 0.00 |
-| GPUI | n/a | n/a | 9.96 | 12.00 | 2 | n/a | n/a | n/a | n/a |
+| GPUI | 0.00 | 0.00 | 9.96 | 12.00 | 2 | n/a | n/a | n/a | n/a |
 | Flutter Skia | 2.32 | 3.67 | 10.00 | 10.00 | 0 | n/a | n/a | n/a | n/a |
 | Flutter Impeller | 2.34 | 3.79 | 10.03 | 10.00 | 1 | n/a | n/a | n/a | n/a |
 | Electron | 1.91 | 2.40 | 10.00 | 12.00 | 0 | n/a | n/a | n/a | n/a |
 
 ## 采集口径
 
-- Metric definitions：`frame_work_ms` 是适配器声明的构建/布局/绘制工作范围；`frame_interval_ms` 是该适配器报告的相邻显示/帧回调时间戳间隔。
-- GPUI 的当前 hook 只有 action dispatch 计时，未覆盖 GPUI draw/paint，因此主表的 work 显示 `n/a`；其原始 dispatch 样本仍在审计 JSON/表中。
-- `input_to_visible_ms`：输入动作到该适配器报告的可见帧完成；`dropped_display_frames`（Dropped display frames）：`max(ceil(interval / 16.667) - 1, 0)` 的累计值。
-- `first_interactive_ms` 是首个可交互帧，不使用进程总耗时替代；打开场景没有前一帧，所以不计算 interval/drop。
-- `offscreen_ms` / `readback_ms` 只展示被实际计时的阶段：GPU 直出路径的 CPU readback 为测得的 `0`；未埋点的 offscreen 或非该路径显示为 `n/a`。
+- Metric definitions：`frame_work_ms` 是适配器声明的构建/布局/绘制工作范围；严格模式的 `system_present_interval_samples_ms` 是 macOS compositor 相邻显示时间戳间隔，普通模式的 `frame_interval_ms` 仍是适配器帧回调间隔。
+- `frame_work_ms` 对 GPUI 来自 request_layout→prepaint→paint 的真实元素包络；action dispatch 作为独立的 `dispatch_work_samples_ms` 诊断字段保留，不与绘制时间混合。
+- `input_to_visible_ms`：普通模式是输入动作到框架可见帧；严格模式只有同一系统 trace 同时包含 HID/os_signpost 动作时间和目标 surface 的逐刷新 present 时才填 `system_input_to_present_samples_ms`。当前适配器的 wall-clock 动作标记仅用于裁剪 trace 窗口，因此严格输入延迟为 `n/a`。`system_dropped_display_frames` 使用同一 trace 的 VSync 周期按四舍五入后的刷新槽位 `max(round(interval / frame_budget_ms) - 1, 0)` 计算，以容忍系统时间戳量化抖动。
+- `first_interactive_ms` 是首个可交互帧；严格模式改为进程启动到首个目标 compositor present，不使用进程总耗时替代；打开场景没有前一帧，所以不计算 interval/drop。
+- `offscreen_ms` / `readback_ms` 只展示被实际计时的阶段；严格系统 trace 不会把 renderer 的提交时间或 readback 时间当作 compositor present。未埋点阶段显示 `n/a`，实测无 CPU 工作才显示数值 `0`。

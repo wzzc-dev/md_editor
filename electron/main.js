@@ -1,4 +1,5 @@
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { spawn } = require('child_process');
 const fs = require('fs/promises');
 const path = require('path');
 const { performance } = require('perf_hooks');
@@ -28,9 +29,34 @@ function createWindow(benchmark = null) {
     },
   });
   if (benchmark) {
+    const helperPath = process.env.MD_EDITOR_SIGNPOST_HELPER;
+    const signpostHelper = helperPath
+      ? spawn(helperPath, [], { stdio: ['pipe', 'ignore', 'ignore'] })
+      : null;
+    ipcMain.on('benchmark:action', (_event, index) => {
+      if (signpostHelper?.stdin?.writable && Number.isInteger(index)) {
+        signpostHelper.stdin.write(`${index}\n`);
+      }
+    });
     ipcMain.handle('benchmark:config', () => benchmark);
     ipcMain.once('benchmark:report', (_event, report) => {
-      process.stdout.write(`${JSON.stringify(report)}\n`, () => app.quit());
+      signpostHelper?.stdin?.end();
+      report.system_trace_process_ids = [
+        process.pid,
+        window.webContents.getOSProcessId(),
+        ...app.getAppMetrics().map(metric => metric.pid),
+        ...(signpostHelper?.pid ? [signpostHelper.pid] : []),
+      ].filter((pid, index, values) => Number.isInteger(pid) && pid > 0 && values.indexOf(pid) === index);
+      process.stdout.write(`${JSON.stringify(report)}\n`, () => {
+        const finish = () => app.quit();
+        if (process.env.UI_BENCHMARK_SYSTEM_PRESENT === '1') {
+          const requestedTail = Number.parseInt(process.env.UI_BENCHMARK_TRACE_TAIL_MS || '', 10);
+          const tailMs = Number.isFinite(requestedTail) ? Math.min(Math.max(requestedTail, 0), 120000) : 15000;
+          setTimeout(finish, tailMs);
+        } else {
+          finish();
+        }
+      });
     });
   }
   window.loadFile(path.join(__dirname, 'index.html'));

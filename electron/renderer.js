@@ -195,7 +195,16 @@ function mean(values) {
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
-function summarize(scenario, workSamples, intervals, latencies, config, firstInteractiveMs) {
+function summarize(
+  scenario,
+  workSamples,
+  intervals,
+  latencies,
+  config,
+  firstInteractiveMs,
+  actionTimestampsEpochMs = [],
+  actionWindowEndEpochMs = null,
+) {
   const sorted = [...workSamples].sort((a, b) => a - b);
   const sortedIntervals = [...intervals].sort((a, b) => a - b);
   const sortedLatencies = [...latencies].sort((a, b) => a - b);
@@ -230,6 +239,9 @@ function summarize(scenario, workSamples, intervals, latencies, config, firstInt
     action_count: scenario === 'open' ? 1 : (scenario === 'scroll' ? 120 : 10),
     frame_sample_count: intervals.length,
     warmup_action_count: scenario === 'open' ? 0 : 1,
+    action_timestamps_epoch_ms: actionTimestampsEpochMs,
+    action_window_start_epoch_ms: actionTimestampsEpochMs.length ? actionTimestampsEpochMs[0] : null,
+    action_window_end_epoch_ms: actionWindowEndEpochMs,
     first_interactive_ms: firstInteractiveMs,
     document_load_ms: config.document_load_ms,
     viewport: { width: innerWidth, height: innerHeight },
@@ -253,6 +265,7 @@ async function runUiBenchmark(config, initializedAt) {
   const workSamples = [];
   const samples = [];
   const latencies = [];
+  const actionTimestampsEpochMs = [];
   let previousFrame = firstFrame;
   vditor.focus();
   if (config.scenario === 'scroll' && viewport.scrollHeight <= viewport.clientHeight) {
@@ -283,6 +296,8 @@ async function runUiBenchmark(config, initializedAt) {
   driveAction(0);
   previousFrame = await nextFrame();
   for (let index = 0; index < count; index += 1) {
+    window.benchmarkApi.action(index);
+    actionTimestampsEpochMs.push(performance.timeOrigin + performance.now());
     const actionStarted = performance.now();
     const workStarted = performance.now();
     driveAction(index + 1);
@@ -293,7 +308,16 @@ async function runUiBenchmark(config, initializedAt) {
     previousFrame = frame;
   }
   window.benchmarkApi.report(
-    summarize(config.scenario, workSamples, samples, latencies, config, firstInteractiveMs),
+    summarize(
+      config.scenario,
+      workSamples,
+      samples,
+      latencies,
+      config,
+      firstInteractiveMs,
+      actionTimestampsEpochMs,
+      performance.timeOrigin + performance.now(),
+    ),
   );
 }
 
