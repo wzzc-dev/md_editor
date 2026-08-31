@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const fs = require('fs/promises');
+const nativeFs = require('fs');
 const path = require('path');
 const { performance } = require('perf_hooks');
 
@@ -36,6 +37,22 @@ function createWindow(benchmark = null) {
   window.loadFile(path.join(__dirname, 'index.html'));
 }
 
+async function waitForTraceGate() {
+  const gate = process.env.UI_BENCHMARK_TRACE_GATE;
+  if (!gate) return;
+  const timeoutMs = Math.max(
+    Number(process.env.UI_BENCHMARK_TRACE_GATE_TIMEOUT_SECONDS || 120) * 1000,
+    1000,
+  );
+  const deadline = Date.now() + timeoutMs;
+  while (!nativeFs.existsSync(gate) && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  if (!nativeFs.existsSync(gate)) {
+    throw new Error('system trace gate was not released');
+  }
+}
+
 if (process.argv.includes('--benchmark')) {
   require('./benchmark');
 } else {
@@ -57,6 +74,7 @@ if (process.argv.includes('--benchmark')) {
     return { path: filePath, name: path.basename(filePath) };
   });
   app.whenReady().then(async () => {
+    await waitForTraceGate();
     const benchmarkIndex = process.argv.indexOf('--ui-benchmark');
     if (benchmarkIndex < 0) {
       createWindow();

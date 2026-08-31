@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,18 @@ def _benchmark_binary() -> Path | None:
     return max(candidates, key=lambda path: path.stat().st_mtime)
 
 
+def _wait_for_trace_gate() -> None:
+    gate = os.environ.get("UI_BENCHMARK_TRACE_GATE")
+    if not gate:
+        return
+    timeout = float(os.environ.get("UI_BENCHMARK_TRACE_GATE_TIMEOUT_SECONDS", "120"))
+    deadline = time.monotonic() + max(timeout, 1.0)
+    while not os.path.exists(gate) and time.monotonic() < deadline:
+        time.sleep(0.01)
+    if not os.path.exists(gate):
+        raise SystemExit("system trace gate was not released")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("renderer", choices=("skia-raster", "skia-gpu", "wgpu"))
@@ -49,6 +62,7 @@ def main() -> None:
     if not fixture.is_file():
         raise SystemExit(f"fixture is unreadable: {fixture}")
 
+    _wait_for_trace_gate()
     env = os.environ.copy()
     env["MOUI_SKIA_RENDERER"] = args.renderer
     if args.renderer == "skia-gpu":

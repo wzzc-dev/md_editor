@@ -1,11 +1,14 @@
 ///|
 test "block parser recognizes the shared Markdown subset" {
-  let source = "# Title\n\nParagraph **bold**.\n\n- item\n\n> quote\n\n```\ncode\n```\n"
+  let source = "# Title\n\nParagraph **bold**.\n\n- item\n\n1. ordered\n\n- [x] done\n\n> quote\n\n---\n\n```\ncode\n```\n"
   let blocks = @cross_framework/md_editor_gpui/app.parse_markdown_blocks(source)
-  assert_eq(blocks.length(), 5)
+  assert_eq(blocks.length(), 8)
   assert_true(blocks[0].kind is Heading(1))
   assert_true(blocks[2].kind is ListItem)
-  assert_true(blocks[4].kind is Code)
+  assert_true(blocks[3].kind is OrderedListItem)
+  assert_true(blocks[4].kind is TaskListItem(true))
+  assert_true(blocks[6].kind is Divider)
+  assert_true(blocks[7].kind is Code)
 }
 
 ///|

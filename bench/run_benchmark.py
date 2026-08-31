@@ -17,6 +17,8 @@ import time
 from typing import Any
 from pathlib import Path
 
+from macos_display_trace import TraceSession, unavailable_result
+
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {"small": 5 * 1024, "medium": 50 * 1024, "large": 500 * 1024, "stress": 5 * 1024 * 1024}
 SCENARIOS = ("open", "input", "scroll")
@@ -134,6 +136,29 @@ def validate_count(payload: dict, field: str, expected: int) -> None:
         raise ValueError(f"ui-frame {field} must be the integer {expected}")
 
 
+def validate_system_trace_payload(payload: dict) -> None:
+    """Validate optional compositor samples without requiring trace support."""
+    for field in (
+        "system_present_timestamps_ms",
+        "system_present_interval_samples_ms",
+        "system_input_to_present_samples_ms",
+    ):
+        values = payload.get(field, [])
+        if not isinstance(values, list):
+            raise ValueError(f"ui-frame {field} must be an array")
+        for index, value in enumerate(values):
+            validate_nonnegative_number(value, f"{field}[{index}]")
+    dropped = payload.get("system_dropped_display_frames")
+    if dropped is not None and (isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 0):
+        raise ValueError("ui-frame system_dropped_display_frames must be null or a nonnegative integer")
+    first = payload.get("system_first_present_ms")
+    if first is not None:
+        validate_nonnegative_number(first, "system_first_present_ms")
+    status = payload.get("system_trace_status")
+    if status is not None and status not in {"captured", "unsupported", "no-target-surface", "insufficient-samples", "error"}:
+        raise ValueError(f"ui-frame unknown system_trace_status: {status!r}")
+
+
 def validate_ui_payload(payload: dict, scenario: str) -> None:
     """Reject malformed UI records before they enter a comparison report."""
     if payload.get("measurement_scope") != "ui-frame":
@@ -226,6 +251,11 @@ def run_command(
     scenario: str,
     adapter_name: str | None = None,
     timeout_seconds: float = 1800.0,
+    *,
+    system_trace: bool = False,
+    system_trace_dir: Path | None = None,
+    system_trace_start_delay_seconds: float = 0.50,
+    system_trace_export_timeout_seconds: float = 45.0,
 ) -> list[dict]:
     """Run one adapter invocation and return a list of measured records.
 
@@ -254,7 +284,27 @@ def run_command(
         rendered.append(scenario)
     displayed_command = assignments + rendered
     started = time.perf_counter()
+    process_started_epoch_ms: float | None = None
     process: subprocess.Popen[str] | None = None
+    trace_session: TraceSession | None = None
+    trace_result = unavailable_result("system trace not requested")
+    trace_gate: Path | None = None
+    trace_gate_directory: Path | None = None
+
+    def finish_trace() -> None:
+        nonlocal trace_result
+        if trace_session is None or process is None:
+            return
+        expected = 1 if scenario == "open" else (120 if scenario == "scroll" else 10)
+        trace_result = trace_session.finish(
+            process_started_epoch_ms=process_started_epoch_ms,
+            pid=process.pid,
+            expected_samples=expected,
+            refresh_hz=60.0,
+        )
+
+    def trace_payload() -> dict:
+        return trace_result.as_payload() if system_trace else {}
 
     def stop_process() -> None:
         if process is None or process.poll() is not None:
@@ -279,6 +329,16 @@ def run_command(
             process.communicate()
 
     try:
+        if system_trace:
+            # The adapter wrappers hold the application before creating its
+            # native window. This makes attach deterministic and avoids a
+            # trace that starts after the first present.
+            import tempfile
+
+            trace_gate_directory = Path(tempfile.mkdtemp(prefix="md-editor-trace-gate-"))
+            trace_gate = trace_gate_directory / "release"
+            command_env["UI_BENCHMARK_TRACE_GATE"] = str(trace_gate)
+            command_env["UI_BENCHMARK_TRACE_GATE_TIMEOUT_SECONDS"] = "120"
         process = subprocess.Popen(
             rendered,
             cwd=ROOT,
@@ -288,21 +348,44 @@ def run_command(
             stderr=subprocess.PIPE,
             start_new_session=os.name != "nt",
         )
+        process_started_epoch_ms = time.time() * 1000.0
+        if system_trace:
+            output_directory = system_trace_dir or (ROOT / "results" / "system-traces")
+            trace_session = TraceSession(
+                process.pid,
+                output_directory,
+                start_delay_seconds=system_trace_start_delay_seconds,
+                export_timeout_seconds=system_trace_export_timeout_seconds,
+            )
+            trace_session.start()
+            # Unsupported hosts still release the gate so the diagnostic run
+            # remains usable; their system fields are explicitly n/a.
+            assert trace_gate is not None
+            trace_gate.touch()
         stdout, stderr = process.communicate(timeout=timeout_seconds)
     except FileNotFoundError as error:
+        finish_trace()
         return [{"status": "skipped", "command": displayed_command, "elapsed_ms": 0.0,
-                 "reason": f"adapter executable unavailable: {error}"}]
+                 "reason": f"adapter executable unavailable: {error}", **trace_payload()}]
     except subprocess.TimeoutExpired:
         stop_process()
+        finish_trace()
         return [{"status": "error", "command": displayed_command, "elapsed_ms": timeout_seconds * 1000,
-                 "error": f"adapter timed out after {timeout_seconds:g} seconds"}]
+                 "error": f"adapter timed out after {timeout_seconds:g} seconds", **trace_payload()}]
     except KeyboardInterrupt:
         stop_process()
+        finish_trace()
         raise
+    finally:
+        # If the adapter exits before communicate returns, xctrace must still
+        # be finalized so its trace package is readable by the parser.
+        if process is not None and trace_session is not None and trace_session.process is not None:
+            pass
+    finish_trace()
     elapsed = (time.perf_counter() - started) * 1000
     if process.returncode:
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
-                 "error": stderr[-4000:] or f"exit {process.returncode}"}]
+                 "error": stderr[-4000:] or f"exit {process.returncode}", **trace_payload()}]
     records: list[dict] = []
     for line in stdout.splitlines():
         if not line.strip():
@@ -313,19 +396,42 @@ def run_command(
             continue
         payload.setdefault("status", "measured")
         payload.update({"command": displayed_command, "process_elapsed_ms": elapsed})
+        if system_trace and adapter_name in {"flutter-skia", "flutter-impeller"} and payload.get("measurement_scope") == "ui-frame":
+            requested_renderer = adapter_name.removeprefix("flutter-")
+            marker = (
+                "Using the Impeller rendering backend"
+                if requested_renderer == "impeller"
+                else "Using the Skia rendering backend"
+            )
+            engine_log = stderr + "\n" + stdout
+            if marker not in engine_log:
+                payload["status"] = "error"
+                payload["error"] = f"Flutter engine log did not confirm the requested {requested_renderer} renderer"
+            else:
+                payload["verified_renderer"] = requested_renderer
+                payload["renderer_verification_source"] = "flutter-engine-startup-log"
+        if system_trace and payload.get("measurement_scope") == "ui-frame":
+            payload.update(trace_payload())
         payload.setdefault("action_count", 1 if scenario == "open" else (120 if scenario == "scroll" else 10))
         payload.setdefault("frame_sample_count", len(payload.get("frame_interval_samples_ms", payload.get("samples_ms", []))))
         payload.setdefault("warmup_action_count", 0)
         if payload.get("status") == "measured":
             try:
                 validate_ui_payload(payload, scenario)
+                if system_trace:
+                    validate_system_trace_payload(payload)
             except ValueError as error:
                 payload["status"] = "error"
                 payload["error"] = str(error)
         records.append(payload)
     if not records:
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
-                 "error": "adapter did not print any JSON object", "stdout": stdout[-4000:]}]
+                 "error": "adapter did not print any JSON object", "stdout": stdout[-4000:], **trace_payload()}]
+    if trace_gate_directory is not None:
+        try:
+            trace_gate_directory.rmdir()
+        except OSError:
+            pass
     return records
 
 
@@ -336,6 +442,28 @@ def main() -> None:
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--warmups", type=int, default=1)
     parser.add_argument("--fail-on-error", action="store_true")
+    parser.add_argument(
+        "--system-present-trace",
+        action="store_true",
+        help="采集 macOS Animation Hitches compositor present timestamps; no callback fallback",
+    )
+    parser.add_argument(
+        "--system-trace-dir",
+        type=Path,
+        help="保留 xctrace 包的目录（默认 results/system-traces）",
+    )
+    parser.add_argument(
+        "--system-trace-start-delay",
+        type=float,
+        default=0.50,
+        help="xctrace attach 后放行 adapter 的等待时间（秒）",
+    )
+    parser.add_argument(
+        "--system-trace-export-timeout",
+        type=float,
+        default=45.0,
+        help="每个 xctrace 表导出的超时时间（秒）",
+    )
     parser.add_argument("--timeout", type=float, default=float(os.environ.get("BENCHMARK_TIMEOUT_SECONDS", "1800")))
     parser.add_argument("--out", type=Path, default=ROOT / "results" / "benchmark.json")
     args = parser.parse_args()
@@ -355,7 +483,20 @@ def main() -> None:
                     continue
                 for _ in range(args.warmups):
                     run_command(command, fixture, scenario, adapter, args.timeout)
-                runs = [run_command(command, fixture, scenario, adapter, args.timeout) for _ in range(args.repetitions)]
+                runs = [
+                    run_command(
+                        command,
+                        fixture,
+                        scenario,
+                        adapter,
+                        args.timeout,
+                        system_trace=args.system_present_trace,
+                        system_trace_dir=args.system_trace_dir,
+                        system_trace_start_delay_seconds=args.system_trace_start_delay,
+                        system_trace_export_timeout_seconds=args.system_trace_export_timeout,
+                    )
+                    for _ in range(args.repetitions)
+                ]
                 for run in runs:
                     for record in run:
                         records.append({**base, **record})
@@ -372,6 +513,13 @@ def main() -> None:
         "gpu": gpu_model(), "renderer_env": renderer_env, "toolchains": toolchain_versions(),
         "viewport": {"width": 1280, "height": 800, "refresh_hz": 60, "frame_budget_ms": 16.667},
         "gpu_backend": "Metal" if sys.platform == "darwin" else ("Direct3D" if sys.platform.startswith("win") else "unknown"),
+        "comparison_mode": "strict-system-present" if args.system_present_trace else "framework-callback-diagnostic",
+        "system_present": {
+            "requested": args.system_present_trace,
+            "source": "macOS xctrace Animation Hitches display-surface-swap",
+            "fallback": "none",
+            "trace_directory": str(args.system_trace_dir or (ROOT / "results" / "system-traces")) if args.system_present_trace else None,
+        },
         "benchmark_config": {
             "font": "system-ui 16px", "line_height": 1.55, "overscan": 3,
             "virtual_row_height": 66, "virtualization": "fixed-height-window",

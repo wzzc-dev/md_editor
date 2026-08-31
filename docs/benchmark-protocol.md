@@ -55,10 +55,16 @@ Use the checked-in hardware command rather than reconstructing adapter strings:
 
 These clocks answer related but not identical questions. In particular,
 Electron rAF is not compositor tracing, GPUI's callback is not an OS present
-timestamp, and the MoUI UI benchmark uses a headless host surface rather than
-an AppKit display window. The report keeps values real and auditable but does
-not claim compositor-equivalent cross-framework ranking. `n/a` means
-unmeasured, never zero.
+timestamp, and the default MoUI UI benchmark uses a headless host surface
+rather than an AppKit display window. For a strict macOS comparison, run
+`./scripts/run_ui_benchmark.sh` with `UI_BENCHMARK_SYSTEM_TRACE=1`. The runner
+holds each adapter behind a trace gate, attaches `xctrace`'s `Animation
+Hitches` template, and reports `system_present_*` fields from the target
+process's `display-surface-swap` rows. It filters by target process swap or
+Metal surface IDs; it never mixes another window's compositor events. If a
+target surface cannot be associated (including the current headless MoUI
+path), strict columns are `n/a` rather than framework-callback fallbacks.
+`n/a` means unmeasured, never zero.
 
 Flutter Profile is launched twice with engine switches. The wrapper rejects a
 row unless startup output contains the matching `Using the Skia rendering

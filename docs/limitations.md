@@ -51,11 +51,12 @@ target macOS 26.2 while the MoonBit link targets macOS 26.0. The app links and
 runs on macOS 26.3, but compatibility with older macOS releases is not claimed.
 
 Inactive and active blocks both remain visually formatted. While a block is
-active, a formatted layer is painted under an input layer whose source glyphs
-are transparent; GPUI still paints its caret and selection independently.
-Caret hit-testing therefore follows raw Markdown offsets, so hidden `#`, `**`,
-list and quote markers can create a horizontal caret offset near syntax. A
-complete source-to-display offset map is outside this minimal benchmark.
+active, GPUI retains the canonical source string but shapes a projected display
+string. Supported hidden delimiters and semantic prefixes use a bidirectional
+source/display offset map for caret, selection, IME bounds and mouse hit-testing.
+Unsupported constructs intentionally remain literal source text. Projection is
+currently block-oriented, so a focused input still edits one logical block at a
+time.
 
 ### Flutter
 

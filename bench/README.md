@@ -19,6 +19,19 @@ An adapter may emit multiple scopes; its emitted `adapter` field is
 authoritative. Missing executables become `skipped`, while non-zero exits,
 timeouts or absent JSON become `error`.
 
+## Strict macOS display timing
+
+Use `--system-present-trace` for a compositor-backed run. On macOS the runner
+attaches `xctrace`'s `Animation Hitches` template to each measured process,
+releases the adapter only after attach, and adds `system_present_timestamps_ms`,
+`system_present_interval_samples_ms`, `system_input_to_present_samples_ms`,
+`system_dropped_display_frames` and `system_first_present_ms`. The report uses
+these fields for pacing, drop and first-present columns and does not fall back
+to framework callback timestamps. Trace packages are kept under
+`results/system-traces` by default; set `--system-trace-dir` to override. On
+non-macOS hosts, or when a native surface cannot be associated, strict fields
+are rendered as `n/a`.
+
 ## Real-window run
 
 Use the build-once wrapper for comparable UI records:

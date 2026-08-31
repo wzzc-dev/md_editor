@@ -28,6 +28,14 @@ OUT=${UI_BENCHMARK_OUT:-"$ROOT/results/$PLATFORM_SLUG-ui.json"}
 REPETITIONS=${UI_BENCHMARK_REPETITIONS:-3}
 WARMUPS=${UI_BENCHMARK_WARMUPS:-1}
 TIMEOUT=${UI_BENCHMARK_TIMEOUT_SECONDS:-120}
+SYSTEM_TRACE_FLAG=
+SYSTEM_TRACE_ARGS=
+if [ "${UI_BENCHMARK_SYSTEM_TRACE:-0}" = "1" ]; then
+  SYSTEM_TRACE_FLAG=--system-present-trace
+  if [ -n "${UI_BENCHMARK_SYSTEM_TRACE_DIR:-}" ]; then
+    SYSTEM_TRACE_ARGS="--system-trace-dir=${UI_BENCHMARK_SYSTEM_TRACE_DIR}"
+  fi
+fi
 
 python3 "$ROOT/scripts/generate_fixtures.py"
 moon build moui/benchmark --target native --release
@@ -50,6 +58,8 @@ MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --repetitions "$REPETITIONS" \
   --warmups "$WARMUPS" \
   --timeout "$TIMEOUT" \
+  $SYSTEM_TRACE_FLAG \
+  $SYSTEM_TRACE_ARGS \
   --out "$OUT" \
   "$@"
 python3 "$ROOT/bench/report.py" "$OUT" > "${OUT%.json}.md"

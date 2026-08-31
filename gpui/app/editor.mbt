@@ -79,6 +79,54 @@ fn sync_active_input(view : Int) -> Unit {
 }
 
 ///|
+fn reindex_blocks(blocks : Array[MarkdownBlock]) -> Unit {
+  for index in 0..<blocks.length() {
+    let block = blocks[index]
+    blocks[index] = { id: index, kind: block.kind, markdown: block.markdown }
+  }
+}
+
+///|
+/// Enter keeps the editor block-oriented: it commits the current source and
+/// creates a small semantic continuation block immediately after it. The
+/// retained input remains source text, so the projection is rebuilt together
+/// with the new active block.
+fn submit_active_block(view : Int, input_id : @gpui.InputId) -> Unit {
+  let current = model.get(store)
+  if current.active_block < 0 || current.active_block >= current.blocks.length() {
+    return
+  }
+  let active = current.blocks[current.active_block]
+  let next_markdown = match active.kind {
+    ListItem => "- "
+    OrderedListItem => "1. "
+    TaskListItem(_) => "- [ ] "
+    Quote => "> "
+    Code => "```\n\n```"
+    Heading(_) | Paragraph | Divider => ""
+  }
+  let next_index = current.active_block + 1
+  current.blocks.insert(next_index, {
+    id: next_index,
+    kind: classify_single_block(next_markdown),
+    markdown: next_markdown,
+  })
+  reindex_blocks(current.blocks)
+  current.active_block = next_index
+  current.source_length = serialize_markdown_blocks(current.blocks).length()
+  current.dirty = true
+  current.status = ""
+  model.set(store, current)
+  ignore(
+    @gpui.input_set_text(
+      view,
+      input_id.to_int(),
+      input_text_of_markdown(next_markdown),
+    ),
+  )
+}
+
+///|
 let editor_input : @gpui.InputId = {
   let id = handlers.new_input_id()
   handlers.on_input_changed(id, fn(view) {
@@ -106,6 +154,7 @@ let editor_input : @gpui.InputId = {
       Err(_) => ()
     }
   })
+  handlers.on_submit(id, fn(view) { submit_active_block(view, id) })
   id
 }
 
@@ -117,6 +166,7 @@ fn activate_block(index : Int, view : Int) -> Unit {
     current.status = ""
     model.set(store, current)
     sync_active_input(view)
+    ignore(@gpui.input_focus(view, editor_input.to_int()))
   }
 }
 
@@ -286,7 +336,8 @@ fn build_preview(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit {
     Heading(_) => (19.0, 32, 36, 42, 700)
     Quote => (16.0, 89, 99, 110, 400)
     Code => (15.0, 55, 65, 81, 400)
-    ListItem | Paragraph => (16.0, 32, 36, 42, 400)
+    ListItem | OrderedListItem | TaskListItem(_) | Divider | Paragraph =>
+      (16.0, 32, 36, 42, 400)
   }
   cb.div()
   cb.set_key("block-\{block.id}")
@@ -301,7 +352,7 @@ fn build_preview(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit {
     cb.set_rounded(4.0)
     cb.set_font_family("monospace")
   }
-  cb.rich_text(inline_runs(visible_markdown(block)), red, green, blue, size)
+  cb.rich_text(block_display_segments(block), red, green, blue, size)
   cb.add_child()
 }
 
@@ -314,7 +365,8 @@ fn build_active_editor(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit 
     Heading(_) => (19.0, 32, 36, 42, 700)
     Quote => (16.0, 89, 99, 110, 400)
     Code => (15.0, 55, 65, 81, 400)
-    ListItem | Paragraph => (16.0, 32, 36, 42, 400)
+    ListItem | OrderedListItem | TaskListItem(_) | Divider | Paragraph =>
+      (16.0, 32, 36, 42, 400)
   }
   cb.div()
   cb.set_key("active-block-\{block.id}")
@@ -322,23 +374,26 @@ fn build_active_editor(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit 
   cb.set_size(940.0, BLOCK_HEIGHT)
   cb.set_min_size(920, 58)
   cb.set_bg_color(@gpui.Color::rgb(250, 251, 253))
+  if block.kind is Code {
+    cb.set_bg_color(@gpui.Color::rgb(240, 242, 244))
+    cb.set_rounded(4.0)
+  }
 
-  // A transparent native input owns selection and IME above this formatted
-  // layer, keeping the UI composition and Markdown presentation in MoonBit.
   cb.div()
   cb.set_position(@gpui.POSITION_ABSOLUTE)
   cb.set_inset(0, 0, 0, 0)
   cb.set_padding_sides(10, 20, 10, 20)
   cb.set_font_weight(weight)
   if block.kind is Code {
-    cb.set_bg_color(@gpui.Color::rgb(240, 242, 244))
-    cb.set_rounded(4.0)
     cb.set_font_family("monospace")
   }
-  cb.rich_text(inline_runs(visible_markdown(block)), red, green, blue, size)
+  cb.rich_text(block_display_segments(block), red, green, blue, size)
   cb.add_child()
   cb.add_child()
 
+  // The transparent input shapes the exact same projected display as the
+  // styled layer. GPUI still owns IME, selection and the caret, while hidden
+  // source delimiters no longer shift hit testing away from visible glyphs.
   cb.div()
   cb.set_key("markdown-block-input")
   cb.set_position(@gpui.POSITION_ABSOLUTE)
@@ -349,7 +404,11 @@ fn build_active_editor(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit 
   cb.set_text_size(size.to_int())
   cb.set_text_color(@gpui.Color::rgba(0, 0, 0, 0))
   cb.set_cursor(@gpui.CURSOR_TEXT)
+  if block.kind is Code {
+    cb.set_font_family("monospace")
+  }
   cb.text_input(editor_input.to_int(), "Write Markdown...")
+  cb.text_input_projection(block_projection(block))
   cb.add_child()
   cb.add_child()
 }
@@ -425,7 +484,7 @@ fn build_footer(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
   cb.set_flex(1.0, 1.0, -1.0)
   cb.add_child()
   cb.text(
-    "{current.source_length} chars | {current.blocks.length()} blocks | MoonBit UI + GPUI",
+    "\{current.source_length} chars | \{current.blocks.length()} blocks | MoonBit UI + GPUI",
     102, 113, 125, 13.0,
   )
   cb.add_child()

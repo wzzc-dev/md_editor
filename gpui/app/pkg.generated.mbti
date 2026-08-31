@@ -33,8 +33,11 @@ pub(all) enum BlockKind {
   Heading(Int)
   Paragraph
   ListItem
+  OrderedListItem
+  TaskListItem(Bool)
   Quote
   Code
+  Divider
 } derive(Eq, @debug.Debug)
 
 pub(all) struct MarkdownBlock {
