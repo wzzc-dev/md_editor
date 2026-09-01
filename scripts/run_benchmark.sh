@@ -5,13 +5,32 @@
 set -eu
 python3 "$(dirname "$0")/generate_fixtures.py"
 
+# The macOS benchmark package hardcodes AppKit/CoreText/Metal native stubs
+# and cannot link on Windows; the Windows package mirrors its protocol.
+case "$(uname -s)" in
+  Darwin) MOUI_BENCHMARK_PACKAGE=moui/benchmark ;;
+  MINGW*|MSYS*|CYGWIN*) MOUI_BENCHMARK_PACKAGE=moui/windows_benchmark ;;
+  *) MOUI_BENCHMARK_PACKAGE=moui/benchmark ;;
+esac
+
+# The lazy `moon run` adapter commands below compile the windows_benchmark
+# closure, and moon tracks the CL environment per object: every such command
+# must carry the same CL/MBT_WGPU_* environment as the two-pass prebuild, or
+# wgpu_mbt's C stub objects get invalidated and rebuild without the C11 flags
+# (loud C1189, repaired by rerunning scripts/build_moui_windows.sh).
+MOUI_NATIVE_ENV=""
+if [ "$MOUI_BENCHMARK_PACKAGE" = "moui/windows_benchmark" ]; then
+  "$(dirname "$0")/build_moui_windows.sh"
+  MOUI_NATIVE_ENV="CL='/std:c11 /experimental:c11atomics' MBT_WGPU_LINK_MODE=dynamic MBT_WGPU_NATIVE_ROOT='$(cygpath -w "$(dirname "$0")/../.cache/wgpu-native-msvc")' "
+fi
+
 # Build the MoonBit GPUI app once; the adapter below only invokes its stable
 # benchmark entrypoint for each fixture/scenario repetition.
 "$(dirname "$0")/../gpui/build.sh"
 
 python3 "$(dirname "$0")/../bench/run_benchmark.py" \
-  --adapter moui-skia-raster='MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
-  --adapter moui-skia-gpu='MOUI_SKIA_RENDERER=skia-gpu moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
+  --adapter moui-skia-raster="${MOUI_NATIVE_ENV}MOUI_SKIA_RENDERER=skia-raster moon run $MOUI_BENCHMARK_PACKAGE --target native --release -- {fixture} {scenario}" \
+  --adapter moui-skia-gpu="${MOUI_NATIVE_ENV}MOUI_SKIA_RENDERER=skia-gpu moon run $MOUI_BENCHMARK_PACKAGE --target native --release -- {fixture} {scenario}" \
   --adapter gpui='python3 gpui/benchmark.py {fixture} {scenario}' \
   --adapter flutter-skia='FLUTTER_RENDERER=skia dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
   --adapter flutter-impeller='FLUTTER_RENDERER=impeller dart run flutter/tool/benchmark.dart {fixture} {scenario}' \

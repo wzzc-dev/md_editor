@@ -12,25 +12,66 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 # Workspace builds (`moon.work`) drop the module-name prefix from the build
 # path; single-module builds keep it. Prefer whichever binary is newest.
-_BINARY_CANDIDATES = (
-    ROOT / "_build" / "native" / "release" / "build" / "benchmark" / "benchmark.exe",
-    ROOT
-    / "_build"
-    / "native"
-    / "release"
-    / "build"
-    / "cross_framework"
-    / "md_editor_moui"
-    / "benchmark"
-    / "benchmark.exe",
-)
+# Windows uses the dedicated `windows_benchmark` package (the macOS package
+# hardcodes AppKit/CoreText/Metal stubs and cannot link there).
+_BINARY_CANDIDATES = {
+    "Darwin": (
+        ROOT / "_build" / "native" / "release" / "build" / "benchmark" / "benchmark",
+        ROOT
+        / "_build"
+        / "native"
+        / "release"
+        / "build"
+        / "cross_framework"
+        / "md_editor_moui"
+        / "benchmark"
+        / "benchmark",
+    ),
+    "Windows": (
+        ROOT / "_build" / "native" / "release" / "build" / "windows_benchmark" / "windows_benchmark.exe",
+        ROOT
+        / "_build"
+        / "native"
+        / "release"
+        / "build"
+        / "cross_framework"
+        / "md_editor_moui"
+        / "windows_benchmark"
+        / "windows_benchmark.exe",
+    ),
+}
 
 
 def _benchmark_binary() -> Path | None:
-    candidates = [path for path in _BINARY_CANDIDATES if path.is_file()]
+    candidates = [
+        path
+        for path in _BINARY_CANDIDATES.get(
+            platform.system(), _BINARY_CANDIDATES["Darwin"]
+        )
+        if path.is_file()
+    ]
     if not candidates:
         return None
     return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def _ensure_skia_icu_data(binary: Path) -> None:
+    """Windows Skia loads ICU data from the executable directory on startup."""
+    if platform.system() != "Windows":
+        return
+    target = binary.parent / "icudtl.dat"
+    if target.is_file():
+        return
+    cached = sorted(
+        ROOT.glob(
+            "vendor/MoUI/moui_skia/.skia-cache/release/*/windows-Release-x64-"
+            "static/package/out/Release-windows-x64/icudtl.dat"
+        )
+    )
+    if cached:
+        import shutil
+
+        shutil.copyfile(cached[-1], target)
 
 
 def _wait_for_trace_gate() -> None:
@@ -69,9 +110,14 @@ def main() -> None:
 
     binary = _benchmark_binary()
     if binary is None:
+        package = (
+            "moui/windows_benchmark"
+            if platform.system() == "Windows"
+            else "moui/benchmark"
+        )
         raise SystemExit(
             "benchmark executable is missing; run "
-            "'moon build moui/benchmark --target native --release' first"
+            f"'moon build {package} --target native --release' first"
         )
     fixture = args.fixture.resolve()
     if not fixture.is_file():
@@ -84,6 +130,23 @@ def main() -> None:
     if args.renderer == "skia-gpu":
         default_route = "direct3d" if platform.system() == "Windows" else "metal"
         env.setdefault("MOUI_GPU_ROUTE", default_route)
+    if args.renderer == "wgpu":
+        wgpu_runtime = ROOT / ".cache" / "wgpu-native-msvc"
+        if wgpu_runtime.is_dir():
+            env.setdefault("MBT_WGPU_NATIVE_ROOT", str(wgpu_runtime))
+    if args.renderer.startswith("skia"):
+        _ensure_skia_icu_data(binary)
+    if platform.system() == "Windows":
+        # MSYS2/Git-Bash `execve` drops inherited pipe handles for the CRT
+        # spawn path, matching the GPUI wrapper's Windows fix.
+        import subprocess
+
+        result = subprocess.run(
+            [str(binary), "--ui-benchmark", str(fixture), args.scenario],
+            env=env,
+            check=False,
+        )
+        raise SystemExit(result.returncode)
     os.execve(
         str(binary),
         [str(binary), "--ui-benchmark", str(fixture), args.scenario],
