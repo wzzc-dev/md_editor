@@ -14,3 +14,6 @@ data/.generated
 .mooncakes
 .cache/
 Launch_sleep_*
+results/*
+!results/macos-arm64-*
+!results/windows-amd64-*
