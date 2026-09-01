@@ -130,7 +130,17 @@ def main() -> None:
     if process.returncode != 0:
         sys.stderr.write(process.stderr)
         raise SystemExit(f"Flutter UI benchmark exited with {process.returncode}")
-    if marker not in log:
+    windows_skia = platform.system() == "Windows" and args.renderer == "skia"
+    if windows_skia:
+        # The Windows engine never logs a Skia backend line; it logs the
+        # Impeller backend only when Impeller is active. A clean run is then
+        # proven by the absence of that line.
+        if RENDERER_MARKERS["impeller"] in log:
+            sys.stderr.write(process.stderr)
+            raise SystemExit(
+                "Flutter engine reported the Impeller backend for a skia run"
+            )
+    elif marker not in log:
         sys.stderr.write(process.stderr)
         raise SystemExit(
             f"Flutter engine log did not confirm the requested {args.renderer} renderer"
@@ -156,7 +166,11 @@ def main() -> None:
                 f"Flutter viewport mismatch: {payload.get('viewport')!r}"
             )
         payload["verified_renderer"] = args.renderer
-        payload["renderer_verification_source"] = "flutter-engine-startup-log"
+        payload["renderer_verification_source"] = (
+            "windows-skia-negative-impeller-marker"
+            if windows_skia
+            else "flutter-engine-startup-log"
+        )
         payload["wrapper_retry_count"] = attempt - 1
         print(json.dumps(payload, separators=(",", ":")))
         return

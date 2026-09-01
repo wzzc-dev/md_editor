@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import platform
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -35,4 +36,10 @@ if gate:
         time.sleep(0.01)
     if not os.path.exists(gate):
         raise SystemExit("system trace gate was not released")
-os.execv(str(binary), [str(binary), "--ui-benchmark", *sys.argv[1:]])
+# The Windows build links as a GUI-subsystem PE. CRT exec*() does not mark the
+# inherited std handles inheritable, so the benchmark report (written by the
+# Rust side through GetStdHandle) would vanish through an exec chain when the
+# harness captures stdout via a pipe. CreateProcess via subprocess.run passes
+# the handles correctly on every platform, at the cost of one extra process.
+result = subprocess.run([str(binary), "--ui-benchmark", *sys.argv[1:]], check=False)
+raise SystemExit(result.returncode)

@@ -307,13 +307,19 @@ async function runUiBenchmark(config, initializedAt) {
     } else {
       const maximum = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
       const target = index % 2 === 0 ? Math.min(maximum, (index + 1) * 480) : 0;
-      if (Math.abs(target - viewport.scrollTop) < 0.5) {
+      // On high-DPI displays Chromium rounds scrollTop to device pixels, so
+      // a sub-pixel tolerance smaller than 1 CSS px reports false failures.
+      const tolerance = Math.max(1, 2 / window.devicePixelRatio);
+      if (Math.abs(target - viewport.scrollTop) < tolerance) {
         throw new Error('Vditor benchmark scroll offset did not change');
       }
       viewport.scrollTop = target;
       renderVisibleRows();
-      if (Math.abs(viewport.scrollTop - target) >= 0.5) {
-        throw new Error('Vditor benchmark scroll target was not applied');
+      if (Math.abs(viewport.scrollTop - target) >= tolerance) {
+        throw new Error(
+          `Vditor benchmark scroll target was not applied (index ${index}, target ${target}, ` +
+          `scrollTop ${viewport.scrollTop}, max ${viewport.scrollHeight - viewport.clientHeight})`,
+        );
       }
     }
   }
