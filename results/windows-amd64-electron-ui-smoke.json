@@ -1,0 +1,194 @@
+[
+  {
+    "adapter": "electron",
+    "fixture": "small",
+    "scenario": "open",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 21.199999928474426,
+    "frame_interval_ms": null,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 21.199999928474426,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "small",
+    "scenario": "input",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 3.7299999952316285,
+    "frame_interval_ms": 8.630599999999992,
+    "input_to_visible_ms": 6.930000007152557,
+    "first_interactive_ms": 20.600000023841858,
+    "dropped_display_frames": 1,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "small",
+    "scenario": "scroll",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 4.374166661500931,
+    "frame_interval_ms": 7.081716666666667,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 23.59999990463257,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "medium",
+    "scenario": "open",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 22.899999976158142,
+    "frame_interval_ms": null,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 22.899999976158142,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "medium",
+    "scenario": "input",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 4.250000023841858,
+    "frame_interval_ms": 7.653999999999996,
+    "input_to_visible_ms": 6.580000007152558,
+    "first_interactive_ms": 24.199999928474426,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "medium",
+    "scenario": "scroll",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 4.622500011324883,
+    "frame_interval_ms": 7.139216666666666,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 24.699999928474426,
+    "dropped_display_frames": 1,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "large",
+    "scenario": "open",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 25.399999976158142,
+    "frame_interval_ms": null,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 25.399999976158142,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "large",
+    "scenario": "input",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 3.7800000071525575,
+    "frame_interval_ms": 7.920600000000002,
+    "input_to_visible_ms": 6.939999997615814,
+    "first_interactive_ms": 23.799999952316284,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "large",
+    "scenario": "scroll",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 3.983333330353101,
+    "frame_interval_ms": 7.047266666666667,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 24.300000071525574,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "stress",
+    "scenario": "open",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 39.799999952316284,
+    "frame_interval_ms": null,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 39.799999952316284,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "stress",
+    "scenario": "input",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 4.329999995231629,
+    "frame_interval_ms": 7.930599999999998,
+    "input_to_visible_ms": 6.649999988079071,
+    "first_interactive_ms": 40.39999997615814,
+    "dropped_display_frames": 0,
+    "error": null
+  },
+  {
+    "adapter": "electron",
+    "fixture": "stress",
+    "scenario": "scroll",
+    "returncode": 0,
+    "viewport": {
+      "width": 1282,
+      "height": 802
+    },
+    "frame_work_ms": 4.155000002185504,
+    "frame_interval_ms": 7.026716666666666,
+    "input_to_visible_ms": null,
+    "first_interactive_ms": 42.199999928474426,
+    "dropped_display_frames": 0,
+    "error": null
+  }
+]

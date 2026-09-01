@@ -13,5 +13,4 @@ data/.generated
 .DS_Store
 .mooncakes
 .cache/
-results/*
 Launch_sleep_*

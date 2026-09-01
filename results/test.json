@@ -1,0 +1,255 @@
+{
+  "schema": "md-editor-benchmark/v2",
+  "generated_at_utc": "2026-09-01T10:40:02Z",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "os_release": "11",
+  "machine": "AMD64",
+  "cpu": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+  "memory_gb": 15.89,
+  "python": "3.12.10",
+  "gpu": "OrayIddDriver Device",
+  "renderer_env": {},
+  "toolchains": {
+    "python": "3.12.10",
+    "moon": "moon 0.1.20260824 (dae026a 2026-08-24)",
+    "rustc": "rustc 1.92.0 (ded5c06cf 2025-12-08)",
+    "cargo": "cargo 1.92.0 (344c4567c 2025-10-21)",
+    "node": "v22.20.0"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "refresh_hz": 60,
+    "frame_budget_ms": 16.667
+  },
+  "gpu_backend": "Direct3D",
+  "comparison_mode": "framework-callback-diagnostic",
+  "trace_scratch_sweep": {
+    "max_age_seconds": null,
+    "removed_entries": 0,
+    "freed_mb": 0.0
+  },
+  "system_present": {
+    "requested": false,
+    "source": "macOS xctrace Animation Hitches + Points of Interest displayed-surfaces-interval + display-vsyncs-interval",
+    "fallback": "none",
+    "trace_directory": null,
+    "trace_retention": "ephemeral"
+  },
+  "benchmark_config": {
+    "font": "system-ui 16px",
+    "line_height": 1.55,
+    "overscan": 3,
+    "virtual_row_height": 66,
+    "virtualization": "fixed-height-window"
+  },
+  "fixtures": {
+    "small": {
+      "bytes": 5120,
+      "path": "data\\small.md"
+    },
+    "medium": {
+      "bytes": 51200,
+      "path": "data\\medium.md"
+    },
+    "large": {
+      "bytes": 512000,
+      "path": "data\\large.md"
+    },
+    "stress": {
+      "bytes": 5242880,
+      "path": "data\\stress.md"
+    }
+  },
+  "records": [
+    {
+      "adapter": "moui-skia-raster",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-skia-raster",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-skia-raster",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-skia-gpu",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-skia-gpu",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-skia-gpu",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-wgpu",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-wgpu",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-wgpu",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "gpui",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "gpui",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "gpui",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "flutter-skia",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "flutter-skia",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "flutter-skia",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "flutter-impeller",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "flutter-impeller",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "flutter-impeller",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "electron",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "electron",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "electron",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    }
+  ]
+}
