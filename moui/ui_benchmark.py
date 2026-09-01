@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # hardcodes AppKit/CoreText/Metal stubs and cannot link there).
 _BINARY_CANDIDATES = {
     "Darwin": (
-        ROOT / "_build" / "native" / "release" / "build" / "benchmark" / "benchmark",
+        ROOT / "_build" / "native" / "release" / "build" / "benchmark" / "benchmark.exe",
         ROOT
         / "_build"
         / "native"
@@ -25,7 +25,7 @@ _BINARY_CANDIDATES = {
         / "cross_framework"
         / "md_editor_moui"
         / "benchmark"
-        / "benchmark",
+        / "benchmark.exe",
     ),
     "Windows": (
         ROOT / "_build" / "native" / "release" / "build" / "windows_benchmark" / "windows_benchmark.exe",
