@@ -28,6 +28,15 @@ function createWindow(benchmark = null) {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+  const start = benchmark
+    // `useContentSize` sizes the client area in DIP, but Windows frame/DPI
+    // rounding can land the CSS viewport a pixel or two off (e.g. 1282x802 at
+    // 125% scaling). Measure the empty document and converge on exactly
+    // 1280x800 CSS px before loading the benchmark page, so the protocol gate
+    // sees the same logical viewport on every platform.
+    ? calibrateContent(window).then(() => window.loadFile(path.join(__dirname, 'index.html')))
+    : window.loadFile(path.join(__dirname, 'index.html'));
+  void start;
   if (benchmark) {
     const helperPath = process.env.MD_EDITOR_SIGNPOST_HELPER;
     const signpostHelper = helperPath
@@ -59,7 +68,34 @@ function createWindow(benchmark = null) {
       });
     });
   }
-  window.loadFile(path.join(__dirname, 'index.html'));
+}
+
+async function calibrateContent(window) {
+  await window.loadURL('about:blank');
+  let lastSet = null;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const measured = await window.webContents.executeJavaScript('[innerWidth, innerHeight]', true);
+    const [width, height] = Array.isArray(measured) ? measured : [];
+    if (width === 1280 && height === 800) return;
+    if (!Number.isInteger(width) || !Number.isInteger(height)) break;
+    // DIP-to-CSS mapping is offset by a DPI-quantization constant (one DIP
+    // here at 125%+ scaling), so solve from the previous (set -> measured)
+    // pair. The resize event is not guaranteed to fire, hence the fallback
+    // timer; measuring too early just costs one extra loop iteration.
+    const next = lastSet === null
+      ? { width: 2560 - width, height: 1600 - height }
+      : {
+          width: lastSet.width + (1280 - width),
+          height: lastSet.height + (800 - height),
+        };
+    lastSet = next;
+    window.setContentSize(next.width, next.height, false);
+    await new Promise(resolve => {
+      const timer = setTimeout(resolve, 250);
+      window.once('resize', () => setTimeout(() => clearTimeout(timer) || resolve(), 40));
+    });
+  }
+  throw new Error('benchmark window did not converge to a 1280x800 CSS viewport');
 }
 
 if (process.argv.includes('--benchmark')) {

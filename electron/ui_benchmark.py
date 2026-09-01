@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import platform
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -92,10 +94,51 @@ def main() -> None:
     helper = build_signpost_helper()
     if helper is not None:
         os.environ["MD_EDITOR_SIGNPOST_HELPER"] = str(helper)
-    os.execv(
-        str(binary),
-        [str(binary), str(ROOT), "--ui-benchmark", str(fixture), args.scenario],
-    )
+    # Chromium's libuv rejects the pseudo-inherited std handles Python uses
+    # for subprocess.PIPE on Windows (the report silently disappears), but a
+    # real inherited OS pipe works. The Electron main process writes one JSON
+    # line and quits, while long-lived helper processes keep the write end
+    # open, so read lines until a ui-frame payload arrives instead of waiting
+    # for EOF.
+    read_fd, write_fd = os.pipe()
+    report_line: str | None = None
+    write_fd_closed = False
+    try:
+        with os.fdopen(read_fd, "r", encoding="utf-8", errors="replace") as stream:
+            process = subprocess.Popen(
+                [str(binary), str(ROOT), "--ui-benchmark", str(fixture), args.scenario],
+                stdout=write_fd,
+                stderr=sys.stderr,
+            )
+            os.close(write_fd)
+            write_fd_closed = True
+            for line in stream:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                stripped = line.strip()
+                if not stripped.startswith("{"):
+                    continue
+                try:
+                    payload = json.loads(stripped)
+                except json.JSONDecodeError:
+                    continue
+                if payload.get("measurement_scope") == "ui-frame":
+                    report_line = stripped
+                    break
+    finally:
+        if not write_fd_closed:
+            os.close(write_fd)
+    waited = 0.0
+    while process.poll() is None and waited < 30.0:
+        time.sleep(0.05)
+        waited += 0.05
+    if process.poll() is None:
+        process.terminate()
+    returncode = process.wait()
+    sys.stdout.flush()
+    if report_line is None:
+        raise SystemExit(returncode if returncode != 0 else 1)
+    raise SystemExit(0)
 
 
 if __name__ == "__main__":

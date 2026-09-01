@@ -99,6 +99,9 @@ pub fn run_benchmark(fixture : String, scenario : String) -> Unit {
 }
 
 ///|
+extern "c" fn exit(code : Int) -> Unit = "exit"
+
+///|
 extern "C" fn gpui_run_window_benchmark_ffi(
   view : Int,
   width : Float,
@@ -158,7 +161,12 @@ pub fn run_ui_benchmark(
     BENCHMARK_SCROLL_STRIDE,
     document_load_ms,
   )
-  // Reaching this line means the window failed to start: a successful run
-  // ends with the Rust-side report + process termination.
+  // A successful run prints its report from Rust, then the event loop ends.
+  // On macOS quitting terminates the process so this line is unreachable;
+  // on Windows `cx.quit()` unwinds and returns 0 after the flushed report,
+  // so a zero status there is the normal completion path.
+  if status == 0 {
+    exit(0)
+  }
   abort("GPUI benchmark window failed with status \{status}")
 }
