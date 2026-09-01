@@ -106,6 +106,6 @@ feature-complete editors.
 ## Full UI matrix
 
 `scripts/run_ui_benchmark.sh` generates fixtures, builds each application once,
-runs all six desktop UI-process adapters, and writes a platform-specific
+runs all seven desktop UI-process adapters, and writes a platform-specific
 JSON/Markdown pair under `results/`. Extra runner options are forwarded, for example
 `--fixture medium --repetitions 1 --warmups 0`.

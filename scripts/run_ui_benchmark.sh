@@ -27,6 +27,10 @@ esac
 OUT=${UI_BENCHMARK_OUT:-"$ROOT/results/$PLATFORM_SLUG-ui.json"}
 REPETITIONS=${UI_BENCHMARK_REPETITIONS:-3}
 WARMUPS=${UI_BENCHMARK_WARMUPS:-1}
+# Strict trace scratch can reach gigabytes per case. This wrapper owns the
+# documented hardware entrypoint, so it reclaims scratch abandoned by earlier
+# interrupted runs; bench/run_benchmark.py stays non-destructive by default.
+SCRATCH_MAX_AGE_SECONDS=${UI_BENCHMARK_SCRATCH_MAX_AGE_SECONDS:-21600}
 if [ "${UI_BENCHMARK_SYSTEM_TRACE:-0}" = "1" ]; then
   # Deferred xctrace stores (especially stress fixtures) can take several
   # minutes to materialize after the adapter has emitted its JSON.
@@ -64,6 +68,7 @@ MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --repetitions "$REPETITIONS" \
   --warmups "$WARMUPS" \
   --timeout "$TIMEOUT" \
+  --scratch-max-age-seconds "$SCRATCH_MAX_AGE_SECONDS" \
   $SYSTEM_TRACE_FLAG \
   $SYSTEM_TRACE_ARGS \
   --out "$OUT" \

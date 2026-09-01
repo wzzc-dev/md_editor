@@ -94,7 +94,8 @@ byte-for-byte source round trips are not part of this benchmark contract.
 renamed or interpreted as UI measurements. The desktop UI-process capture is
 written separately as `results/macos-arm64-ui.json` and `.md`.
 
-The regenerated macOS UI-process capture is complete (216/216 measured, 0 errors) and
+The regenerated macOS UI-process capture is complete (252/252 measured, 0 errors:
+seven adapters x four fixtures x three scenarios x three repetitions) and
 retained as `results/macos-arm64-ui.json` plus its Markdown report. Windows
 amd64 numbers are not synthesized on macOS. The same UI script and CI artifact
 path are provided, but the dedicated 16 GiB Windows acceptance capture remains

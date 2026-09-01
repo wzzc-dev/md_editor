@@ -1,11 +1,16 @@
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from run_benchmark import run_command, validate_system_trace_payload
+import run_benchmark
+from run_benchmark import prune_trace_scratch, run_command, validate_system_trace_payload
 from macos_display_trace import _SurfaceRow, _dropped_slots, _match_action_presents, parse_exported_xml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -402,6 +407,101 @@ class FixtureTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "120 action-to-present samples"):
             validate_system_trace_payload(payload)
+
+
+class TraceScratchTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        root = Path(self.temporary.name)
+        self.gate_root = root / ".trace-gates"
+        self.xctrace_root = root / ".xctrace-tmp"
+        self.gate_patcher = patch.object(run_benchmark, "TRACE_SCRATCH_ROOT", self.gate_root)
+        self.xctrace_patcher = patch.object(run_benchmark, "XCTRACE_TMP_ROOT", self.xctrace_root)
+        self.gate_patcher.start()
+        self.xctrace_patcher.start()
+        self.addCleanup(self.gate_patcher.stop)
+        self.addCleanup(self.xctrace_patcher.stop)
+        self.addCleanup(self.temporary.cleanup)
+
+    def make_scratch(self, path: Path, *, age_seconds: float) -> None:
+        path.mkdir(parents=True, exist_ok=True)
+        (path / "capture.trace").write_bytes(b"x" * 4096)
+        stamp = time.time() - age_seconds
+        os.utime(path, (stamp, stamp))
+
+    def test_scratch_is_removed_even_when_the_case_raises(self):
+        # Strict traces are gigabytes; a harness crash must not orphan one. The
+        # gate directory is created by run_command so no return path or
+        # exception inside the case can skip the cleanup.
+        seen: list[Path] = []
+
+        def exploding_case(*args, **kwargs):
+            seen.append(kwargs["trace_scratch_directory"])
+            raise RuntimeError("renderer exploded")
+
+        with patch.object(run_benchmark, "_run_command_case", exploding_case):
+            with self.assertRaises(RuntimeError):
+                run_command(
+                    "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpui",
+                    system_trace=True,
+                )
+
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0].parent, self.gate_root)
+        self.assertFalse(seen[0].exists())
+
+    def test_scratch_is_removed_when_the_adapter_is_unavailable(self):
+        result = run_command(
+            "md-editor-definitely-missing-adapter", ROOT / "data" / "small.md", "open", "gpui",
+            system_trace=True,
+        )
+        self.assertEqual(result[0]["status"], "skipped")
+        self.assertEqual(list(self.gate_root.iterdir()), [])
+
+    @patch.object(run_benchmark, "display_session_locked", return_value=True)
+    def test_locked_display_rejects_strict_case_before_launch(self, _locked):
+        result = run_command(
+            "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpui",
+            system_trace=True,
+        )
+        self.assertEqual(result[0]["status"], "error")
+        self.assertEqual(result[0]["system_trace_status"], "unsupported")
+        self.assertIn("display session is locked", result[0]["error"])
+        self.assertEqual(list(self.gate_root.iterdir()), [])
+
+    def test_non_trace_runs_do_not_create_scratch(self):
+        run_command("python3 -c 'pass'", ROOT / "data" / "small.md", "open", "electron")
+        self.assertFalse(self.gate_root.exists())
+
+    def test_prune_removes_only_stale_entries(self):
+        self.make_scratch(self.gate_root / "case-stale", age_seconds=7200)
+        self.make_scratch(self.gate_root / "case-fresh", age_seconds=60)
+        self.make_scratch(self.xctrace_root / "4242-stale", age_seconds=7200)
+        removed, freed = prune_trace_scratch(3600)
+        self.assertEqual(removed, 2)
+        self.assertGreaterEqual(freed, 8192)
+        self.assertFalse((self.gate_root / "case-stale").exists())
+        self.assertFalse((self.xctrace_root / "4242-stale").exists())
+        self.assertTrue((self.gate_root / "case-fresh").exists())
+
+    def test_default_runner_invocation_never_sweeps_the_real_roots(self):
+        # The sweep deletes multi-gigabyte artifacts, so it must stay opt-in:
+        # `bench/run_benchmark.py` is called directly by tests and by hand.
+        planted = run_benchmark.TRACE_SCRATCH_ROOT / "case-test-default-off"
+        planted.mkdir(parents=True, exist_ok=True)
+        os.utime(planted, (time.time() - 8 * 86400,) * 2)
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                subprocess.run(
+                    [sys.executable, str(ROOT / "bench" / "run_benchmark.py"),
+                     "--fixture", "small", "--out", str(Path(directory) / "sweep.json")],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            self.assertTrue(planted.exists())
+        finally:
+            shutil.rmtree(planted, ignore_errors=True)
 
 
 if __name__ == "__main__":

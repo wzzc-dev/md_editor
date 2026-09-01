@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:ui' show FlutterView, FramePhase;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 typedef _SignpostNative = ffi.Void Function(ffi.Int32);
@@ -113,8 +114,8 @@ List<String> _splitBlocks(String source) {
     } else if (value.isEmpty) {
       flush();
     } else if (value.startsWith('> ') ||
-        RegExp(r'^[-*] ').hasMatch(value) ||
-        RegExp(r'^#{1,6}\s+').hasMatch(value)) {
+        MarkdownEditingController._listPattern.hasMatch(value) ||
+        MarkdownEditingController._headingPattern.hasMatch(value)) {
       flush();
       blocks.add(value);
     } else {
@@ -155,8 +156,8 @@ List<String> _documentBlocks(String source) {
     } else if (value.isEmpty) {
       flushParagraph();
     } else if (value.startsWith('> ') ||
-        RegExp(r'^[-*] ').hasMatch(value) ||
-        RegExp(r'^#{1,6}\s+').hasMatch(value)) {
+        MarkdownEditingController._listPattern.hasMatch(value) ||
+        MarkdownEditingController._headingPattern.hasMatch(value)) {
       flushParagraph();
       result.add(value);
     } else {
@@ -203,6 +204,15 @@ class UiBenchmark {
     }
   }
 
+  Future<void> _waitForFrameSamples(int expected) async {
+    // FrameTiming callbacks arrive asynchronously after the frame. Wait for a
+    // long frame to flush, but never synthesize a missing sample.
+    final deadline = DateTime.now().add(const Duration(seconds: 3));
+    while (_frameWork.length < expected && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
+  }
+
   double _mean(List<double> values) =>
       values.reduce((total, value) => total + value) / values.length;
 
@@ -228,22 +238,17 @@ class UiBenchmark {
     }
     final firstInteractiveMs = _benchmarkWatch.elapsedMicroseconds / 1000;
     if (scenario == 'open') {
+      await _waitForFrameSamples(1);
       if (_frameWork.length > 1) {
         _frameWork.removeRange(0, _frameWork.length - 1);
-      }
-      if (_frameIntervals.length > 1) {
-        _frameIntervals.removeRange(0, _frameIntervals.length - 1);
       }
       // A first interactive frame has no preceding vsync in this run. Any
       // timing callback buffered before it belongs to startup, not an open
       // display interval sample.
       _frameIntervals.clear();
-      if (_frameWork.isEmpty) {
-        _frameWork.add(firstInteractiveMs);
-      }
       // There is no preceding vsync for the first frame; do not use startup
       // time as a display interval or count it as a dropped frame.
-          await _report(firstInteractiveMs, view, logicalSize);
+      await _report(firstInteractiveMs, view, logicalSize);
       return;
     }
 
@@ -284,9 +289,23 @@ class UiBenchmark {
     }
 
     await driveAction(0);
+    // Let the warm-up action and its asynchronous FrameTiming callback fully
+    // settle before establishing the measured baseline. This is a real frame
+    // barrier, not a fabricated sample or an arbitrary sleep.
+    await SchedulerBinding.instance.endOfFrame;
+    await Future<void>.delayed(Duration.zero);
     _frameWork.clear();
     _frameIntervals.clear();
+    // FrameTiming callbacks can arrive after the warm-up frame. The scheduler
+    // still exposes that frame's authoritative vsync timestamp synchronously;
+    // use it as the interval baseline instead of a potentially stale callback.
+    final currentFrameStamp =
+        SchedulerBinding.instance.currentSystemFrameTimeStamp;
+    final baselineStamp = currentFrameStamp == Duration.zero
+        ? (_timingStamps.isNotEmpty ? _timingStamps.last : null)
+        : currentFrameStamp.inMicroseconds / 1000.0;
     _timingStamps.clear();
+    if (baselineStamp != null) _timingStamps.add(baselineStamp);
     _inputToVisible.clear();
     _actionTimestampsEpochMs.clear();
     final count = scenario == 'scroll' ? 120 : 10;
@@ -297,24 +316,18 @@ class UiBenchmark {
       if (scenario == 'input') _inputToVisible.add(latency);
     }
     _actionWindowEndEpochMs = _epochNowMs();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await _waitForFrameSamples(count);
     if (_frameWork.length > count) {
       _frameWork.removeRange(0, _frameWork.length - count);
-    }
-    if (_frameWork.length < count) {
-      _frameWork.addAll(List<double>.filled(count - _frameWork.length, 0));
     }
     if (_frameIntervals.length > count) {
       _frameIntervals.removeRange(0, _frameIntervals.length - count);
     }
-    if (_frameIntervals.length < count) {
-      _frameIntervals
-          .addAll(List<double>.filled(count - _frameIntervals.length, 16.667));
-    }
     await _report(firstInteractiveMs, view, logicalSize);
   }
 
-  Future<void> _report(double firstInteractiveMs, FlutterView view, Size logicalSize) async {
+  Future<void> _report(
+      double firstInteractiveMs, FlutterView view, Size logicalSize) async {
     final samples = _frameWork;
     final intervals = _frameIntervals;
     final sorted = List<double>.of(samples)..sort();
@@ -335,7 +348,8 @@ class UiBenchmark {
       'latency_source': 'action-to-SchedulerBinding.endOfFrame',
       'window_mode': 'native-window',
       'work_scope': 'flutter-build-plus-raster',
-      'display_timestamp_source': 'flutter-FrameTiming.vsyncStart-not-os-present',
+      'display_timestamp_source':
+          'flutter-FrameTiming.vsyncStart-not-os-present',
       'scenario': scenario,
       'frame_work_samples_ms': samples,
       'frame_interval_samples_ms': intervals,
@@ -345,7 +359,8 @@ class UiBenchmark {
       // reserved for a path that explicitly proves no work occurred.
       'offscreen_samples_ms': List<Object?>.filled(samples.length, null),
       'readback_samples_ms': List<Object?>.filled(samples.length, null),
-      'offscreen_readback_samples_ms': List<Object?>.filled(samples.length, null),
+      'offscreen_readback_samples_ms':
+          List<Object?>.filled(samples.length, null),
       'frame_work_ms': _mean(samples),
       'frame_interval_ms': intervals.isNotEmpty ? _mean(intervals) : null,
       'input_to_visible_ms':
@@ -355,10 +370,9 @@ class UiBenchmark {
       'offscreen_readback_ms': null,
       'frame_work_p95_ms': at(.95),
       'frame_interval_p95_ms': intervals.isNotEmpty ? intervalAt(.95) : null,
-      'input_to_visible_p95_ms':
-          scenario == 'input' && sortedInput.isNotEmpty
-              ? sortedInput[((sortedInput.length - 1) * .95).round()]
-              : null,
+      'input_to_visible_p95_ms': scenario == 'input' && sortedInput.isNotEmpty
+          ? sortedInput[((sortedInput.length - 1) * .95).round()]
+          : null,
       'dropped_display_frames': dropped,
       'action_count':
           scenario == 'open' ? 1 : (scenario == 'scroll' ? 120 : 10),
@@ -388,7 +402,8 @@ class UiBenchmark {
             Platform.environment['UI_BENCHMARK_TRACE_TAIL_MS'] ?? '',
           ) ??
           15000;
-      await Future<void>.delayed(Duration(milliseconds: tailMs.clamp(0, 120000)));
+      await Future<void>.delayed(
+          Duration(milliseconds: tailMs.clamp(0, 120000)));
     }
     exit(0);
   }
@@ -396,6 +411,12 @@ class UiBenchmark {
 
 class MarkdownEditingController extends TextEditingController {
   MarkdownEditingController({super.text});
+
+  static final RegExp _inlinePattern =
+      RegExp(r'(\*\*|__)(.+?)\1|(\*)(.+?)\3|(`)(.+?)\5');
+  static final RegExp _headingPattern = RegExp(r'^(#{1,6})(\s+)(.*)$');
+  static final RegExp _quotePattern = RegExp(r'^(>)(\s+)(.*)$');
+  static final RegExp _listPattern = RegExp(r'^([-*])(\s+)(.*)$');
 
   static TextStyle _marker(TextStyle base, {required bool sourceFidelity}) =>
       sourceFidelity
@@ -405,9 +426,8 @@ class MarkdownEditingController extends TextEditingController {
   static List<InlineSpan> _inline(String value, TextStyle base,
       {required bool sourceFidelity}) {
     final spans = <InlineSpan>[];
-    final pattern = RegExp(r'(\*\*|__)(.+?)\1|(\*)(.+?)\3|(`)(.+?)\5');
     var cursor = 0;
-    for (final match in pattern.allMatches(value)) {
+    for (final match in _inlinePattern.allMatches(value)) {
       if (match.start > cursor) {
         spans.add(
             TextSpan(text: value.substring(cursor, match.start), style: base));
@@ -454,7 +474,7 @@ class MarkdownEditingController extends TextEditingController {
     }
     final value = line.trimLeft();
     final indent = line.substring(0, line.length - value.length);
-    final heading = RegExp(r'^(#{1,6})(\s+)(.*)$').firstMatch(value);
+    final heading = _headingPattern.firstMatch(value);
     if (heading != null) {
       final size = heading.group(1)!.length == 1
           ? 28.0
@@ -471,7 +491,7 @@ class MarkdownEditingController extends TextEditingController {
             sourceFidelity: sourceFidelity)
       ];
     }
-    final quote = RegExp(r'^(>)(\s+)(.*)$').firstMatch(value);
+    final quote = _quotePattern.firstMatch(value);
     if (quote != null) {
       final quoteStyle = base.copyWith(color: Colors.blueGrey.shade700);
       return [
@@ -486,7 +506,7 @@ class MarkdownEditingController extends TextEditingController {
         ..._inline(quote.group(3)!, quoteStyle, sourceFidelity: sourceFidelity)
       ];
     }
-    final list = RegExp(r'^([-*])(\s+)(.*)$').firstMatch(value);
+    final list = _listPattern.firstMatch(value);
     if (list != null) {
       return [
         TextSpan(
@@ -576,8 +596,10 @@ class _MarkdownAppState extends State<MarkdownApp> {
   var _activeBlock = 0;
   var _controllerReady = false;
   var _characterCount = 0;
+  final ValueNotifier<bool> _dirtyNotifier = ValueNotifier(false);
+  final ValueNotifier<int> _characterCountNotifier = ValueNotifier(0);
+  final Map<int, TextSpan> _previewCache = <int, TextSpan>{};
   String? _path;
-  bool _dirty = false;
 
   @override
   void initState() {
@@ -605,8 +627,10 @@ class _MarkdownAppState extends State<MarkdownApp> {
       _controller.removeListener(_activeBlockChanged);
     }
     _blocks = _documentBlocks(source);
+    _previewCache.clear();
     _activeBlock = 0;
     _characterCount = source.length;
+    _characterCountNotifier.value = _characterCount;
     final value = TextEditingValue(
       text: _blocks.first,
       selection: TextSelection.collapsed(offset: _blocks.first.length),
@@ -626,14 +650,17 @@ class _MarkdownAppState extends State<MarkdownApp> {
     final next = _controller.text;
     if (previous == next) return;
     _blocks[_activeBlock] = next;
+    _previewCache.remove(_activeBlock);
     _characterCount += next.length - previous.length;
-    if (mounted) setState(() => _dirty = true);
+    _dirtyNotifier.value = true;
+    _characterCountNotifier.value = _characterCount;
   }
 
   void _activateBlock(int index) {
     if (index == _activeBlock) return;
     setState(() {
       _controller.removeListener(_activeBlockChanged);
+      _previewCache.remove(_activeBlock);
       _activeBlock = index;
       _controller.value = TextEditingValue(
         text: _blocks[index],
@@ -648,7 +675,7 @@ class _MarkdownAppState extends State<MarkdownApp> {
   void _setSource(String source) {
     setState(() {
       _installSource(source);
-      _dirty = false;
+      _dirtyNotifier.value = false;
     });
   }
 
@@ -672,7 +699,9 @@ class _MarkdownAppState extends State<MarkdownApp> {
     if (path == null) return;
     await File(path).writeAsString(_serializeSource());
     _path = path;
-    setState(() => _dirty = false);
+    setState(() {
+      _dirtyNotifier.value = false;
+    });
   }
 
   Widget _blockEditor(int index) => Container(
@@ -701,6 +730,8 @@ class _MarkdownAppState extends State<MarkdownApp> {
 
   Widget _blockPreview(BuildContext context, int index) {
     const style = TextStyle(fontSize: 16, height: 1.55, color: Colors.black87);
+    final span = _previewCache.putIfAbsent(
+        index, () => MarkdownEditingController.previewSpan(_blocks[index], style));
     return InkWell(
       key: ValueKey<String>('preview-$index'),
       onTap: () => _activateBlock(index),
@@ -709,7 +740,7 @@ class _MarkdownAppState extends State<MarkdownApp> {
         child: RichText(
           maxLines: 2,
           overflow: TextOverflow.clip,
-          text: MarkdownEditingController.previewSpan(_blocks[index], style),
+          text: span,
         ),
       ),
     );
@@ -743,12 +774,18 @@ class _MarkdownAppState extends State<MarkdownApp> {
                     controller: _scrollController,
                     itemCount: _blocks.length,
                     itemExtent: 66,
+                    scrollCacheExtent: ScrollCacheExtent.pixels(66 * 8),
                     itemBuilder: _buildBlock,
                   ))),
           bottomNavigationBar: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                  '${_dirty ? 'Unsaved changes' : 'Saved'}  |  $_characterCount chars  |  ${_blocks.length} blocks  |  Flutter ${Platform.environment['FLUTTER_RENDERER'] ?? 'Skia'} WYSIWYG')),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: AnimatedBuilder(
+              animation: Listenable.merge(
+                  <Listenable>[_dirtyNotifier, _characterCountNotifier]),
+              builder: (context, _) => Text(
+                  '${_dirtyNotifier.value ? 'Unsaved changes' : 'Saved'}  |  ${_characterCountNotifier.value} chars  |  ${_blocks.length} blocks  |  Flutter ${Platform.environment['FLUTTER_RENDERER'] ?? 'Skia'} WYSIWYG'),
+            ),
+          ),
         ),
       );
 
@@ -757,6 +794,8 @@ class _MarkdownAppState extends State<MarkdownApp> {
     _controller.removeListener(_activeBlockChanged);
     _controller.dispose();
     _scrollController.dispose();
+    _dirtyNotifier.dispose();
+    _characterCountNotifier.dispose();
     super.dispose();
   }
 }

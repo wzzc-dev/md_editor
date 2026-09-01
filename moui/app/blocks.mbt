@@ -25,20 +25,22 @@ pub fn parse_markdown_blocks(source : String) -> Array[MarkdownBlockItem] {
     }
   }
   for raw in source.split("\n") {
-    let line = raw.to_owned().trim_end().to_owned()
-    let value = line.trim().to_owned()
+    // `split` already yields owned strings. Avoid copying each line twice on
+    // large documents; only block text that survives classification is kept.
+    let line = raw.trim_end()
+    let value = line.trim()
     if value.has_prefix("```") {
       if in_code {
-        code.push(line)
+        code.push(line.to_owned())
         push_markdown_block(blocks, code.join("\n"))
         code.clear()
       } else {
         flush_paragraph()
-        code.push(line)
+        code.push(line.to_owned())
       }
       in_code = !in_code
     } else if in_code {
-      code.push(line)
+      code.push(line.to_owned())
     } else if value == "" {
       flush_paragraph()
     } else if value.has_prefix("#") ||
@@ -46,9 +48,9 @@ pub fn parse_markdown_blocks(source : String) -> Array[MarkdownBlockItem] {
       value.has_prefix("- ") ||
       value.has_prefix("* ") {
       flush_paragraph()
-      push_markdown_block(blocks, value)
+      push_markdown_block(blocks, value.to_owned())
     } else {
-      paragraph.push(value)
+      paragraph.push(value.to_owned())
     }
   }
   if in_code && !code.is_empty() {

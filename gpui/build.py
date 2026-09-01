@@ -43,6 +43,25 @@ def install_atomic(source: Path, target: Path) -> None:
         raise
 
 
+def remove_stale_release_outputs() -> None:
+    """Force relinking when the external Rust static library changes.
+
+    MoonBit's incremental graph does not include ``libgpui_sys.a`` produced by
+    the gpui-bindings prebuild hook. Without removing the linked executable,
+    Rust-only changes can leave the release binary silently using old timing
+    or rendering code.
+    """
+    build_roots = (
+        ROOT / "_build" / "native" / "release" / "build",
+        ROOT.parent / "_build" / "native" / "release" / "build",
+    )
+    for build_root in build_roots:
+        for path in build_root.glob("**/cmd/main/main.exe"):
+            path.unlink(missing_ok=True)
+        for path in build_root.glob("**/cmd/main/__moonbit_link_core__/main.o"):
+            path.unlink(missing_ok=True)
+
+
 def bundle_macos(executable: Path) -> Path:
     app = ROOT / "dist" / "GPUI Markdown Editor.app"
     macos = app / "Contents" / "MacOS"
@@ -68,6 +87,7 @@ def bundle_macos(executable: Path) -> Path:
 def main() -> None:
     environment = os.environ.copy()
     environment.setdefault("CARGO_HOME", str(DEFAULT_CARGO_HOME))
+    remove_stale_release_outputs()
     run(
         ["moon", "build", "cmd/main", "--target", "native", "--release"],
         env=environment,
