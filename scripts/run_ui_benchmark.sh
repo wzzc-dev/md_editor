@@ -12,11 +12,15 @@ case "$SYSTEM" in
     PLATFORM_SLUG="macos-$ARCH"
     FLUTTER_TARGET=macos
     MOUI_GPU_ROUTE=metal
+    MOUI_BENCHMARK_PACKAGE=moui/benchmark
     ;;
   MINGW*|MSYS*|CYGWIN*)
     PLATFORM_SLUG="windows-$ARCH"
     FLUTTER_TARGET=windows
     MOUI_GPU_ROUTE=direct3d
+    # The macOS benchmark package hardcodes AppKit/CoreText/Metal stubs; the
+    # Windows package mirrors it on top of backend-free headless primitives.
+    MOUI_BENCHMARK_PACKAGE=moui/windows_benchmark
     ;;
   *)
     echo "UI benchmark supports macOS and Windows only (found $SYSTEM)" >&2
@@ -48,7 +52,13 @@ if [ "${UI_BENCHMARK_SYSTEM_TRACE:-0}" = "1" ]; then
 fi
 
 python3 "$ROOT/scripts/generate_fixtures.py"
-moon build moui/benchmark --target native --release
+# Windows needs the two-pass MSVC build (see scripts/build_moui_windows.sh);
+# macOS builds the single benchmark package directly.
+if [ "$MOUI_BENCHMARK_PACKAGE" = "moui/windows_benchmark" ]; then
+  "$ROOT/scripts/build_moui_windows.sh"
+else
+  moon build "$MOUI_BENCHMARK_PACKAGE" --target native --release
+fi
 "$ROOT/gpui/build.sh"
 npm ci --prefix "$ROOT/electron"
 (
