@@ -78,7 +78,7 @@ python3 gpui/ui_benchmark.py data/small.md input
 
 gpui2 runs the sibling [md_mbt](/Volumes/Data/Code/moon/md_mbt) editor — a
 velotype-style MoonBit block-WYSIWYG core (live inline transforms, snapshot
-undo, whole-tree rendering without virtualization) on the same GPUI backend:
+undo, estimator-windowed block rendering) on the same GPUI backend:
 
 ```sh
 MD_MBT_DIR=/path/to/md_mbt ./gpui2/build.sh   # MD_MBT_DIR defaults to ../md_mbt
