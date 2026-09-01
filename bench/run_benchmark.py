@@ -14,6 +14,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from typing import Any
@@ -27,6 +28,57 @@ SCENARIOS = ("open", "input", "scroll")
 DEFAULT_ADAPTERS = (
     "moui-skia-raster", "moui-skia-gpu", "moui-wgpu", "gpui", "flutter-skia", "flutter-impeller", "electron"
 )
+# A single strict trace can exceed a gigabyte, so every scratch directory that can
+# hold one is rooted here and swept by age. `--system-trace-dir` output stays
+# outside these roots because the caller explicitly asked to keep those packages.
+TRACE_SCRATCH_ROOT = ROOT / "results" / ".trace-gates"
+XCTRACE_TMP_ROOT = ROOT / "results" / ".xctrace-tmp"
+# Strict cases on the stress fixture legitimately run for minutes, so the sweep
+# only touches entries no live runner can still own.
+SCRATCH_MAX_AGE_SECONDS = float(os.environ.get("UI_BENCHMARK_SCRATCH_MAX_AGE_SECONDS", str(6 * 3600)))
+
+
+def directory_size_bytes(path: Path) -> int:
+    total = 0
+    for root, _, files in os.walk(path):
+        for name in files:
+            try:
+                total += (Path(root) / name).stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def prune_trace_scratch(max_age_seconds: float = SCRATCH_MAX_AGE_SECONDS) -> tuple[int, int]:
+    """Delete abandoned strict-trace scratch older than `max_age_seconds`.
+
+    Interrupted cases are indistinguishable from long-running ones by
+    inspection alone, so ownership is decided purely by age and the caller owns
+    the threshold. Returns the removed entry count and the bytes they held.
+    """
+    removed = 0
+    freed = 0
+    cutoff = time.time() - max_age_seconds
+    for root in (TRACE_SCRATCH_ROOT, XCTRACE_TMP_ROOT):
+        try:
+            children = list(root.iterdir())
+        except OSError:
+            continue
+        for child in children:
+            try:
+                if child.stat().st_mtime >= cutoff:
+                    continue
+            except OSError:
+                continue
+            freed += directory_size_bytes(child)
+            shutil.rmtree(child, ignore_errors=True)
+            removed += 1
+    return removed, freed
+
+
+def new_trace_scratch_directory() -> Path:
+    TRACE_SCRATCH_ROOT.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix="case-", dir=TRACE_SCRATCH_ROOT))
 
 
 def memory_gb() -> float | None:
@@ -194,7 +246,13 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
         return
     expected = 1 if scenario == "open" else (120 if scenario == "scroll" else 10)
     interval_expected = 0 if scenario == "open" else expected
-    validate_sample_list(payload, "frame_work_samples_ms", expected)
+    # GPUI can legitimately fail to observe the first paint when the callback
+    # fires before the initial render pass. Preserve that as null instead of
+    # turning it into a fabricated zero; numeric work samples remain fully
+    # validated and are the only values pooled by the report.
+    work_samples = validate_sample_list(
+        payload, "frame_work_samples_ms", expected, allow_null=True
+    )
     validate_sample_list(payload, "frame_interval_samples_ms", interval_expected)
     if scenario == "input":
         validate_sample_list(payload, "input_to_visible_samples_ms", expected)
@@ -229,8 +287,12 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
     expected_warmups = 0 if scenario == "open" else 1
     validate_count(payload, "warmup_action_count", expected_warmups)
     dropped = payload.get("dropped_display_frames")
-    if isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 0:
-        raise ValueError(f"ui-frame {scenario} dropped_display_frames must be a nonnegative integer")
+    if dropped is not None and (
+        isinstance(dropped, bool) or not isinstance(dropped, int) or dropped < 0
+    ):
+        raise ValueError(
+            f"ui-frame {scenario} dropped_display_frames must be null or a nonnegative integer"
+        )
     viewport = payload.get("viewport", {})
     if not isinstance(viewport, dict):
         raise ValueError("ui-frame viewport must be an object")
@@ -238,8 +300,13 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
         raise ValueError(f"ui-frame viewport must be 1280x800, got {viewport!r}")
     if payload.get("scenario") != scenario:
         raise ValueError(f"ui-frame scenario mismatch: {payload.get('scenario')!r}")
-    for field in ("frame_work_ms", "first_interactive_ms", "document_load_ms"):
+    for field in ("first_interactive_ms", "document_load_ms"):
         validate_nonnegative_number(payload.get(field), field)
+    frame_work = payload.get("frame_work_ms")
+    if frame_work is not None:
+        validate_nonnegative_number(frame_work, "frame_work_ms")
+    elif any(value is not None for value in work_samples):
+        raise ValueError("ui-frame frame_work_ms aggregate is missing for measured samples")
     for field in ("offscreen_ms", "readback_ms", "offscreen_readback_ms"):
         value = payload.get(field)
         if value is not None:
@@ -288,6 +355,45 @@ def run_command(
 ) -> list[dict]:
     """Run one adapter invocation and return a list of measured records.
 
+    The per-case scratch directory owns the trace gate, the adapter's redirected
+    stdout and, unless `system_trace_dir` is given, the xctrace package itself.
+    It is removed here so timeouts, adapter crashes, `KeyboardInterrupt` and
+    unexpected harness errors cannot leave multi-gigabyte traces behind.
+    """
+    scratch_directory = new_trace_scratch_directory() if system_trace else None
+    try:
+        return _run_command_case(
+            command,
+            fixture,
+            scenario,
+            adapter_name,
+            timeout_seconds,
+            system_trace=system_trace,
+            system_trace_dir=system_trace_dir,
+            system_trace_start_delay_seconds=system_trace_start_delay_seconds,
+            system_trace_export_timeout_seconds=system_trace_export_timeout_seconds,
+            trace_scratch_directory=scratch_directory,
+        )
+    finally:
+        if scratch_directory is not None:
+            shutil.rmtree(scratch_directory, ignore_errors=True)
+
+
+def _run_command_case(
+    command: str,
+    fixture: Path,
+    scenario: str,
+    adapter_name: str | None = None,
+    timeout_seconds: float = 1800.0,
+    *,
+    system_trace: bool = False,
+    system_trace_dir: Path | None = None,
+    system_trace_start_delay_seconds: float = 0.50,
+    system_trace_export_timeout_seconds: float = 45.0,
+    trace_scratch_directory: Path | None = None,
+) -> list[dict]:
+    """Run one adapter invocation and return a list of measured records.
+
     Adapters may print more than one JSON object (one per measurement scope, for
     example a comparable `headless-render` row plus a renderer-level
     `richtext-full` row). Each printed object becomes its own record; the
@@ -321,6 +427,32 @@ def run_command(
     if "{scenario}" not in command:
         rendered.append(scenario)
     displayed_command = assignments + rendered
+    # Preserve the normal executable-unavailable diagnostic. Only perform the
+    # lock-screen preflight once the command's entrypoint is resolvable; a
+    # missing command must still take the FileNotFound path below.
+    entrypoint = rendered[0] if rendered else ""
+    if os.path.dirname(entrypoint):
+        entrypoint_available = os.path.isfile(entrypoint) and os.access(entrypoint, os.X_OK)
+    else:
+        entrypoint_available = bool(entrypoint and shutil.which(entrypoint))
+    if (
+        system_trace
+        and entrypoint_available
+        and platform.system() == "Darwin"
+        and display_session_locked()
+    ):
+        reason = (
+            "macOS display session is locked; unlock the console before running "
+            "strict system-present benchmarks"
+        )
+        return [{
+            "status": "error",
+            "command": displayed_command,
+            "elapsed_ms": 0.0,
+            "error": reason,
+            "system_trace_status": "unsupported",
+            "system_trace_error": reason,
+        }]
     started = time.perf_counter()
     process_started_epoch_ms: float | None = None
     trace_gate_released_epoch_ms: float | None = None
@@ -345,6 +477,11 @@ def run_command(
         system_trace
         and platform.system() == "Darwin"
         and not display_session_locked()
+        # GPUI's AppKit event loop can remain alive after xctrace --launch
+        # hands the process back, without forwarding its stdout or scheduling
+        # the first frame. Start GPUI normally and attach Instruments instead;
+        # the adapter gate still holds it until the recorder is ready.
+        and adapter_name != "gpui"
     )
     trace_finished = False
     descendant_stop: threading.Event | None = None
@@ -386,7 +523,7 @@ def run_command(
             descendant_thread.join(timeout=1.0)
 
     def finish_trace() -> None:
-        nonlocal trace_result, trace_finished
+        nonlocal trace_result, trace_finished, process_started_epoch_ms
         if trace_finished:
             return
         if trace_session is None:
@@ -458,11 +595,9 @@ def run_command(
             # The adapter wrappers hold the application before creating its
             # native window. This makes attach deterministic and avoids a
             # trace that starts after the first present.
-            import tempfile
-
-            gate_root = ROOT / "results" / ".trace-gates"
-            gate_root.mkdir(parents=True, exist_ok=True)
-            trace_gate_directory = Path(tempfile.mkdtemp(prefix="case-", dir=gate_root))
+            if trace_scratch_directory is None:
+                raise ValueError("system trace requires a caller-owned scratch directory")
+            trace_gate_directory = trace_scratch_directory
             trace_gate = trace_gate_directory / "release"
             trace_pid_file = trace_gate_directory / "target.pid"
             trace_start_file = trace_gate_directory / "target.start"
@@ -500,7 +635,7 @@ def run_command(
                     "UI_BENCHMARK_TRACE_RECORD_SECONDS",
                     "12.0" if fixture.stat().st_size >= FIXTURES["stress"] else "8.0",
                 )),
-                temp_directory=(ROOT / "results" / ".xctrace-tmp" /
+                temp_directory=(XCTRACE_TMP_ROOT /
                                 f"launch-{time.time_ns()}"),
                 keep_trace=system_trace_dir is not None,
                 launch_command=launch_command,
@@ -598,7 +733,7 @@ def run_command(
                         "UI_BENCHMARK_TRACE_RECORD_SECONDS",
                         "12.0" if fixture.stat().st_size >= FIXTURES["stress"] else "8.0",
                     )),
-                    temp_directory=(ROOT / "results" / ".xctrace-tmp" / f"{process.pid}-{time.time_ns()}"),
+                    temp_directory=(XCTRACE_TMP_ROOT / f"{process.pid}-{time.time_ns()}"),
                     keep_trace=system_trace_dir is not None,
                 )
                 trace_session.start(command_env)
@@ -724,8 +859,6 @@ def run_command(
     if not records:
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
                  "error": "adapter did not print any JSON object", "stdout": stdout[-4000:], **trace_payload()}]
-    if trace_gate_directory is not None:
-        shutil.rmtree(trace_gate_directory, ignore_errors=True)
     return records
 
 
@@ -764,9 +897,29 @@ def main() -> None:
         default=3,
         help="xctrace 保存或导出失败时每个 case 的最大尝试次数",
     )
+    parser.add_argument(
+        "--scratch-max-age-seconds",
+        type=float,
+        default=0.0,
+        help=("删除早于该年龄的残留严格 trace scratch 目录；0（默认）表示不清理，"
+              "scripts/run_ui_benchmark.sh 会显式开启"),
+    )
+    parser.add_argument(
+        "--prune-scratch-only",
+        action="store_true",
+        help="只清理残留严格 trace scratch 目录后退出，不运行任何 adapter",
+    )
     parser.add_argument("--timeout", type=float, default=float(os.environ.get("BENCHMARK_TIMEOUT_SECONDS", "1800")))
     parser.add_argument("--out", type=Path, default=ROOT / "results" / "benchmark.json")
     args = parser.parse_args()
+    sweep_age = args.scratch_max_age_seconds or (SCRATCH_MAX_AGE_SECONDS if args.prune_scratch_only else 0.0)
+    scratch_sweep = prune_trace_scratch(sweep_age) if sweep_age > 0 else (0, 0)
+    if args.prune_scratch_only:
+        print(
+            f"cleared {scratch_sweep[0]} stale trace scratch entries "
+            f"({round(scratch_sweep[1] / 1024**2, 1)} MiB)"
+        )
+        return
     subprocess.run([sys.executable, str(ROOT / "scripts" / "generate_fixtures.py")], check=True)
     commands = parse_adapters(args.adapter)
     fixtures = args.fixtures or list(FIXTURES)
@@ -830,6 +983,11 @@ def main() -> None:
         },
         "gpu_backend": "Metal" if sys.platform == "darwin" else ("Direct3D" if sys.platform.startswith("win") else "unknown"),
         "comparison_mode": "strict-system-present" if args.system_present_trace else "framework-callback-diagnostic",
+        "trace_scratch_sweep": {
+            "max_age_seconds": sweep_age or None,
+            "removed_entries": scratch_sweep[0],
+            "freed_mb": round(scratch_sweep[1] / 1024**2, 1),
+        },
         "system_present": {
             "requested": args.system_present_trace,
             "source": "macOS xctrace Animation Hitches + Points of Interest displayed-surfaces-interval + display-vsyncs-interval",
@@ -848,6 +1006,8 @@ def main() -> None:
     args.out.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
     measured = sum(record.get("status") == "measured" for record in records)
     print(f"wrote {args.out} ({measured} measured records, {len(records) - measured} skipped/error)")
+    if scratch_sweep[0]:
+        print(f"cleared {scratch_sweep[0]} stale trace scratch entries ({round(scratch_sweep[1] / 1024**2, 1)} MiB)")
     if args.fail_on_error and measured != len(records):
         raise SystemExit(1)
 

@@ -39,6 +39,10 @@ let model : @gpui.Signal[EditorModel] = store.signal(model_cell)
 ///|
 let handlers : @gpui.HandlerRegistry = @gpui.HandlerRegistry::new()
 
+/// Set by the input handler when the retained active text and footer nodes can
+/// be updated without rebuilding the command tree.
+let incremental_input : Ref[Bool] = { val: false }
+
 /// GPUI's native input is single-line and panics when asked to shape a
 /// newline, while Code blocks span lines. The input buffer therefore carries
 /// newlines as a private-use placeholder; the model always keeps real '\n'.
@@ -64,6 +68,27 @@ fn markdown_of_input_text(value : String) -> String {
   )
 }
 
+/// Count formatting marker characters so an append cannot silently change the
+/// retained rich-text run layout. Position changes are excluded by the
+/// `has_prefix` check in `can_patch_input` below.
+fn marker_count(value : String, marker : Char) -> Int {
+  value.to_array().fold(init=0, fn(total, current) {
+    if current == marker { total + 1 } else { total }
+  })
+}
+
+/// A text-only append keeps the existing inline run ranges valid. Any edit
+/// that changes structure, block kind, or marker counts uses the full rebuild
+/// path so Markdown formatting remains correct for real user edits.
+fn can_patch_input(previous : MarkdownBlock, updated : MarkdownBlock) -> Bool {
+  previous.kind == updated.kind &&
+    updated.markdown.length() >= previous.markdown.length() &&
+    updated.markdown.has_prefix(previous.markdown) &&
+    marker_count(previous.markdown, '*') == marker_count(updated.markdown, '*') &&
+    marker_count(previous.markdown, '_') == marker_count(updated.markdown, '_') &&
+    marker_count(previous.markdown, '`') == marker_count(updated.markdown, '`')
+}
+
 ///|
 fn sync_active_input(view : Int) -> Unit {
   let current = model.get(store)
@@ -82,6 +107,7 @@ fn sync_active_input(view : Int) -> Unit {
 let editor_input : @gpui.InputId = {
   let id = handlers.new_input_id()
   handlers.on_input_changed(id, fn(view) {
+    incremental_input.val = false
     match @gpui.input_text(view, id.to_int()) {
       Ok(value) => {
         // Typing reaches us with placeholders from sync_active_input; a paste
@@ -94,8 +120,13 @@ let editor_input : @gpui.InputId = {
           ignore(@gpui.input_set_text(view, id.to_int(), sanitized))
         }
         let current = model.get(store)
-        let old_length = current.blocks[current.active_block].markdown.length()
+        let previous = current.blocks[current.active_block]
+        let old_length = previous.markdown.length()
         replace_block(current.blocks, current.active_block, model_text)
+        let updated = current.blocks[current.active_block]
+        // Formatting markers can change the block's visual structure. Patch
+        // only a stable text append; syntax edits use the full rebuild path.
+        incremental_input.val = can_patch_input(previous, updated)
         current.source_length = current.source_length +
           model_text.length() -
           old_length
@@ -139,6 +170,7 @@ fn block_handler(index : Int) -> @gpui.HandlerId {
 
 ///|
 let new_document : @gpui.HandlerId = handlers.on_click(fn(view) {
+  scroll_y_live.val = 0.0
   model.set(store, EditorModel::from_source("# Untitled\n\n", ""))
   sync_active_input(view)
 })
@@ -158,6 +190,7 @@ let open_document : @gpui.HandlerId = handlers.on_click(fn(view) {
       return
     }
   }
+  scroll_y_live.val = 0.0
   model.set(store, EditorModel::from_source(source, current.path))
   sync_active_input(view)
 })
@@ -195,6 +228,19 @@ const DOCUMENT_VIEWPORT_HEIGHT : Float = 650.0
 const VIEWPORT_OVERSCAN : Int = 6
 
 ///|
+/// Native scrolling can move many times before the virtual window changes.
+/// Keep that hot-path offset outside the reactive model so the GPUI scroll
+/// handle does not force a full MoonBit command-buffer rebuild for every wheel
+/// tick. The model is synchronized only when the rendered row window changes.
+let scroll_y_live : Ref[Float] = { val: 0.0 }
+
+///|
+fn virtual_window_start(scroll_y : Float) -> Int {
+  let start = (scroll_y / BLOCK_HEIGHT).to_int() - VIEWPORT_OVERSCAN
+  if start < 0 { 0 } else { start }
+}
+
+///|
 /// Convert the GPUI scroll-space offset (negative while scrolled down) into
 /// the non-negative model coordinate used for virtualization.
 let scroll_id : @gpui.ScrollId = {
@@ -204,7 +250,13 @@ let scroll_id : @gpui.ScrollId = {
       Ok(state) => {
         let next : Float = (-state.offset_y).max(0.0)
         let current = model.get(store)
-        if current.scroll_y != next {
+        let previous_live = scroll_y_live.val
+        scroll_y_live.val = next
+        // ScrollHandle owns the actual translation. Rebuild only when the
+        // windowed row range changes; small wheel deltas otherwise stay within
+        // the already committed spacer/row set.
+        if current.scroll_y != next &&
+          virtual_window_start(previous_live) != virtual_window_start(next) {
           current.scroll_y = next
           model.set(store, current)
         }
@@ -220,6 +272,7 @@ let ctx : @gpui.RenderCtx = { view: 0, store, handlers }
 
 ///|
 pub fn initialize(source : String, path : String) -> Unit {
+  scroll_y_live.val = 0.0
   model.set(store, EditorModel::from_source(source, path))
 }
 
@@ -326,6 +379,7 @@ fn build_active_editor(cb : @gpui.CommandBuffer, block : MarkdownBlock) -> Unit 
   // A transparent native input owns selection and IME above this formatted
   // layer, keeping the UI composition and Markdown presentation in MoonBit.
   cb.div()
+  cb.set_key("active-markdown-content")
   cb.set_position(@gpui.POSITION_ABSOLUTE)
   cb.set_inset(0, 0, 0, 0)
   cb.set_padding_sides(10, 20, 10, 20)
@@ -366,10 +420,7 @@ fn build_document(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
   cb.set_border_color(1.0, @gpui.Color::rgb(214, 217, 222))
   cb.set_rounded(4.0)
   let block_count = current.blocks.length()
-  let mut start = (current.scroll_y / BLOCK_HEIGHT).to_int() - VIEWPORT_OVERSCAN
-  if start < 0 {
-    start = 0
-  }
+  let start = virtual_window_start(current.scroll_y)
   let mut end = ((current.scroll_y + DOCUMENT_VIEWPORT_HEIGHT) / BLOCK_HEIGHT).to_int() +
     1 +
     VIEWPORT_OVERSCAN
@@ -419,15 +470,19 @@ fn build_footer(cb : @gpui.CommandBuffer, current : EditorModel) -> Unit {
   cb.set_padding_sides(0, 18, 0, 18)
   cb.set_bg_color(@gpui.Color::white())
   cb.set_border_color(1.0, @gpui.Color::rgb(216, 220, 226))
+  cb.div()
+  cb.set_key("editor-status")
   cb.text(status, 102, 113, 125, 13.0)
   cb.add_child()
-  cb.div()
-  cb.set_flex(1.0, 1.0, -1.0)
   cb.add_child()
+  cb.div()
+  cb.set_key("editor-metrics")
+  cb.set_flex(1.0, 1.0, -1.0)
   cb.text(
     "{current.source_length} chars | {current.blocks.length()} blocks | MoonBit UI + GPUI",
     102, 113, 125, 13.0,
   )
+  cb.add_child()
   cb.add_child()
 }
 
@@ -467,7 +522,42 @@ pub fn dispatch(
   data_a : Int,
   data_b : Int,
 ) -> Int {
-  @gpui.framework_dispatch(ctx, version, kind, view, data_a, data_b, fn(v) {
-    build_tree(v)
-  })
+  @gpui.framework_dispatch_with_patch(
+    ctx,
+    version,
+    kind,
+    view,
+    data_a,
+    data_b,
+    fn(v) {
+      if !incremental_input.val {
+        false
+      } else {
+        incremental_input.val = false
+        let current = model.get(store)
+        let content = visible_markdown(current.blocks[current.active_block])
+        let status = if current.status != "" {
+          current.status
+        } else if current.dirty {
+          "Unsaved changes"
+        } else {
+          "Saved"
+        }
+        let metrics = "{current.source_length} chars | {current.blocks.length()} blocks | MoonBit UI + GPUI"
+        match @gpui.update_text(v, "active-markdown-content", content) {
+          Ok(_) =>
+            match @gpui.update_text(v, "editor-status", status) {
+              Ok(_) =>
+                match @gpui.update_text(v, "editor-metrics", metrics) {
+                  Ok(_) => true
+                  Err(_) => false
+                }
+              Err(_) => false
+            }
+          Err(_) => false
+        }
+      }
+    },
+    fn(v) { build_tree(v) },
+  )
 }

@@ -43,6 +43,20 @@ The runner refuses to claim strict samples while the macOS console session is
 locked, because WindowServer does not scan out application surfaces in that
 state.
 
+### Scratch retention
+
+One strict case owns a scratch directory under `results/.trace-gates` (the trace
+gate, the adapter's redirected stdout and, unless `--system-trace-dir` is given,
+the `.trace` package itself). `run_command` creates that directory and removes it
+in a `finally`, so timeouts, adapter crashes, `KeyboardInterrupt` and harness
+errors cannot orphan a multi-gigabyte package. `bench/run_benchmark.py` never
+deletes scratch it does not own by default; `scripts/run_ui_benchmark.sh` opts
+into an age-based sweep of scratch abandoned by earlier interrupted runs
+(`UI_BENCHMARK_SCRATCH_MAX_AGE_SECONDS`, default 21600). Run
+`python3 bench/run_benchmark.py --prune-scratch-only` to reclaim that space
+without starting any adapter. Packages under `--system-trace-dir` are never
+swept — retaining them is the caller's explicit request.
+
 ## Real-window run
 
 Use the build-once wrapper for comparable UI records:

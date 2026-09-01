@@ -27,10 +27,10 @@ normalized. Unsupported constructs remain editable source text.
 ## Quick start
 
 ```sh
-# Build each application once and run all six desktop UI-process adapters.
+# Build each application once and run all seven desktop UI-process adapters.
 ./scripts/run_ui_benchmark.sh
 
-# Fast six-adapter integration smoke run.
+# Fast seven-adapter integration smoke run.
 UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
   ./scripts/run_ui_benchmark.sh --fixture small \
   --out results/smoke-ui.json
@@ -44,8 +44,9 @@ Skia/Impeller labels are accepted only after matching engine startup logs.
 
 The current audited macOS arm64 capture is
 [`results/macos-arm64-ui.json`](results/macos-arm64-ui.json) with the rendered
-[`Markdown report`](results/macos-arm64-ui.md): 216/216 desktop UI-process
-records are measured on an Apple M4 16 GiB host at 1280x800. The report intentionally shows
+[`Markdown report`](results/macos-arm64-ui.md): 252/252 desktop UI-process
+records (seven adapters x four fixtures x three scenarios x three repetitions)
+are measured on an Apple M4 16 GiB host at 1280x800. The report intentionally shows
 where the strict 2x screen passes and fails; frame clocks are framework-specific
 and are not compositor-equivalent. A dedicated Windows amd64 16 GiB capture is
 still required and is documented in [`docs/windows.md`](docs/windows.md).

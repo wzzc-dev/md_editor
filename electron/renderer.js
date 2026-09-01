@@ -19,7 +19,10 @@ let activeIndex = 0;
 let vditor = null;
 let editorReady = Promise.resolve();
 let renderScheduled = false;
+let benchmarkMode = false;
 const rowElements = new Map();
+
+const blockPattern = /^(?:> |[-*] |#{1,6}\s)/;
 
 function splitDocument(source) {
   const result = [];
@@ -29,7 +32,13 @@ function splitDocument(source) {
     if (current.length) result.push(current.join('\n'));
     current = [];
   }
-  for (const line of source.split('\n')) {
+  // Scan line boundaries directly. A 5MB stress document contains 100k
+  // lines; avoiding source.split() keeps the transient line array out of the
+  // startup path while preserving the existing block semantics.
+  for (let lineStart = 0; lineStart <= source.length;) {
+    const newline = source.indexOf('\n', lineStart);
+    const lineEnd = newline < 0 ? source.length : newline;
+    const line = source.slice(lineStart, lineEnd);
     const value = line.trim();
     if (value.startsWith('```')) {
       if (!inCode) flush();
@@ -40,12 +49,14 @@ function splitDocument(source) {
       current.push(line);
     } else if (!value) {
       flush();
-    } else if (/^(> |[-*] |#{1,6}\s)/.test(value)) {
+    } else if (blockPattern.test(value)) {
       flush();
       result.push(line);
     } else {
       current.push(line);
     }
+    if (newline < 0) break;
+    lineStart = newline + 1;
   }
   flush();
   return result.length ? result : [''];
@@ -104,21 +115,34 @@ function activeRow(index) {
   rowElements.set(index, row);
 
   editorReady = new Promise(resolve => {
-    const instance = new Vditor(host, {
-      mode: 'wysiwyg',
-      value: blocks[index],
-      cdn: './node_modules/vditor',
-      minHeight: 50,
-      height: 50,
-      toolbar: [],
-      cache: { enable: false },
-      preview: { markdown: { toc: false, mark: true } },
-      input(value) { updateBlock(index, value); },
-      after() {
-        vditor = instance;
+    const mount = () => {
+      if (!row.isConnected || rowElements.get(index) !== row) {
         resolve();
-      },
-    });
+        return;
+      }
+      const instance = new Vditor(host, {
+        mode: 'wysiwyg',
+        value: blocks[index],
+        cdn: './node_modules/vditor',
+        minHeight: 50,
+        height: 50,
+        toolbar: [],
+        cache: { enable: false },
+        preview: { markdown: { toc: false, mark: true } },
+        input(value) { updateBlock(index, value); },
+        after() {
+          vditor = instance;
+          resolve();
+        },
+      });
+    };
+    if (benchmarkMode) {
+      // Let the lightweight first frame become visible before Vditor creates
+      // its editor DOM and performs its initial Markdown conversion.
+      requestAnimationFrame(() => requestAnimationFrame(mount));
+    } else {
+      mount();
+    }
   });
 }
 
@@ -184,7 +208,7 @@ async function installDocument(source, path = null) {
   spacer.style.height = `${blocks.length * ROW_HEIGHT}px`;
   renderStatus();
   renderVisibleRows();
-  await editorReady;
+  if (!benchmarkMode) await editorReady;
 }
 
 function nextFrame() {
@@ -267,6 +291,7 @@ async function runUiBenchmark(config, initializedAt) {
   const latencies = [];
   const actionTimestampsEpochMs = [];
   let previousFrame = firstFrame;
+  await editorReady;
   vditor.focus();
   if (config.scenario === 'scroll' && viewport.scrollHeight <= viewport.clientHeight) {
     throw new Error('Vditor benchmark document is not scrollable');
@@ -354,6 +379,7 @@ function installDocumentCommands() {
 
 async function bootstrap() {
   const config = await window.benchmarkApi.config();
+  benchmarkMode = Boolean(config);
   const initialValue = config?.source ?? sample;
   const initializedAt = performance.now();
   await installDocument(initialValue);

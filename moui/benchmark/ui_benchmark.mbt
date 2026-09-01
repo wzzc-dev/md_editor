@@ -353,9 +353,6 @@ fn ui_report_v2(
       total + value
     }) /
     samples.readback_ms.length().to_double()
-  let dropped = samples.interval_ms.fold(init=0, fn(total, value) {
-    total + ((value / 16.667).ceil().to_int() - 1).max(0)
-  })
   "{\"adapter\":\"" +
   adapter +
   "\",\"measurement_scope\":\"ui-frame\",\"timing_source\":\"" +
@@ -412,8 +409,9 @@ fn ui_report_v2(
   } else {
     "null"
   }) +
-  ",\"dropped_display_frames\":" +
-  dropped.to_string() +
+  // This adapter uses a synchronous host-surface completion clock, not a
+  // compositor/vsync timestamp. Do not infer dropped display frames from it.
+  ",\"dropped_display_frames\":null" +
   ",\"action_count\":" +
   samples.work_ms.length().to_string() +
   ",\"frame_sample_count\":" +

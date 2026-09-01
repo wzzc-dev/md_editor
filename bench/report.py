@@ -333,13 +333,93 @@ def print_audit_table(
             )
         else:
             interactive = first(valid, "first_interactive_ms") if valid else None
+            drop_count = dropped(valid) if valid else None
             print(
                 f"| {adapter} | {fixture} | {scenario} | ui-frame | "
                 f"{audit_pair(work)} | {audit_pair(dispatch)} | {audit_pair(interval)} | {audit_pair(input_visible)} | "
                 f"{fmt(offscreen[0])} | {fmt(readback[0])} | {fmt(interactive)} | "
-                f"{dropped(valid) if valid else '-'} | {status_text(records)} |"
+                f"{drop_count if drop_count is not None else 'n/a'} | {status_text(records)} |"
             )
     print("\n</details>\n")
+
+
+def print_anomalies(
+    payload: dict,
+    grouped: dict[tuple[str, str, str], list[dict]],
+    strict_system: bool,
+) -> None:
+    """Summarize threshold breaches without turning them into pass/fail claims."""
+    viewport = payload.get("viewport", {})
+    budget = viewport.get("frame_budget_ms")
+    if strict_system:
+        trace_budgets = scalar_values(
+            [record for records in grouped.values() for record in records],
+            "system_frame_budget_ms",
+        )
+        if trace_budgets:
+            budget = average(trace_budgets)
+    if not isinstance(budget, (int, float)) or isinstance(budget, bool) or budget <= 0:
+        refresh = viewport.get("refresh_hz", 60)
+        budget = 1000.0 / refresh if isinstance(refresh, (int, float)) and refresh > 0 else 16.667
+    interval_field = "system_present_interval" if strict_system else "frame_interval"
+    startup_field = "system_first_present_ms" if strict_system else "first_interactive_ms"
+    input_field = "system_action_to_present" if strict_system else "input_to_visible"
+    drop_fn = system_dropped if strict_system else dropped
+    source = "系统 compositor trace" if strict_system else "框架回调诊断（非 compositor 时钟）"
+    threshold = budget + 0.1  # absorb timestamp quantization around the budget
+    startup: list[str] = []
+    input_tail: list[str] = []
+    long_frames: dict[str, list[str]] = defaultdict(list)
+    drops: dict[str, list[str]] = defaultdict(list)
+    for adapter in ADAPTERS:
+        for fixture in FIXTURES:
+            open_records = measured(grouped.get((adapter, fixture, "open"), []))
+            startup_values = scalar_values(open_records, startup_field)
+            if startup_values and max(startup_values) > 100.0:
+                startup.append(
+                    f"{LABELS[adapter]} {fixture} {average(startup_values):.1f} ms（max {max(startup_values):.1f} ms）"
+                )
+            input_records = measured(grouped.get((adapter, fixture, "input"), []))
+            input_values = samples(input_records, input_field)
+            input_p95 = percentile(input_values, 0.95)
+            if input_p95 is not None and input_p95 > threshold:
+                input_tail.append(f"{LABELS[adapter]} {fixture} P95 {input_p95:.2f} ms")
+            for scenario in ("input", "scroll"):
+                records = measured(grouped.get((adapter, fixture, scenario), []))
+                values = samples(records, interval_field)
+                breaches = [value for value in values if value > threshold]
+                if breaches:
+                    long_frames[LABELS[adapter]].append(
+                        f"{fixture}/{scenario} {len(breaches)} 次，max {max(breaches):.2f} ms"
+                    )
+                drop_count = drop_fn(records) if records else None
+                if drop_count is not None and drop_count > 0:
+                    drops[LABELS[adapter]].append(f"{fixture}/{scenario} {drop_count} 帧")
+
+    print("# 异常项与优化优先级\n")
+    print(
+        f"- 参考帧预算：`{budget:.3f} ms`（含 ±0.1 ms 量化容差）；长帧/输入尾延迟阈值为一帧预算；计时来源：{source}。"
+    )
+    print("- P1 首帧：" + ("；".join(startup) if startup else "未发现 >100 ms 的首帧") + "。")
+    print("- P1 输入尾延迟：" + ("；".join(input_tail) if input_tail else "未发现超过一帧预算的输入 P95") + "。")
+    long_text = "；".join(
+        f"{adapter}: {', '.join(details)}" for adapter, details in long_frames.items()
+    )
+    drop_text = "；".join(
+        f"{adapter}: {', '.join(details)}" for adapter, details in drops.items()
+    )
+    print("- 长帧（超预算）：" + (long_text if long_text else "未发现超过一帧预算的间隔") + "。")
+    print("- 丢帧（优先处理）：" + (drop_text if drop_text else "未发现可测丢帧") + "。")
+    print(
+        "- 解释：首帧异常优先检查窗口/渲染器初始化；输入尾延迟检查 action 到下一可见帧的调度与同步重建；"
+        "长帧检查解析、布局、文本 shaping 和 GPU 提交；`n/a` 表示未埋点，不等于 0。"
+    )
+    if not strict_system:
+        print(
+            "- 普通模式的长帧、帧间隔和输入延迟是各框架回调诊断，不能替代跨框架 compositor 排名；"
+            "需要严格结论时运行 `UI_BENCHMARK_SYSTEM_TRACE=1 ./scripts/run_ui_benchmark.sh`。"
+        )
+    print()
 
 
 def main() -> None:
@@ -374,7 +454,7 @@ def main() -> None:
         budget_text = ", ".join(f"{value:.3f} ms" for value in budgets) or "n/a"
         print("- 公平性口径：严格模式的帧间隔、丢帧、动作到下一次显示和首帧显示只来自 macOS compositor/display trace；目标 surface 无法被 xctrace 明确关联时显示 `n/a`，绝不回退到框架回调。当前 trace 推导的显示预算：" + budget_text + "。表中的 `动作到显示` 是统一端到端边界；框架内部 work 仅作为诊断，不参与跨实现排名。\n")
     else:
-        print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数；数值来自框架真实渲染/提交回调。MoUI ui-frame 是 headless host-surface，GPUI 的 work 当前只覆盖 action dispatch；不同框架的显示时间戳由各自平台 API 提供，因此报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。\n")
+        print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数；数值来自框架真实渲染/提交回调。MoUI ui-frame 是 headless host-surface；GPUI 的 frame work 覆盖 request_layout→prepaint→paint，action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，因此报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。\n")
 
     # Put the audit table first so command-line consumers can locate the
     # legacy-compatible raw summary without parsing the fixture matrix.
@@ -383,6 +463,7 @@ def main() -> None:
     print_section("输入延迟", "input", "input", grouped, strict_system)
     print_section("打开性能", "open", "open", grouped, strict_system)
     print_section("滚动性能", "scroll", "scroll", grouped, strict_system)
+    print_anomalies(payload, grouped, strict_system)
     print("## 采集口径\n")
     print("- Metric definitions：严格模式的 `动作到显示` 为统一的系统 action marker 到目标 surface 下一次 compositor present；`system_present_interval_samples_ms` 为同一目标 surface 的相邻显示时间戳间隔。`frame_work_ms` 仍是适配器内部 phase 诊断，不能与系统 present 时间相加。")
     print("- `frame_work_ms` 对 GPUI 来自 request_layout→prepaint→paint 的真实元素包络；action dispatch 作为独立的 `dispatch_work_samples_ms` 诊断字段保留，不与绘制时间混合。")
