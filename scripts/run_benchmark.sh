@@ -27,11 +27,15 @@ fi
 # Build the MoonBit GPUI app once; the adapter below only invokes its stable
 # benchmark entrypoint for each fixture/scenario repetition.
 "$(dirname "$0")/../gpui/build.sh"
+# gpui2 (md_mbt) is macOS-arm64-only; build.py self-skips elsewhere and the
+# adapter then reports a `skipped` protocol row.
+"$(dirname "$0")/../gpui2/build.sh"
 
 python3 "$(dirname "$0")/../bench/run_benchmark.py" \
   --adapter moui-skia-raster="${MOUI_NATIVE_ENV}MOUI_SKIA_RENDERER=skia-raster moon run $MOUI_BENCHMARK_PACKAGE --target native --release -- {fixture} {scenario}" \
   --adapter moui-skia-gpu="${MOUI_NATIVE_ENV}MOUI_SKIA_RENDERER=skia-gpu moon run $MOUI_BENCHMARK_PACKAGE --target native --release -- {fixture} {scenario}" \
   --adapter gpui='python3 gpui/benchmark.py {fixture} {scenario}' \
+  --adapter gpui2='python3 gpui2/benchmark.py {fixture} {scenario}' \
   --adapter flutter-skia='FLUTTER_RENDERER=skia dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
   --adapter flutter-impeller='FLUTTER_RENDERER=impeller dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
   --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \

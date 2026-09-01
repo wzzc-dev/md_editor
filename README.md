@@ -18,6 +18,7 @@ normalized. Unsupported constructs remain editable source text.
 | --- | --- |
 | `moui/` | MoonBit + local MoUI rich-text editor, native Skia and WGPU entrypoints |
 | `gpui/` | MoonBit GPUI application over the vendored Rust native binding |
+| `gpui2/` | The external md_mbt editor (MoonBit velotype-style block WYSIWYG) on the same GPUI backend |
 | `flutter/` | Flutter Material 3 WYSIWYG comparison editor |
 | `electron/` | Electron + Vditor WYSIWYG comparison editor |
 | `data/` | Deterministic Small/Medium/Large/Stress Markdown fixtures |
@@ -27,10 +28,10 @@ normalized. Unsupported constructs remain editable source text.
 ## Quick start
 
 ```sh
-# Build each application once and run all seven desktop UI-process adapters.
+# Build each application once and run all eight desktop UI-process adapters.
 ./scripts/run_ui_benchmark.sh
 
-# Fast seven-adapter integration smoke run.
+# Fast eight-adapter integration smoke run.
 UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
   ./scripts/run_ui_benchmark.sh --fixture small \
   --out results/smoke-ui.json
