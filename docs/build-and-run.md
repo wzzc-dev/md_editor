@@ -74,6 +74,27 @@ The GPUI desktop-window benchmark directly invokes the built executable:
 python3 gpui/ui_benchmark.py data/small.md input
 ```
 
+## GPUI2 (md_mbt)
+
+gpui2 runs the sibling [md_mbt](/Volumes/Data/Code/moon/md_mbt) editor — a
+velotype-style MoonBit block-WYSIWYG core (live inline transforms, snapshot
+undo, whole-tree rendering without virtualization) on the same GPUI backend:
+
+```sh
+MD_MBT_DIR=/path/to/md_mbt ./gpui2/build.sh   # MD_MBT_DIR defaults to ../md_mbt
+python3 gpui2/ui_benchmark.py data/small.md input
+python3 gpui2/benchmark.py data/small.md open
+```
+
+`gpui2/build.py` builds md_mbt with `moon build --target native --release` and
+installs `gpui2/dist/gpui2-markdown-editor`. md_mbt vendors the same
+wzzc-dev/gpui-moonbit fork as `gpui/vendor/gpui-moonbit`; its Rust window
+benchmark loop labels the ui-frame row through `UI_BENCHMARK_ADAPTER_NAME`
+(set by the wrapper to `gpui2`). Input actions reach the editor as real
+`EVENT_TEXT` dispatches and scroll drives the retained `ScrollHandle`.
+md_mbt is validated on macOS arm64 only; on other platforms the adapters emit
+the shared `skipped` protocol row.
+
 ## Flutter and Electron
 
 Flutter requires a current stable SDK. For interactive use, run `flutter run
@@ -106,6 +127,6 @@ feature-complete editors.
 ## Full UI matrix
 
 `scripts/run_ui_benchmark.sh` generates fixtures, builds each application once,
-runs all seven desktop UI-process adapters, and writes a platform-specific
+runs all eight desktop UI-process adapters, and writes a platform-specific
 JSON/Markdown pair under `results/`. Extra runner options are forwarded, for example
 `--fixture medium --repetitions 1 --warmups 0`.

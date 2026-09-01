@@ -60,6 +60,9 @@ else
   moon build "$MOUI_BENCHMARK_PACKAGE" --target native --release
 fi
 "$ROOT/gpui/build.sh"
+# gpui2 (md_mbt) is macOS-arm64-only; build.py self-skips elsewhere and the
+# adapter then reports the documented `skipped` protocol row.
+"$ROOT/gpui2/build.sh"
 npm ci --prefix "$ROOT/electron"
 (
   cd "$ROOT/flutter"
@@ -72,6 +75,7 @@ MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --adapter moui-skia-gpu='python3 moui/ui_benchmark.py skia-gpu {fixture} {scenario}' \
   --adapter moui-wgpu='python3 moui/ui_benchmark.py wgpu {fixture} {scenario}' \
   --adapter gpui='python3 gpui/ui_benchmark.py {fixture} {scenario}' \
+  --adapter gpui2='python3 gpui2/ui_benchmark.py {fixture} {scenario}' \
   --adapter flutter-skia='python3 flutter/ui_benchmark.py skia {fixture} {scenario}' \
   --adapter flutter-impeller='python3 flutter/ui_benchmark.py impeller {fixture} {scenario}' \
   --adapter electron='python3 electron/ui_benchmark.py {fixture} {scenario}' \
