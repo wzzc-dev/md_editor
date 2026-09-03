@@ -44,6 +44,99 @@ TRACE_INSTRUMENT = "Points of Interest"
 DEFAULT_START_DELAY_SECONDS = 0.50
 DEFAULT_EXPORT_TIMEOUT_SECONDS = 45.0
 _NANOSECONDS_PER_MILLISECOND = 1_000_000.0
+# ``xctrace record`` writes its uncompressed intermediates under this name
+# pattern into the per-user darwin temp directory.
+KTRACE_TEMP_GLOB = "instruments*.ktrace"
+
+
+def default_user_temp_directories() -> list[Path]:
+    """Return the temp roots where xctrace can land its intermediate files.
+
+    Current recorders resolve the per-user darwin temp directory via
+    ``confstr(_CS_DARWIN_USER_TEMP_DIR)`` for their ktrace intermediates and
+    ignore a redirected ``TMPDIR``, so both locations are swept defensively.
+    """
+    roots = [Path(tempfile.gettempdir())]
+    if platform.system() == "Darwin":
+        try:
+            darwin_temp = os.confstr("CS_DARWIN_USER_TEMP_DIR")
+        except (AttributeError, OSError, ValueError):
+            darwin_temp = None
+        if darwin_temp:
+            roots.append(Path(darwin_temp))
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        try:
+            resolved = root.resolve()
+        except OSError:
+            continue
+        if str(resolved) not in seen:
+            seen.add(str(resolved))
+            unique.append(resolved)
+    return unique
+
+
+def _tree_size_bytes(path: Path) -> int:
+    if path.is_symlink() or not path.is_dir():
+        try:
+            return path.stat().st_size
+        except OSError:
+            return 0
+    total = 0
+    for root, _, names in os.walk(path):
+        for name in names:
+            try:
+                total += (Path(root) / name).stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def sweep_stray_ktraces(
+    *,
+    newer_than: float | None = None,
+    older_than: float | None = None,
+    roots: Iterable[Path] | None = None,
+) -> tuple[int, int]:
+    """Delete stray xctrace ``instrumentsXXXXXX.ktrace`` intermediates.
+
+    These multi-gigabyte files survive a killed or redirected recorder, but
+    their names carry no session identity (the Instruments GUI writes the same
+    pattern into the same directory), so callers must bound ownership by mtime
+    and a file is only removed when it satisfies every supplied bound: a
+    finished recording session passes ``newer_than`` (its start time), and an
+    age-based maintenance sweep passes ``older_than`` (the mtime cutoff).
+    Returns the removed entry count and the bytes they held.
+    """
+    sweep_roots = default_user_temp_directories() if roots is None else list(roots)
+    removed = 0
+    freed = 0
+    for root in sweep_roots:
+        try:
+            candidates = sorted(root.glob(KTRACE_TEMP_GLOB))
+        except OSError:
+            continue
+        for candidate in candidates:
+            try:
+                mtime = candidate.stat().st_mtime
+            except OSError:
+                continue
+            if newer_than is not None and mtime < newer_than:
+                continue
+            if older_than is not None and mtime >= older_than:
+                continue
+            size = _tree_size_bytes(candidate)
+            try:
+                if candidate.is_dir() and not candidate.is_symlink():
+                    shutil.rmtree(candidate)
+                else:
+                    candidate.unlink()
+            except OSError:
+                continue
+            removed += 1
+            freed += size
+    return removed, freed
 
 
 @dataclass
@@ -1056,7 +1149,10 @@ class TraceSession:
             if self.temp_directory is not None:
                 # Trace stores can be multiple gigabytes on large windows;
                 # keep Instruments' working files on the data volume rather
-                # than the small system-volume /var/folders filesystem.
+                # than the small system-volume /var/folders filesystem. The
+                # recorder resolves some intermediates through confstr and
+                # ignores this redirect, so cleanup() additionally sweeps the
+                # per-user temp directory for this session's ktrace files.
                 environment["TMPDIR"] = str(self.temp_directory.resolve())
             log = self.log_path.open("w", encoding="utf-8")
             command = [
@@ -1126,6 +1222,56 @@ class TraceSession:
     ) -> DisplayTraceResult:
         if self.start_error:
             return DisplayTraceResult("unsupported", trace_path=str(self.trace_path), error=self.start_error)
+        try:
+            return self._collect_result(
+                process_started_epoch_ms=process_started_epoch_ms,
+                pid=pid,
+                additional_pids=additional_pids,
+                action_window_start_epoch_ms=action_window_start_epoch_ms,
+                action_window_end_epoch_ms=action_window_end_epoch_ms,
+                action_timestamps_epoch_ms=action_timestamps_epoch_ms,
+                expected_samples=expected_samples,
+            )
+        finally:
+            self.cleanup()
+
+    def cleanup(self) -> None:
+        """Remove every scratch artifact this session could have produced.
+
+        Covers all recording outcomes, including timeout kills and
+        interrupted parses: a still-running recorder is taken down first
+        because it would keep writing gigabyte intermediates into scratch that
+        is about to vanish, the per-session temp directory is reclaimed, and
+        the stray ``instrumentsXXXXXX.ktrace`` intermediates that xctrace
+        leaves in the per-user temp directory regardless of the redirected
+        TMPDIR are swept. The sweep is bounded by this session's start time so
+        unrelated older temp artifacts are never touched.
+        """
+        if self.process is not None and self.process.poll() is None:
+            try:
+                self.process.terminate()
+                self.process.wait(timeout=5)
+            except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
+                try:
+                    self.process.kill()
+                except OSError:
+                    pass
+        if self.temp_directory is not None:
+            shutil.rmtree(self.temp_directory, ignore_errors=True)
+        if platform.system() == "Darwin" and self.started_epoch_ms is not None:
+            sweep_stray_ktraces(newer_than=self.started_epoch_ms / 1000.0)
+
+    def _collect_result(
+        self,
+        *,
+        process_started_epoch_ms: float | None,
+        pid: int,
+        additional_pids: Iterable[int],
+        action_window_start_epoch_ms: float | None,
+        action_window_end_epoch_ms: float | None,
+        action_timestamps_epoch_ms: Iterable[float],
+        expected_samples: int | None,
+    ) -> DisplayTraceResult:
         recorder_error = ""
         if self.process is not None and self.process.poll() is None:
             try:
@@ -1166,8 +1312,6 @@ class TraceSession:
         except OSError:
             recorder_log = ""
         if "Output file saved as:" not in recorder_log:
-            if self.temp_directory is not None:
-                shutil.rmtree(self.temp_directory, ignore_errors=True)
             if not self.keep_trace:
                 shutil.rmtree(self.trace_path, ignore_errors=True)
             return DisplayTraceResult(
@@ -1182,27 +1326,20 @@ class TraceSession:
                 error=(recorder_error or "").strip() or "xctrace did not produce a trace file",
             )
         try:
-            try:
-                exported = _export_tables(self.trace_path, self.export_timeout_seconds)
-            except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
-                return DisplayTraceResult("error", trace_path=str(self.trace_path), error=str(error))
-            result = parse_exported_xml(
-                exported,
-                pid=pid,
-                additional_pids=additional_pids,
-                process_started_epoch_ms=process_started_epoch_ms,
-                action_window_start_epoch_ms=action_window_start_epoch_ms,
-                action_window_end_epoch_ms=action_window_end_epoch_ms,
-                action_timestamps_epoch_ms=action_timestamps_epoch_ms,
-                expected_samples=expected_samples,
-                trace_path=str(self.trace_path),
-            )
-        finally:
-            # xctrace leaves its large intermediate ktrace files behind even
-            # after a successful natural-limit save. They are not part of the
-            # audit bundle and must be removed between cases.
-            if self.temp_directory is not None:
-                shutil.rmtree(self.temp_directory, ignore_errors=True)
+            exported = _export_tables(self.trace_path, self.export_timeout_seconds)
+        except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+            return DisplayTraceResult("error", trace_path=str(self.trace_path), error=str(error))
+        result = parse_exported_xml(
+            exported,
+            pid=pid,
+            additional_pids=additional_pids,
+            process_started_epoch_ms=process_started_epoch_ms,
+            action_window_start_epoch_ms=action_window_start_epoch_ms,
+            action_window_end_epoch_ms=action_window_end_epoch_ms,
+            action_timestamps_epoch_ms=action_timestamps_epoch_ms,
+            expected_samples=expected_samples,
+            trace_path=str(self.trace_path),
+        )
         if result.trace_started_epoch_ms is None:
             result.trace_started_epoch_ms = self.started_epoch_ms
         if not self.keep_trace:

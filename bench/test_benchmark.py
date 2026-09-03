@@ -11,7 +11,15 @@ from unittest.mock import patch
 
 import run_benchmark
 from run_benchmark import prune_trace_scratch, run_command, validate_system_trace_payload
-from macos_display_trace import _SurfaceRow, _dropped_slots, _match_action_presents, parse_exported_xml
+import macos_display_trace
+from macos_display_trace import (
+    TraceSession,
+    _SurfaceRow,
+    _dropped_slots,
+    _match_action_presents,
+    parse_exported_xml,
+    sweep_stray_ktraces,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -409,18 +417,37 @@ class FixtureTests(unittest.TestCase):
             validate_system_trace_payload(payload)
 
 
+def plant_ktrace(root: Path, name: str, age_seconds: float, *, directory: bool = False) -> Path:
+    path = root / name
+    if directory:
+        path.mkdir(parents=True)
+        (path / "payload").write_bytes(b"x" * 2048)
+    else:
+        path.write_bytes(b"x" * 1024)
+    stamp = time.time() - age_seconds
+    os.utime(path, (stamp, stamp))
+    return path
+
+
 class TraceScratchTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         root = Path(self.temporary.name)
         self.gate_root = root / ".trace-gates"
         self.xctrace_root = root / ".xctrace-tmp"
+        self.user_temp_root = root / "user-temp"
+        self.user_temp_root.mkdir()
         self.gate_patcher = patch.object(run_benchmark, "TRACE_SCRATCH_ROOT", self.gate_root)
         self.xctrace_patcher = patch.object(run_benchmark, "XCTRACE_TMP_ROOT", self.xctrace_root)
+        self.user_temp_patcher = patch.object(
+            macos_display_trace, "default_user_temp_directories", return_value=[self.user_temp_root]
+        )
         self.gate_patcher.start()
         self.xctrace_patcher.start()
+        self.user_temp_patcher.start()
         self.addCleanup(self.gate_patcher.stop)
         self.addCleanup(self.xctrace_patcher.stop)
+        self.addCleanup(self.user_temp_patcher.stop)
         self.addCleanup(self.temporary.cleanup)
 
     def make_scratch(self, path: Path, *, age_seconds: float) -> None:
@@ -484,6 +511,22 @@ class TraceScratchTests(unittest.TestCase):
         self.assertFalse((self.xctrace_root / "4242-stale").exists())
         self.assertTrue((self.gate_root / "case-fresh").exists())
 
+    def test_prune_reclaims_stale_stray_ktraces(self):
+        # xctrace ignores the redirected TMPDIR for these intermediates, so a
+        # killed runner leaves them in the per-user temp directory by the
+        # gigabyte; the age sweep must reach them too.
+        plant_ktrace(self.user_temp_root, "instrumentsStale.ktrace", 7200)
+        plant_ktrace(self.user_temp_root, "instrumentsBundle.ktrace", 7200, directory=True)
+        plant_ktrace(self.user_temp_root, "instrumentsFresh.ktrace", 60)
+        plant_ktrace(self.user_temp_root, "other.ktrace", 7200)
+        removed, freed = prune_trace_scratch(3600)
+        self.assertEqual(removed, 2)
+        self.assertGreaterEqual(freed, 3072)
+        self.assertFalse((self.user_temp_root / "instrumentsStale.ktrace").exists())
+        self.assertFalse((self.user_temp_root / "instrumentsBundle.ktrace").exists())
+        self.assertTrue((self.user_temp_root / "instrumentsFresh.ktrace").exists())
+        self.assertTrue((self.user_temp_root / "other.ktrace").exists())
+
     def test_default_runner_invocation_never_sweeps_the_real_roots(self):
         # The sweep deletes multi-gigabyte artifacts, so it must stay opt-in:
         # `bench/run_benchmark.py` is called directly by tests and by hand.
@@ -502,6 +545,77 @@ class TraceScratchTests(unittest.TestCase):
             self.assertTrue(planted.exists())
         finally:
             shutil.rmtree(planted, ignore_errors=True)
+
+
+class SweepStrayKtracesTests(unittest.TestCase):
+    def test_newer_than_only_sweeps_this_sessions_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fresh = plant_ktrace(root, "instrumentsF1234567.ktrace", 60)
+            fresh_bundle = plant_ktrace(root, "instrumentsF7654321.ktrace", 60, directory=True)
+            old = plant_ktrace(root, "instrumentsO1234567.ktrace", 7200)
+            nested_root = root / "sub"
+            nested_root.mkdir()
+            nested = plant_ktrace(nested_root, "instrumentsNested.ktrace", 60)
+            removed, freed = sweep_stray_ktraces(newer_than=time.time() - 3600, roots=[root])
+            self.assertEqual(removed, 2)
+            self.assertGreaterEqual(freed, 3072)
+            self.assertFalse(fresh.exists())
+            self.assertFalse(fresh_bundle.exists())
+            self.assertTrue(old.exists())
+            self.assertTrue(nested.exists())
+
+    def test_older_than_only_sweeps_stale_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = plant_ktrace(root, "instrumentsO1234567.ktrace", 7200)
+            fresh = plant_ktrace(root, "instrumentsF1234567.ktrace", 60)
+            active = plant_ktrace(root, "instrumentsA1234567.ktrace", 0)
+            removed, _ = sweep_stray_ktraces(older_than=time.time() - 3600, roots=[root])
+            self.assertEqual(removed, 1)
+            self.assertFalse(old.exists())
+            self.assertTrue(fresh.exists())
+            self.assertTrue(active.exists())
+
+    def test_only_matching_names_are_removed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stray = plant_ktrace(root, "instrumentsZ1234567.ktrace", 60)
+            keep_file = root / "other.ktrace"
+            keep_file.write_bytes(b"x" * 1024)
+            keep_name = root / "instrumentsZ1234567.trace"
+            keep_name.write_bytes(b"x" * 1024)
+            removed, _ = sweep_stray_ktraces(roots=[root])
+            self.assertEqual(removed, 1)
+            self.assertFalse(stray.exists())
+            self.assertTrue(keep_file.exists())
+            self.assertTrue(keep_name.exists())
+
+
+class TraceSessionCleanupTests(unittest.TestCase):
+    def test_cleanup_reclaims_scratch_and_bounds_the_stray_sweep(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            temp_directory = root / "xctrace-tmp"
+            temp_directory.mkdir()
+            (temp_directory / "instruments1234567.ktrace").write_bytes(b"x")
+            session = TraceSession(4242, root / "out", temp_directory=temp_directory)
+            session.started_epoch_ms = 1_700_000_000_000.0
+            with patch.object(macos_display_trace.platform, "system", return_value="Darwin"), \
+                    patch.object(macos_display_trace, "sweep_stray_ktraces") as sweep:
+                session.cleanup()
+            self.assertFalse(temp_directory.exists())
+            sweep.assert_called_once_with(newer_than=1_700_000_000.0)
+
+    def test_cleanup_without_a_started_session_never_sweeps_unbounded(self):
+        # An unbounded sweep could destroy a concurrent Instruments GUI
+        # recording, so cleanup only ever sweeps with a session start bound.
+        with tempfile.TemporaryDirectory() as directory:
+            session = TraceSession(4242, Path(directory) / "out")
+            with patch.object(macos_display_trace.platform, "system", return_value="Darwin"), \
+                    patch.object(macos_display_trace, "sweep_stray_ktraces") as sweep:
+                session.cleanup()
+            sweep.assert_not_called()
 
 
 if __name__ == "__main__":
