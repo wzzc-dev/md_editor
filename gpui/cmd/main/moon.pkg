@@ -1,9 +1,0 @@
-import {
-  "cross_framework/md_editor_gpui/app",
-  "nakake/gpui-bindings" @gpui,
-  "nakake/gpui-bindings/link" @gpui_link,
-  "moonbitlang/core/env",
-  "moonbitlang/x/fs",
-}
-
-pkgtype(kind: "executable")

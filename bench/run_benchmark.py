@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {"small": 5 * 1024, "medium": 50 * 1024, "large": 500 * 1024, "stress": 5 * 1024 * 1024}
 SCENARIOS = ("open", "input", "scroll")
 DEFAULT_ADAPTERS = (
-    "moui-skia-raster", "moui-skia-gpu", "moui-wgpu", "gpui", "gpui2", "flutter-skia",
+    "moui-skia-raster", "moui-skia-gpu", "moui-wgpu", "gpui", "flutter-skia",
     "flutter-impeller", "electron",
 )
 # A single strict trace can exceed a gigabyte, so every scratch directory that can
@@ -481,9 +481,8 @@ def _run_command_case(
         # GPUI's AppKit event loop can remain alive after xctrace --launch
         # hands the process back, without forwarding its stdout or scheduling
         # the first frame. Start GPUI normally and attach Instruments instead;
-        # the adapter gate still holds it until the recorder is ready. This
-        # applies to both GPUI adapters (gpui and gpui2 share the AppKit loop).
-        and adapter_name not in {"gpui", "gpui2"}
+        # the adapter gate still holds it until the recorder is ready.
+        and adapter_name != "gpui"
     )
     trace_finished = False
     descendant_stop: threading.Event | None = None

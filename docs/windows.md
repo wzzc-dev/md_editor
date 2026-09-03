@@ -19,11 +19,12 @@ from the registry. Then validate the toolchains:
 ```sh
 moon update
 moon check moui/app --target native
-moon check gpui/app gpui/cmd/main --target native
-moon test gpui/app --target native
 npm ci --prefix electron
 flutter doctor -v
 ```
+
+The gpui adapter (md_mbt) is validated on macOS arm64 only; its build script
+self-skips on Windows and the adapter reports the documented `skipped` row.
 
 ## Full UI matrix
 
@@ -35,8 +36,8 @@ UI_BENCHMARK_OUT=results/windows-amd64-ui.json \
 ```
 
 The script selects `MOUI_GPU_ROUTE=direct3d`, builds Flutter Profile for
-Windows, verifies its Skia/Impeller startup logs, builds the MoonBit/GPUI native
-executable, installs the Electron runtime and runs all four fixtures and three
+Windows, verifies its Skia/Impeller startup logs, builds the MoonBit benchmark
+package, installs the Electron runtime and runs all four fixtures and three
 scenarios. Default settings are one discarded process warm-up and three
 recorded repetitions.
 

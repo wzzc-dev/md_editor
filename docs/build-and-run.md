@@ -45,55 +45,40 @@ python3 moui/ui_benchmark.py skia-raster data/small.md scroll
 MOUI_GPU_ROUTE=metal python3 moui/ui_benchmark.py skia-gpu data/small.md scroll
 ```
 
-## GPUI
+## GPUI (md_mbt)
 
-Build the MoonBit-authored GPUI executable and its vendored native binding:
-
-```sh
-./gpui/build.sh                 # macOS/Linux
-pwsh -File gpui/build.ps1       # Windows
-```
-
-The macOS build emits `gpui/dist/GPUI Markdown Editor.app`; the Windows build
-emits `gpui/dist/gpui-markdown-editor.exe`. The executable opens the GPUI
-window at 1280x800. Pass a Markdown path as the first argument to open it;
-**Open** reloads that path, while **Save** writes to the same path (or
-`untitled.md` for a new document). The formatted block surface accepts keyboard
-input and wheel scrolling. MoonBit owns the command tree, block model, input
-handlers, file I/O, benchmark and native process entrypoint. The vendored Rust
-`gpui-sys` static library only exposes GPUI window, rendering and input
-capabilities through the native binding. `moon check gpui/app gpui/cmd/main
---target native` validates the MoonBit surface without opening a window, and
-`CARGO_HOME=.tools/gpui-cargo-home moon test gpui/app --target native`
-validates it with the native bridge from the repository root. The build script
-uses this ignored Cargo home by default unless `CARGO_HOME` is explicitly set.
-
-The GPUI desktop-window benchmark directly invokes the built executable:
+`gpui/` is the md_mbt Git submodule: a velotype-style MoonBit block-WYSIWYG
+core (live inline transforms, snapshot undo, estimator-windowed block
+rendering) on GPUI, vendoring the benchmark-instrumented
+wzzc-dev/gpui-moonbit fork under `gpui/third_party`:
 
 ```sh
-python3 gpui/ui_benchmark.py data/small.md input
+git submodule update --init --recursive   # gpui and its vendored gpui-moonbit
+./bench/adapters/gpui/build.sh
 ```
 
-## GPUI2 (md_mbt)
+`build.py` runs `moon build --target native --release` inside the submodule
+(unless `CARGO_HOME` is set explicitly, it uses the ignored repository-local
+`.tools/gpui-cargo-home` so the vendored binding stays reproducible) and
+installs `bench/adapters/gpui/dist/gpui-markdown-editor`. Pass a Markdown path
+as the first argument to open the document in the interactive 1280x800 GPUI
+window. MoonBit owns the command tree, block model, input handlers, file I/O,
+benchmark and native process entrypoint; the vendored Rust `gpui-sys` static
+library only exposes GPUI window, rendering and input capabilities over the
+native binding.
 
-gpui2 runs the sibling [md_mbt](/Volumes/Data/Code/moon/md_mbt) editor — a
-velotype-style MoonBit block-WYSIWYG core (live inline transforms, snapshot
-undo, estimator-windowed block rendering) on the same GPUI backend:
+The benchmark wrappers invoke the built executable without rebuilding:
 
 ```sh
-MD_MBT_DIR=/path/to/md_mbt ./gpui2/build.sh   # MD_MBT_DIR defaults to ../md_mbt
-python3 gpui2/ui_benchmark.py data/small.md input
-python3 gpui2/benchmark.py data/small.md open
+python3 bench/adapters/gpui/ui_benchmark.py data/small.md input
+python3 bench/adapters/gpui/benchmark.py data/small.md open
 ```
 
-`gpui2/build.py` builds md_mbt with `moon build --target native --release` and
-installs `gpui2/dist/gpui2-markdown-editor`. md_mbt vendors the same
-wzzc-dev/gpui-moonbit fork as `gpui/vendor/gpui-moonbit`; its Rust window
-benchmark loop labels the ui-frame row through `UI_BENCHMARK_ADAPTER_NAME`
-(set by the wrapper to `gpui2`). Input actions reach the editor as real
-`EVENT_TEXT` dispatches and scroll drives the retained `ScrollHandle`.
-md_mbt is validated on macOS arm64 only; on other platforms the adapters emit
-the shared `skipped` protocol row.
+The Rust window benchmark loop labels the ui-frame row through
+`UI_BENCHMARK_ADAPTER_NAME` (set by the wrapper to `gpui`). Input actions reach
+the editor as real `EVENT_TEXT` dispatches and scroll drives the retained
+`ScrollHandle`. md_mbt is validated on macOS arm64 only; on other platforms the
+adapter emits the shared `skipped` protocol row.
 
 ## Flutter and Electron
 
@@ -127,6 +112,6 @@ feature-complete editors.
 ## Full UI matrix
 
 `scripts/run_ui_benchmark.sh` generates fixtures, builds each application once,
-runs all eight desktop UI-process adapters, and writes a platform-specific
+runs all seven desktop UI-process adapters, and writes a platform-specific
 JSON/Markdown pair under `results/`. Extra runner options are forwarded, for example
 `--fixture medium --repetitions 1 --warmups 0`.

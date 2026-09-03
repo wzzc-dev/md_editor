@@ -17,8 +17,7 @@ normalized. Unsupported constructs remain editable source text.
 | Directory | Implementation |
 | --- | --- |
 | `moui/` | MoonBit + local MoUI rich-text editor, native Skia and WGPU entrypoints |
-| `gpui/` | MoonBit GPUI application over the vendored Rust native binding |
-| `gpui2/` | The external md_mbt editor (MoonBit velotype-style block WYSIWYG) on the same GPUI backend |
+| `gpui/` | Git submodule: the md_mbt editor (MoonBit velotype-style block WYSIWYG) on GPUI over the vendored Rust native binding |
 | `flutter/` | Flutter Material 3 WYSIWYG comparison editor |
 | `electron/` | Electron + Vditor WYSIWYG comparison editor |
 | `data/` | Deterministic Small/Medium/Large/Stress Markdown fixtures |
@@ -28,10 +27,10 @@ normalized. Unsupported constructs remain editable source text.
 ## Quick start
 
 ```sh
-# Build each application once and run all eight desktop UI-process adapters.
+# Build each application once and run all seven desktop UI-process adapters.
 ./scripts/run_ui_benchmark.sh
 
-# Fast eight-adapter integration smoke run.
+# Fast seven-adapter integration smoke run.
 UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
   ./scripts/run_ui_benchmark.sh --fixture small \
   --out results/smoke-ui.json
@@ -47,7 +46,8 @@ The current audited macOS arm64 capture is
 [`results/macos-arm64-ui.json`](results/macos-arm64-ui.json) with the rendered
 [`Markdown report`](results/macos-arm64-ui.md): 252/252 desktop UI-process
 records (seven adapters x four fixtures x three scenarios x three repetitions)
-are measured on an Apple M4 16 GiB host at 1280x800. The report intentionally shows
+are measured on an Apple M4 16 GiB host at 1280x800, with the `gpui` row
+emitted by the md_mbt submodule editor. The report intentionally shows
 where the strict 2x screen passes and fails; frame clocks are framework-specific
 and are not compositor-equivalent. A dedicated Windows amd64 16 GiB capture is
 still required and is documented in [`docs/windows.md`](docs/windows.md).
@@ -59,10 +59,10 @@ claims still require an instrumented GUI run.
 
 Electron uses Vditor 3.11.3 in `mode: "wysiwyg"` and loads all assets locally;
 its headless benchmark additionally emits a Small-only full Lute DOM row.
-GPUI's MoonBit executable links the vendored `gpui-moonbit` native binding.
-The MoonBit packages own the UI command tree, editor state, Markdown model,
-event handlers, file operations and process entrypoint; Rust is limited to the
-GPUI native capability bridge.
+The `gpui/` submodule runs the md_mbt editor: its MoonBit core owns the
+command tree, editor state, Markdown model, event handlers, file operations and
+process entrypoint, linked to the vendored `gpui-moonbit` Rust static library
+that is limited to the GPUI native capability bridge.
 
 ## Reproducibility
 

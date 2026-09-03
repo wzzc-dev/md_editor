@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "cross_framework/md_editor_moui/windows_benchmark"
+
+// Values
+
+// Errors
+
+// Types and methods
+type UiTimingSamples
+
+// Type aliases
+
+// Traits
