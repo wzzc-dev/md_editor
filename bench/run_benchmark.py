@@ -20,7 +20,7 @@ import time
 from typing import Any
 from pathlib import Path
 
-from macos_display_trace import TraceSession, display_session_locked, unavailable_result
+from macos_display_trace import TraceSession, display_session_locked, sweep_stray_ktraces, unavailable_result
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {"small": 5 * 1024, "medium": 50 * 1024, "large": 500 * 1024, "stress": 5 * 1024 * 1024}
@@ -55,7 +55,11 @@ def prune_trace_scratch(max_age_seconds: float = SCRATCH_MAX_AGE_SECONDS) -> tup
 
     Interrupted cases are indistinguishable from long-running ones by
     inspection alone, so ownership is decided purely by age and the caller owns
-    the threshold. Returns the removed entry count and the bytes they held.
+    the threshold. Besides the project scratch roots this also reclaims the
+    stray `instruments*.ktrace` intermediates xctrace lands in the per-user
+    temp directory (a redirected TMPDIR does not keep them away from there and
+    a killed runner cannot clean them up), which otherwise accumulate by the
+    gigabyte per case. Returns the removed entry count and the bytes they held.
     """
     removed = 0
     freed = 0
@@ -74,7 +78,8 @@ def prune_trace_scratch(max_age_seconds: float = SCRATCH_MAX_AGE_SECONDS) -> tup
             freed += directory_size_bytes(child)
             shutil.rmtree(child, ignore_errors=True)
             removed += 1
-    return removed, freed
+    stray_removed, stray_freed = sweep_stray_ktraces(older_than=cutoff)
+    return removed + stray_removed, freed + stray_freed
 
 
 def new_trace_scratch_directory() -> Path:
@@ -538,6 +543,9 @@ def _run_command_case(
         if trace_pid is None:
             trace_result = unavailable_result("xctrace launch did not expose target pid")
             trace_finished = True
+            # finish() will never run for this session, so reclaim its scratch
+            # (and any stray ktrace it already wrote) explicitly here.
+            trace_session.cleanup()
             return
         if trace_start_file is not None:
             try:
