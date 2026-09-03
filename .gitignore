@@ -1,7 +1,7 @@
 _build/
 .tools/
 target/
-gpui/dist/
+bench/adapters/gpui/dist/
 .dart_tool/
 build/
 node_modules/

@@ -1,7 +1,7 @@
 # Markdown editor benchmark report
 
-- Schema：`md-editor-benchmark/v2`；生成时间：`2026-09-01T17:33:04Z`
-- 数据状态：`288 measured`，`0 skipped/error`；原始样本保留在 JSON。
+- Schema：`md-editor-benchmark/v2`；生成时间：`2026-09-03T10:41:43Z`
+- 数据状态：`252 measured`，`0 skipped/error`；原始样本保留在 JSON。
 - Host：`macOS-26.3-arm64-arm-64bit` / `arm64` / `16.0 GiB`；GPU：`Apple M4`
 - OS：`25.3.0`；CPU：`arm`；toolchains：`python=3.12.11, moon=moon 0.1.20260824 (dae026a 2026-08-24), rustc=rustc 1.94.0 (4a4ef493e 2026-03-02), cargo=cargo 1.94.0 (85eff7c80 2026-01-15), node=v25.2.1, npm=11.6.2, flutter=Flutter 3.47.1 • channel stable • https://github.com/flutter/flutter.git`
 - 统一配置：`1280x800 @ 60 Hz`；font `system-ui 16px`；line-height `1.55`；overscan `3`；fixed row `66px`；GPU backend `Metal`
@@ -14,102 +14,90 @@
 
 | 实现 | 测试集合 | 场景 | 范围 | 工作均值/P95 | 仅分发均值/P95 | 帧间隔均值/P95 | 输入到可见均值/P95 | 离屏均值 | 回读均值 | 首次可交互 | 丢帧数 | 状态 |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| moui-skia-raster | small | open | ui-frame | 44.690/46.538 | - | - | - | 0.00 ms | 5.50 ms | 51.91 ms | n/a | measured |
-| moui-skia-raster | small | input | ui-frame | 0.506/0.721 | - | 4.790/5.308 | 4.790/5.307 | 0.00 ms | 3.96 ms | 55.26 ms | n/a | measured |
-| moui-skia-raster | small | scroll | ui-frame | 2.123/4.750 | - | 6.851/10.227 | - | 0.00 ms | 4.12 ms | 54.47 ms | n/a | measured |
-| moui-skia-raster | medium | open | ui-frame | 45.461/46.620 | - | - | - | 0.00 ms | 5.87 ms | 53.26 ms | n/a | measured |
-| moui-skia-raster | medium | input | ui-frame | 0.473/0.512 | - | 4.688/4.953 | 4.687/4.953 | 0.00 ms | 3.88 ms | 52.73 ms | n/a | measured |
-| moui-skia-raster | medium | scroll | ui-frame | 2.141/4.849 | - | 6.825/10.224 | - | 0.00 ms | 4.08 ms | 53.05 ms | n/a | measured |
-| moui-skia-raster | large | open | ui-frame | 45.754/46.336 | - | - | - | 0.00 ms | 5.90 ms | 55.30 ms | n/a | measured |
-| moui-skia-raster | large | input | ui-frame | 0.498/0.572 | - | 5.014/5.376 | 5.014/5.375 | 0.00 ms | 4.00 ms | 57.39 ms | n/a | measured |
-| moui-skia-raster | large | scroll | ui-frame | 2.209/4.959 | - | 7.005/10.694 | - | 0.00 ms | 4.17 ms | 54.60 ms | n/a | measured |
-| moui-skia-raster | stress | open | ui-frame | 64.316/101.278 | - | - | - | 0.00 ms | 6.54 ms | 100.80 ms | n/a | measured |
-| moui-skia-raster | stress | input | ui-frame | 0.594/0.856 | - | 7.537/8.504 | 7.537/8.504 | 0.00 ms | 4.23 ms | 73.54 ms | n/a | measured |
-| moui-skia-raster | stress | scroll | ui-frame | 2.309/5.183 | - | 7.299/11.320 | - | 0.00 ms | 4.33 ms | 76.66 ms | n/a | measured |
-| moui-skia-gpu | small | open | ui-frame | 59.008/59.489 | - | - | - | n/a | 0.00 ms | 60.79 ms | n/a | measured |
-| moui-skia-gpu | small | input | ui-frame | 8.161/9.134 | - | 8.548/9.492 | 8.547/9.491 | n/a | 0.00 ms | 65.49 ms | n/a | measured |
-| moui-skia-gpu | small | scroll | ui-frame | 8.150/9.427 | - | 8.853/10.837 | - | n/a | 0.00 ms | 62.45 ms | n/a | measured |
-| moui-skia-gpu | medium | open | ui-frame | 62.359/66.167 | - | - | - | n/a | 0.00 ms | 64.35 ms | n/a | measured |
-| moui-skia-gpu | medium | input | ui-frame | 8.300/9.610 | - | 8.705/10.037 | 8.705/10.036 | n/a | 0.00 ms | 67.04 ms | n/a | measured |
-| moui-skia-gpu | medium | scroll | ui-frame | 8.025/9.087 | - | 8.695/10.079 | - | n/a | 0.00 ms | 69.57 ms | n/a | measured |
-| moui-skia-gpu | large | open | ui-frame | 57.039/58.354 | - | - | - | n/a | 0.00 ms | 60.51 ms | n/a | measured |
-| moui-skia-gpu | large | input | ui-frame | 8.133/9.160 | - | 8.639/9.712 | 8.638/9.711 | n/a | 0.00 ms | 59.16 ms | n/a | measured |
-| moui-skia-gpu | large | scroll | ui-frame | 8.033/9.131 | - | 8.662/9.925 | - | n/a | 0.00 ms | 60.12 ms | n/a | measured |
-| moui-skia-gpu | stress | open | ui-frame | 56.472/56.691 | - | - | - | n/a | 0.00 ms | 76.01 ms | n/a | measured |
-| moui-skia-gpu | stress | input | ui-frame | 7.021/8.355 | - | 9.483/10.618 | 9.483/10.618 | n/a | 0.00 ms | 78.85 ms | n/a | measured |
-| moui-skia-gpu | stress | scroll | ui-frame | 8.013/9.060 | - | 8.634/10.020 | - | n/a | 0.00 ms | 76.46 ms | n/a | measured |
-| moui-wgpu | small | open | ui-frame | 46.637/47.209 | - | - | - | n/a | 0.00 ms | 48.41 ms | n/a | measured |
-| moui-wgpu | small | input | ui-frame | 7.862/9.880 | - | 8.210/10.196 | 8.209/10.196 | n/a | 0.00 ms | 48.72 ms | n/a | measured |
-| moui-wgpu | small | scroll | ui-frame | 7.721/9.032 | - | 8.331/9.421 | - | n/a | 0.00 ms | 48.64 ms | n/a | measured |
-| moui-wgpu | medium | open | ui-frame | 52.668/62.053 | - | - | - | n/a | 0.00 ms | 54.59 ms | n/a | measured |
-| moui-wgpu | medium | input | ui-frame | 7.870/9.393 | - | 8.247/9.714 | 8.247/9.714 | n/a | 0.00 ms | 49.71 ms | n/a | measured |
-| moui-wgpu | medium | scroll | ui-frame | 7.731/8.936 | - | 8.335/9.361 | - | n/a | 0.00 ms | 48.94 ms | n/a | measured |
-| moui-wgpu | large | open | ui-frame | 46.910/47.234 | - | - | - | n/a | 0.00 ms | 50.49 ms | n/a | measured |
-| moui-wgpu | large | input | ui-frame | 7.672/9.105 | - | 8.197/9.583 | 8.197/9.582 | n/a | 0.00 ms | 50.69 ms | n/a | measured |
-| moui-wgpu | large | scroll | ui-frame | 7.711/9.049 | - | 8.325/9.479 | - | n/a | 0.00 ms | 50.98 ms | n/a | measured |
-| moui-wgpu | stress | open | ui-frame | 47.964/48.133 | - | - | - | n/a | 0.00 ms | 67.56 ms | n/a | measured |
-| moui-wgpu | stress | input | ui-frame | 5.594/6.941 | - | 8.267/9.263 | 8.266/9.263 | n/a | 0.00 ms | 69.24 ms | n/a | measured |
-| moui-wgpu | stress | scroll | ui-frame | 7.733/8.963 | - | 8.347/9.443 | - | n/a | 0.00 ms | 67.98 ms | n/a | measured |
-| gpui | small | open | ui-frame | 2.014/2.176 | - | - | - | n/a | n/a | 113.40 ms | n/a | measured |
-| gpui | small | input | ui-frame | 1.962/2.121 | 0.060/0.158 | 9.567/11.997 | 9.565/11.995 | n/a | n/a | 111.63 ms | n/a | measured |
-| gpui | small | scroll | ui-frame | 2.232/2.932 | 0.003/0.005 | 9.952/11.933 | - | n/a | n/a | 114.65 ms | n/a | measured |
-| gpui | medium | open | ui-frame | 2.018/2.058 | - | - | - | n/a | n/a | 114.75 ms | n/a | measured |
-| gpui | medium | input | ui-frame | 1.874/2.026 | 0.056/0.160 | 9.660/12.010 | 9.657/12.007 | n/a | n/a | 111.19 ms | n/a | measured |
-| gpui | medium | scroll | ui-frame | 2.335/3.005 | 0.003/0.004 | 10.014/11.869 | - | n/a | n/a | 108.60 ms | n/a | measured |
-| gpui | large | open | ui-frame | 2.065/2.089 | - | - | - | n/a | n/a | 106.80 ms | n/a | measured |
-| gpui | large | input | ui-frame | 1.916/2.057 | 0.058/0.165 | 9.306/12.075 | 9.303/12.073 | n/a | n/a | 105.89 ms | n/a | measured |
-| gpui | large | scroll | ui-frame | 2.338/3.139 | 0.003/0.005 | 9.966/10.707 | - | n/a | n/a | 105.88 ms | n/a | measured |
-| gpui | stress | open | ui-frame | 2.055/2.115 | - | - | - | n/a | n/a | 109.53 ms | n/a | measured |
-| gpui | stress | input | ui-frame | 1.920/2.057 | 0.063/0.188 | 9.512/10.756 | 9.509/10.754 | n/a | n/a | 119.40 ms | n/a | measured |
-| gpui | stress | scroll | ui-frame | 1.986/2.963 | 0.003/0.004 | 9.988/11.214 | - | n/a | n/a | 108.51 ms | n/a | measured |
-| gpui2 | small | open | ui-frame | 17.970/18.455 | - | - | - | n/a | n/a | 143.84 ms | n/a | measured |
-| gpui2 | small | input | ui-frame | 16.307/17.191 | 0.648/0.857 | 20.297/25.171 | 20.295/25.169 | n/a | n/a | 139.40 ms | n/a | measured |
-| gpui2 | small | scroll | ui-frame | 17.771/20.746 | 0.002/0.003 | 20.830/24.241 | - | n/a | n/a | 136.09 ms | n/a | measured |
-| gpui2 | medium | open | ui-frame | 17.355/17.371 | - | - | - | n/a | n/a | 134.77 ms | n/a | measured |
-| gpui2 | medium | input | ui-frame | 16.315/16.683 | 1.549/1.642 | 21.323/28.164 | 21.320/28.163 | n/a | n/a | 140.05 ms | n/a | measured |
-| gpui2 | medium | scroll | ui-frame | 17.733/20.631 | 0.002/0.003 | 21.190/24.623 | - | n/a | n/a | 138.72 ms | n/a | measured |
-| gpui2 | large | open | ui-frame | 17.694/17.763 | - | - | - | n/a | n/a | 137.34 ms | n/a | measured |
-| gpui2 | large | input | ui-frame | 16.354/16.820 | 10.971/11.479 | 29.762/37.278 | 29.759/37.276 | n/a | n/a | 135.70 ms | n/a | measured |
-| gpui2 | large | scroll | ui-frame | 17.683/20.503 | 0.002/0.003 | 25.052/28.430 | - | n/a | n/a | 145.34 ms | n/a | measured |
-| gpui2 | stress | open | ui-frame | 17.668/17.889 | - | - | - | n/a | n/a | 165.22 ms | n/a | measured |
-| gpui2 | stress | input | ui-frame | 15.799/16.240 | 110.979/115.856 | 118.387/135.075 | 118.385/135.072 | n/a | n/a | 161.30 ms | n/a | measured |
-| gpui2 | stress | scroll | ui-frame | 17.681/20.428 | 0.002/0.003 | 63.267/67.293 | - | n/a | n/a | 155.72 ms | n/a | measured |
-| flutter-skia | small | open | ui-frame | 8.224/8.779 | - | - | - | n/a | n/a | 54.54 ms | 0 | measured |
-| flutter-skia | small | input | ui-frame | 1.078/1.482 | - | 10.000/10.003 | 10.285/13.436 | n/a | n/a | 55.73 ms | 0 | measured |
-| flutter-skia | small | scroll | ui-frame | 1.586/2.457 | - | 10.000/10.001 | - | n/a | n/a | 54.88 ms | 2 | measured |
-| flutter-skia | medium | open | ui-frame | 7.983/8.238 | - | - | - | n/a | n/a | 53.90 ms | 0 | measured |
-| flutter-skia | medium | input | ui-frame | 1.081/1.518 | - | 9.667/10.002 | 10.826/17.028 | n/a | n/a | 56.63 ms | 0 | measured |
-| flutter-skia | medium | scroll | ui-frame | 1.915/2.733 | - | 10.000/10.001 | - | n/a | n/a | 53.88 ms | 1 | measured |
-| flutter-skia | large | open | ui-frame | 8.222/8.732 | - | - | - | n/a | n/a | 55.40 ms | 0 | measured |
-| flutter-skia | large | input | ui-frame | 1.048/1.485 | - | 10.000/10.002 | 10.562/15.475 | n/a | n/a | 56.11 ms | 0 | measured |
-| flutter-skia | large | scroll | ui-frame | 1.958/2.723 | - | 9.972/10.001 | - | n/a | n/a | 56.03 ms | 1 | measured |
-| flutter-skia | stress | open | ui-frame | 7.944/8.200 | - | - | - | n/a | n/a | 85.46 ms | 0 | measured |
-| flutter-skia | stress | input | ui-frame | 1.078/1.403 | - | 10.000/10.002 | 10.037/11.803 | n/a | n/a | 86.54 ms | 0 | measured |
-| flutter-skia | stress | scroll | ui-frame | 1.973/2.775 | - | 9.972/10.001 | - | n/a | n/a | 87.54 ms | 0 | measured |
-| flutter-impeller | small | open | ui-frame | 6.467/6.562 | - | - | - | n/a | n/a | 56.09 ms | 0 | measured |
-| flutter-impeller | small | input | ui-frame | 1.029/1.516 | - | 9.667/10.002 | 10.884/19.795 | n/a | n/a | 55.34 ms | 0 | measured |
-| flutter-impeller | small | scroll | ui-frame | 1.514/1.846 | - | 10.028/10.001 | - | n/a | n/a | 55.48 ms | 1 | measured |
-| flutter-impeller | medium | open | ui-frame | 6.637/6.953 | - | - | - | n/a | n/a | 53.81 ms | 0 | measured |
-| flutter-impeller | medium | input | ui-frame | 1.147/2.083 | - | 9.000/10.001 | 10.850/15.888 | n/a | n/a | 54.96 ms | 0 | measured |
-| flutter-impeller | medium | scroll | ui-frame | 1.966/2.771 | - | 10.028/10.001 | - | n/a | n/a | 54.69 ms | 1 | measured |
-| flutter-impeller | large | open | ui-frame | 6.274/6.389 | - | - | - | n/a | n/a | 59.56 ms | 0 | measured |
-| flutter-impeller | large | input | ui-frame | 1.147/2.019 | - | 9.000/10.001 | 10.830/15.185 | n/a | n/a | 58.70 ms | 0 | measured |
-| flutter-impeller | large | scroll | ui-frame | 1.945/2.825 | - | 10.028/10.001 | - | n/a | n/a | 57.48 ms | 1 | measured |
-| flutter-impeller | stress | open | ui-frame | 6.149/6.253 | - | - | - | n/a | n/a | 85.50 ms | 0 | measured |
-| flutter-impeller | stress | input | ui-frame | 1.074/1.377 | - | 10.000/10.001 | 10.138/14.941 | n/a | n/a | 86.26 ms | 0 | measured |
-| flutter-impeller | stress | scroll | ui-frame | 2.014/2.798 | - | 10.000/10.001 | - | n/a | n/a | 86.77 ms | 0 | measured |
-| electron | small | open | ui-frame | 12.533/14.900 | - | - | - | n/a | n/a | 12.53 ms | 0 | measured |
-| electron | small | input | ui-frame | 1.780/3.300 | - | 9.334/11.800 | 8.360/11.800 | n/a | n/a | 12.40 ms | 0 | measured |
-| electron | small | scroll | ui-frame | 1.733/2.100 | - | 9.940/11.700 | - | n/a | n/a | 10.73 ms | 0 | measured |
-| electron | medium | open | ui-frame | 12.400/14.700 | - | - | - | n/a | n/a | 12.40 ms | 0 | measured |
-| electron | medium | input | ui-frame | 1.723/2.300 | - | 10.054/14.436 | 8.660/11.700 | n/a | n/a | 8.67 ms | 0 | measured |
-| electron | medium | scroll | ui-frame | 1.835/2.300 | - | 9.943/11.400 | - | n/a | n/a | 8.77 ms | 0 | measured |
-| electron | large | open | ui-frame | 11.900/15.800 | - | - | - | n/a | n/a | 11.90 ms | 0 | measured |
-| electron | large | input | ui-frame | 1.710/2.600 | - | 9.775/11.900 | 8.573/11.800 | n/a | n/a | 9.73 ms | 0 | measured |
-| electron | large | scroll | ui-frame | 1.793/2.200 | - | 9.909/11.600 | - | n/a | n/a | 10.03 ms | 0 | measured |
-| electron | stress | open | ui-frame | 18.100/18.300 | - | - | - | n/a | n/a | 18.10 ms | 0 | measured |
-| electron | stress | input | ui-frame | 1.653/2.100 | - | 8.997/11.000 | 8.603/11.000 | n/a | n/a | 17.60 ms | 0 | measured |
-| electron | stress | scroll | ui-frame | 1.832/2.300 | - | 9.917/11.500 | - | n/a | n/a | 17.87 ms | 0 | measured |
+| moui-skia-raster | small | open | ui-frame | 46.698/46.800 | - | - | - | 0.00 ms | 6.18 ms | 54.61 ms | n/a | measured |
+| moui-skia-raster | small | input | ui-frame | 0.515/0.565 | - | 5.143/6.301 | 5.143/6.300 | 0.00 ms | 4.27 ms | 55.19 ms | n/a | measured |
+| moui-skia-raster | small | scroll | ui-frame | 2.082/4.728 | - | 6.670/10.175 | - | 0.00 ms | 4.00 ms | 53.58 ms | n/a | measured |
+| moui-skia-raster | medium | open | ui-frame | 45.711/47.261 | - | - | - | 0.00 ms | 6.08 ms | 53.66 ms | n/a | measured |
+| moui-skia-raster | medium | input | ui-frame | 0.485/0.557 | - | 4.696/4.941 | 4.696/4.940 | 0.00 ms | 3.88 ms | 54.62 ms | n/a | measured |
+| moui-skia-raster | medium | scroll | ui-frame | 2.166/4.881 | - | 6.948/10.495 | - | 0.00 ms | 4.15 ms | 54.76 ms | n/a | measured |
+| moui-skia-raster | large | open | ui-frame | 46.166/46.823 | - | - | - | 0.00 ms | 5.82 ms | 55.50 ms | n/a | measured |
+| moui-skia-raster | large | input | ui-frame | 0.500/0.601 | - | 5.045/5.902 | 5.045/5.902 | 0.00 ms | 4.02 ms | 56.23 ms | n/a | measured |
+| moui-skia-raster | large | scroll | ui-frame | 2.101/4.803 | - | 6.676/10.105 | - | 0.00 ms | 4.00 ms | 55.86 ms | n/a | measured |
+| moui-skia-raster | stress | open | ui-frame | 46.855/48.230 | - | - | - | 0.00 ms | 5.68 ms | 72.16 ms | n/a | measured |
+| moui-skia-raster | stress | input | ui-frame | 0.540/0.618 | - | 7.038/8.088 | 7.037/8.086 | 0.00 ms | 3.93 ms | 71.88 ms | n/a | measured |
+| moui-skia-raster | stress | scroll | ui-frame | 2.086/4.730 | - | 6.672/10.021 | - | 0.00 ms | 4.01 ms | 78.70 ms | n/a | measured |
+| moui-skia-gpu | small | open | ui-frame | 55.702/56.941 | - | - | - | n/a | 0.00 ms | 57.46 ms | n/a | measured |
+| moui-skia-gpu | small | input | ui-frame | 8.427/10.474 | - | 8.770/10.808 | 8.769/10.807 | n/a | 0.00 ms | 60.24 ms | n/a | measured |
+| moui-skia-gpu | small | scroll | ui-frame | 7.995/8.964 | - | 8.610/9.782 | - | n/a | 0.00 ms | 59.47 ms | n/a | measured |
+| moui-skia-gpu | medium | open | ui-frame | 56.945/57.609 | - | - | - | n/a | 0.00 ms | 58.89 ms | n/a | measured |
+| moui-skia-gpu | medium | input | ui-frame | 8.163/9.440 | - | 8.510/9.791 | 8.510/9.790 | n/a | 0.00 ms | 58.44 ms | n/a | measured |
+| moui-skia-gpu | medium | scroll | ui-frame | 8.209/9.086 | - | 8.857/10.210 | - | n/a | 0.00 ms | 58.11 ms | n/a | measured |
+| moui-skia-gpu | large | open | ui-frame | 56.856/58.954 | - | - | - | n/a | 0.00 ms | 60.32 ms | n/a | measured |
+| moui-skia-gpu | large | input | ui-frame | 7.934/8.933 | - | 8.473/9.446 | 8.473/9.446 | n/a | 0.00 ms | 63.55 ms | n/a | measured |
+| moui-skia-gpu | large | scroll | ui-frame | 7.979/9.047 | - | 8.599/9.835 | - | n/a | 0.00 ms | 62.31 ms | n/a | measured |
+| moui-skia-gpu | stress | open | ui-frame | 57.574/58.725 | - | - | - | n/a | 0.00 ms | 77.67 ms | n/a | measured |
+| moui-skia-gpu | stress | input | ui-frame | 6.643/8.888 | - | 9.157/11.193 | 9.157/11.193 | n/a | 0.00 ms | 79.16 ms | n/a | measured |
+| moui-skia-gpu | stress | scroll | ui-frame | 7.990/9.115 | - | 8.614/9.815 | - | n/a | 0.00 ms | 76.42 ms | n/a | measured |
+| moui-wgpu | small | open | ui-frame | 57.895/60.515 | - | - | - | n/a | 0.00 ms | 59.66 ms | n/a | measured |
+| moui-wgpu | small | input | ui-frame | 7.810/9.133 | - | 8.196/9.511 | 8.196/9.511 | n/a | 0.00 ms | 58.21 ms | n/a | measured |
+| moui-wgpu | small | scroll | ui-frame | 7.695/9.010 | - | 8.330/9.392 | - | n/a | 0.00 ms | 56.95 ms | n/a | measured |
+| moui-wgpu | medium | open | ui-frame | 54.681/54.965 | - | - | - | n/a | 0.00 ms | 56.56 ms | n/a | measured |
+| moui-wgpu | medium | input | ui-frame | 7.795/9.087 | - | 8.205/9.459 | 8.205/9.458 | n/a | 0.00 ms | 56.17 ms | n/a | measured |
+| moui-wgpu | medium | scroll | ui-frame | 7.708/9.024 | - | 8.327/9.455 | - | n/a | 0.00 ms | 55.65 ms | n/a | measured |
+| moui-wgpu | large | open | ui-frame | 53.569/54.172 | - | - | - | n/a | 0.00 ms | 57.13 ms | n/a | measured |
+| moui-wgpu | large | input | ui-frame | 7.567/8.929 | - | 8.165/9.431 | 8.164/9.430 | n/a | 0.00 ms | 58.90 ms | n/a | measured |
+| moui-wgpu | large | scroll | ui-frame | 7.753/9.085 | - | 8.377/9.579 | - | n/a | 0.00 ms | 56.57 ms | n/a | measured |
+| moui-wgpu | stress | open | ui-frame | 53.948/55.823 | - | - | - | n/a | 0.00 ms | 74.07 ms | n/a | measured |
+| moui-wgpu | stress | input | ui-frame | 5.511/6.774 | - | 8.298/9.136 | 8.297/9.136 | n/a | 0.00 ms | 73.96 ms | n/a | measured |
+| moui-wgpu | stress | scroll | ui-frame | 7.711/9.015 | - | 8.327/9.377 | - | n/a | 0.00 ms | 72.58 ms | n/a | measured |
+| gpui | small | open | ui-frame | 17.666/17.772 | - | - | - | n/a | n/a | 140.20 ms | n/a | measured |
+| gpui | small | input | ui-frame | 16.850/17.184 | 0.869/0.984 | 21.365/26.957 | 21.363/26.955 | n/a | n/a | 128.19 ms | n/a | measured |
+| gpui | small | scroll | ui-frame | 18.338/21.231 | 0.002/0.003 | 21.870/25.284 | - | n/a | n/a | 134.33 ms | n/a | measured |
+| gpui | medium | open | ui-frame | 17.636/17.915 | - | - | - | n/a | n/a | 129.66 ms | n/a | measured |
+| gpui | medium | input | ui-frame | 16.942/17.344 | 1.745/1.896 | 22.211/29.183 | 22.208/29.182 | n/a | n/a | 134.38 ms | n/a | measured |
+| gpui | medium | scroll | ui-frame | 18.359/21.400 | 0.002/0.003 | 22.271/25.889 | - | n/a | n/a | 137.64 ms | n/a | measured |
+| gpui | large | open | ui-frame | 18.423/19.333 | - | - | - | n/a | n/a | 134.98 ms | n/a | measured |
+| gpui | large | input | ui-frame | 16.806/17.207 | 11.206/11.840 | 30.319/35.355 | 30.316/35.354 | n/a | n/a | 131.91 ms | n/a | measured |
+| gpui | large | scroll | ui-frame | 18.337/21.243 | 0.002/0.004 | 26.213/29.634 | - | n/a | n/a | 138.29 ms | n/a | measured |
+| gpui | stress | open | ui-frame | 17.724/17.873 | - | - | - | n/a | n/a | 160.01 ms | n/a | measured |
+| gpui | stress | input | ui-frame | 16.469/16.842 | 112.417/115.626 | 120.817/138.041 | 120.815/138.032 | n/a | n/a | 159.70 ms | n/a | measured |
+| gpui | stress | scroll | ui-frame | 18.317/21.125 | 0.002/0.003 | 66.095/70.166 | - | n/a | n/a | 141.17 ms | n/a | measured |
+| flutter-skia | small | open | ui-frame | 9.000/9.662 | - | - | - | n/a | n/a | 32.45 ms | 0 | measured |
+| flutter-skia | small | input | ui-frame | 0.940/1.234 | - | 10.000/10.003 | 10.030/10.389 | n/a | n/a | 30.94 ms | 0 | measured |
+| flutter-skia | small | scroll | ui-frame | 2.043/3.032 | - | 10.028/10.001 | - | n/a | n/a | 33.40 ms | 1 | measured |
+| flutter-skia | medium | open | ui-frame | 8.888/9.253 | - | - | - | n/a | n/a | 32.48 ms | 0 | measured |
+| flutter-skia | medium | input | ui-frame | 0.906/1.129 | - | 10.000/10.002 | 10.033/10.329 | n/a | n/a | 32.54 ms | 0 | measured |
+| flutter-skia | medium | scroll | ui-frame | 2.087/3.889 | - | 9.972/10.001 | - | n/a | n/a | 31.19 ms | 1 | measured |
+| flutter-skia | large | open | ui-frame | 8.692/8.934 | - | - | - | n/a | n/a | 31.31 ms | 0 | measured |
+| flutter-skia | large | input | ui-frame | 0.917/1.447 | - | 10.000/10.002 | 10.032/10.425 | n/a | n/a | 32.98 ms | 0 | measured |
+| flutter-skia | large | scroll | ui-frame | 2.329/3.907 | - | 10.000/10.001 | - | n/a | n/a | 34.80 ms | 1 | measured |
+| flutter-skia | stress | open | ui-frame | 8.731/8.789 | - | - | - | n/a | n/a | 65.40 ms | 0 | measured |
+| flutter-skia | stress | input | ui-frame | 0.905/1.189 | - | 10.000/10.002 | 10.224/17.225 | n/a | n/a | 64.88 ms | 0 | measured |
+| flutter-skia | stress | scroll | ui-frame | 2.396/3.979 | - | 9.945/10.002 | - | n/a | n/a | 67.11 ms | 0 | measured |
+| flutter-impeller | small | open | ui-frame | 7.276/7.397 | - | - | - | n/a | n/a | 33.45 ms | 0 | measured |
+| flutter-impeller | small | input | ui-frame | 0.970/1.587 | - | 10.000/10.002 | 10.039/10.453 | n/a | n/a | 32.97 ms | 0 | measured |
+| flutter-impeller | small | scroll | ui-frame | 2.146/3.005 | - | 9.972/10.002 | - | n/a | n/a | 34.30 ms | 0 | measured |
+| flutter-impeller | medium | open | ui-frame | 7.059/7.260 | - | - | - | n/a | n/a | 31.92 ms | 0 | measured |
+| flutter-impeller | medium | input | ui-frame | 0.956/1.621 | - | 10.000/10.002 | 10.028/10.423 | n/a | n/a | 32.93 ms | 0 | measured |
+| flutter-impeller | medium | scroll | ui-frame | 2.456/3.985 | - | 10.028/10.001 | - | n/a | n/a | 31.76 ms | 1 | measured |
+| flutter-impeller | large | open | ui-frame | 7.372/7.626 | - | - | - | n/a | n/a | 31.69 ms | 0 | measured |
+| flutter-impeller | large | input | ui-frame | 1.002/1.286 | - | 10.000/10.003 | 10.023/10.401 | n/a | n/a | 33.86 ms | 0 | measured |
+| flutter-impeller | large | scroll | ui-frame | 2.517/4.114 | - | 10.028/10.001 | - | n/a | n/a | 37.32 ms | 1 | measured |
+| flutter-impeller | stress | open | ui-frame | 6.974/7.132 | - | - | - | n/a | n/a | 62.53 ms | 0 | measured |
+| flutter-impeller | stress | input | ui-frame | 0.833/1.286 | - | 10.000/10.001 | 10.237/15.611 | n/a | n/a | 61.81 ms | 0 | measured |
+| flutter-impeller | stress | scroll | ui-frame | 2.426/3.940 | - | 10.028/10.001 | - | n/a | n/a | 66.09 ms | 1 | measured |
+| electron | small | open | ui-frame | 15.367/15.400 | - | - | - | n/a | n/a | 15.37 ms | 0 | measured |
+| electron | small | input | ui-frame | 1.740/3.100 | - | 9.819/12.000 | 8.773/11.900 | n/a | n/a | 15.23 ms | 0 | measured |
+| electron | small | scroll | ui-frame | 1.762/2.300 | - | 9.891/11.900 | - | n/a | n/a | 14.90 ms | 0 | measured |
+| electron | medium | open | ui-frame | 16.000/17.600 | - | - | - | n/a | n/a | 16.00 ms | 0 | measured |
+| electron | medium | input | ui-frame | 1.723/3.000 | - | 9.644/11.700 | 8.693/11.800 | n/a | n/a | 15.70 ms | 0 | measured |
+| electron | medium | scroll | ui-frame | 1.817/2.400 | - | 9.963/11.600 | - | n/a | n/a | 15.40 ms | 0 | measured |
+| electron | large | open | ui-frame | 16.733/16.900 | - | - | - | n/a | n/a | 16.73 ms | 0 | measured |
+| electron | large | input | ui-frame | 1.720/2.600 | - | 9.893/11.900 | 8.870/11.700 | n/a | n/a | 16.53 ms | 0 | measured |
+| electron | large | scroll | ui-frame | 1.814/2.400 | - | 9.908/11.600 | - | n/a | n/a | 16.70 ms | 0 | measured |
+| electron | stress | open | ui-frame | 25.433/25.900 | - | - | - | n/a | n/a | 25.43 ms | 0 | measured |
+| electron | stress | input | ui-frame | 1.650/2.100 | - | 9.276/11.900 | 8.560/11.400 | n/a | n/a | 25.13 ms | 0 | measured |
+| electron | stress | scroll | ui-frame | 1.766/2.400 | - | 9.930/12.000 | - | n/a | n/a | 25.03 ms | 0 | measured |
 
 </details>
 
@@ -121,27 +109,25 @@
 
 | 实现 | 工作均值（ms） | 工作 P95（ms） | 帧间隔均值（ms） | 帧间隔 P95（ms） | 丢帧数 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 2.12/2.14/2.21 | 4.75/4.85/4.96 | 6.85/6.82/7.00 | 10.23/10.22/10.69 | n/a/n/a/n/a |
-| MoUI Skia GPU | 8.15/8.03/8.03 | 9.43/9.09/9.13 | 8.85/8.69/8.66 | 10.84/10.08/9.93 | n/a/n/a/n/a |
-| MoUI WGPU | 7.72/7.73/7.71 | 9.03/8.94/9.05 | 8.33/8.34/8.33 | 9.42/9.36/9.48 | n/a/n/a/n/a |
-| GPUI | 2.23/2.34/2.34 | 2.93/3.00/3.14 | 9.95/10.01/9.97 | 11.93/11.87/10.71 | n/a/n/a/n/a |
-| GPUI2 (md_mbt) | 17.77/17.73/17.68 | 20.75/20.63/20.50 | 20.83/21.19/25.05 | 24.24/24.62/28.43 | n/a/n/a/n/a |
-| Flutter Skia | 1.59/1.92/1.96 | 2.46/2.73/2.72 | 10.00/10.00/9.97 | 10.00/10.00/10.00 | 2/1/1 |
-| Flutter Impeller | 1.51/1.97/1.94 | 1.85/2.77/2.83 | 10.03/10.03/10.03 | 10.00/10.00/10.00 | 1/1/1 |
-| Electron | 1.73/1.84/1.79 | 2.10/2.30/2.20 | 9.94/9.94/9.91 | 11.70/11.40/11.60 | 0/0/0 |
+| MoUI Skia Raster CPU | 2.08/2.17/2.10 | 4.73/4.88/4.80 | 6.67/6.95/6.68 | 10.18/10.50/10.10 | n/a/n/a/n/a |
+| MoUI Skia GPU | 7.99/8.21/7.98 | 8.96/9.09/9.05 | 8.61/8.86/8.60 | 9.78/10.21/9.84 | n/a/n/a/n/a |
+| MoUI WGPU | 7.70/7.71/7.75 | 9.01/9.02/9.08 | 8.33/8.33/8.38 | 9.39/9.46/9.58 | n/a/n/a/n/a |
+| GPUI (md_mbt) | 18.34/18.36/18.34 | 21.23/21.40/21.24 | 21.87/22.27/26.21 | 25.28/25.89/29.63 | n/a/n/a/n/a |
+| Flutter Skia | 2.04/2.09/2.33 | 3.03/3.89/3.91 | 10.03/9.97/10.00 | 10.00/10.00/10.00 | 1/1/1 |
+| Flutter Impeller | 2.15/2.46/2.52 | 3.00/3.98/4.11 | 9.97/10.03/10.03 | 10.00/10.00/10.00 | 0/1/1 |
+| Electron | 1.76/1.82/1.81 | 2.30/2.40/2.40 | 9.89/9.96/9.91 | 11.90/11.60/11.60 | 0/0/0 |
 
 ## stress 5MB
 
 | 实现 | 工作均值（ms） | 工作 P95（ms） | 帧间隔均值（ms） | 帧间隔 P95（ms） | 丢帧数 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 2.31 | 5.18 | 7.30 | 11.32 | n/a |
-| MoUI Skia GPU | 8.01 | 9.06 | 8.63 | 10.02 | n/a |
-| MoUI WGPU | 7.73 | 8.96 | 8.35 | 9.44 | n/a |
-| GPUI | 1.99 | 2.96 | 9.99 | 11.21 | n/a |
-| GPUI2 (md_mbt) | 17.68 | 20.43 | 63.27 | 67.29 | n/a |
-| Flutter Skia | 1.97 | 2.77 | 9.97 | 10.00 | 0 |
-| Flutter Impeller | 2.01 | 2.80 | 10.00 | 10.00 | 0 |
-| Electron | 1.83 | 2.30 | 9.92 | 11.50 | 0 |
+| MoUI Skia Raster CPU | 2.09 | 4.73 | 6.67 | 10.02 | n/a |
+| MoUI Skia GPU | 7.99 | 9.11 | 8.61 | 9.81 | n/a |
+| MoUI WGPU | 7.71 | 9.01 | 8.33 | 9.38 | n/a |
+| GPUI (md_mbt) | 18.32 | 21.13 | 66.10 | 70.17 | n/a |
+| Flutter Skia | 2.40 | 3.98 | 9.94 | 10.00 | 0 |
+| Flutter Impeller | 2.43 | 3.94 | 10.03 | 10.00 | 1 |
+| Electron | 1.77 | 2.40 | 9.93 | 12.00 | 0 |
 
 # 输入延迟
 
@@ -151,27 +137,25 @@
 
 | 实现 | 可见延迟均值（ms） | 可见延迟 P95（ms） | 工作均值（ms） | 工作 P95（ms） |
 | --- | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 4.79/4.69/5.01 | 5.31/4.95/5.38 | 0.51/0.47/0.50 | 0.72/0.51/0.57 |
-| MoUI Skia GPU | 8.55/8.70/8.64 | 9.49/10.04/9.71 | 8.16/8.30/8.13 | 9.13/9.61/9.16 |
-| MoUI WGPU | 8.21/8.25/8.20 | 10.20/9.71/9.58 | 7.86/7.87/7.67 | 9.88/9.39/9.11 |
-| GPUI | 9.56/9.66/9.30 | 11.99/12.01/12.07 | 1.96/1.87/1.92 | 2.12/2.03/2.06 |
-| GPUI2 (md_mbt) | 20.29/21.32/29.76 | 25.17/28.16/37.28 | 16.31/16.31/16.35 | 17.19/16.68/16.82 |
-| Flutter Skia | 10.28/10.83/10.56 | 13.44/17.03/15.47 | 1.08/1.08/1.05 | 1.48/1.52/1.49 |
-| Flutter Impeller | 10.88/10.85/10.83 | 19.80/15.89/15.19 | 1.03/1.15/1.15 | 1.52/2.08/2.02 |
-| Electron | 8.36/8.66/8.57 | 11.80/11.70/11.80 | 1.78/1.72/1.71 | 3.30/2.30/2.60 |
+| MoUI Skia Raster CPU | 5.14/4.70/5.04 | 6.30/4.94/5.90 | 0.51/0.48/0.50 | 0.57/0.56/0.60 |
+| MoUI Skia GPU | 8.77/8.51/8.47 | 10.81/9.79/9.45 | 8.43/8.16/7.93 | 10.47/9.44/8.93 |
+| MoUI WGPU | 8.20/8.20/8.16 | 9.51/9.46/9.43 | 7.81/7.80/7.57 | 9.13/9.09/8.93 |
+| GPUI (md_mbt) | 21.36/22.21/30.32 | 26.95/29.18/35.35 | 16.85/16.94/16.81 | 17.18/17.34/17.21 |
+| Flutter Skia | 10.03/10.03/10.03 | 10.39/10.33/10.43 | 0.94/0.91/0.92 | 1.23/1.13/1.45 |
+| Flutter Impeller | 10.04/10.03/10.02 | 10.45/10.42/10.40 | 0.97/0.96/1.00 | 1.59/1.62/1.29 |
+| Electron | 8.77/8.69/8.87 | 11.90/11.80/11.70 | 1.74/1.72/1.72 | 3.10/3.00/2.60 |
 
 ## stress 5MB
 
 | 实现 | 可见延迟均值（ms） | 可见延迟 P95（ms） | 工作均值（ms） | 工作 P95（ms） |
 | --- | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 7.54 | 8.50 | 0.59 | 0.86 |
-| MoUI Skia GPU | 9.48 | 10.62 | 7.02 | 8.35 |
-| MoUI WGPU | 8.27 | 9.26 | 5.59 | 6.94 |
-| GPUI | 9.51 | 10.75 | 1.92 | 2.06 |
-| GPUI2 (md_mbt) | 118.39 | 135.07 | 15.80 | 16.24 |
-| Flutter Skia | 10.04 | 11.80 | 1.08 | 1.40 |
-| Flutter Impeller | 10.14 | 14.94 | 1.07 | 1.38 |
-| Electron | 8.60 | 11.00 | 1.65 | 2.10 |
+| MoUI Skia Raster CPU | 7.04 | 8.09 | 0.54 | 0.62 |
+| MoUI Skia GPU | 9.16 | 11.19 | 6.64 | 8.89 |
+| MoUI WGPU | 8.30 | 9.14 | 5.51 | 6.77 |
+| GPUI (md_mbt) | 120.81 | 138.03 | 16.47 | 16.84 |
+| Flutter Skia | 10.22 | 17.23 | 0.90 | 1.19 |
+| Flutter Impeller | 10.24 | 15.61 | 0.83 | 1.29 |
+| Electron | 8.56 | 11.40 | 1.65 | 2.10 |
 
 # 打开性能
 
@@ -181,27 +165,25 @@
 
 | 实现 | 首次可交互均值（ms） | 首次可交互 P95（ms） | 工作均值（ms） | 工作 P95（ms） | 文档加载均值（ms） | 文档加载 P95（ms） |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 51.91/53.26/55.30 | 53.63/54.90/55.41 | 44.69/45.46/45.75 | 46.54/46.62/46.34 | 0.05/0.30/2.38 | 0.06/0.32/2.46 |
-| MoUI Skia GPU | 60.79/64.35/60.51 | 61.22/68.27/61.85 | 59.01/62.36/57.04 | 59.49/66.17/58.35 | 0.07/0.29/2.36 | 0.07/0.30/2.40 |
-| MoUI WGPU | 48.41/54.59/50.49 | 48.90/64.00/50.78 | 46.64/52.67/46.91 | 47.21/62.05/47.23 | 0.06/0.28/2.46 | 0.06/0.30/2.51 |
-| GPUI | 113.40/114.75/106.80 | 123.47/124.83/108.61 | 2.01/2.02/2.06 | 2.18/2.06/2.09 | 0.00/0.33/2.67 | 0.00/1.00/3.00 |
-| GPUI2 (md_mbt) | 143.84/134.77/137.34 | 147.66/135.60/140.51 | 17.97/17.36/17.69 | 18.46/17.37/17.76 | 0.00/1.00/2.67 | 0.00/1.00/3.00 |
-| Flutter Skia | 54.54/53.90/55.40 | 55.04/55.01/57.57 | 8.22/7.98/8.22 | 8.78/8.24/8.73 | 0.11/0.10/0.38 | 0.17/0.11/0.46 |
-| Flutter Impeller | 56.09/53.81/59.56 | 56.96/57.26/60.20 | 6.47/6.64/6.27 | 6.56/6.95/6.39 | 0.11/0.14/0.43 | 0.16/0.16/0.47 |
-| Electron | 12.53/12.40/11.90 | 14.90/14.70/15.80 | 12.53/12.40/11.90 | 14.90/14.70/15.80 | 2.57/2.75/2.56 | 2.70/2.99/2.64 |
+| MoUI Skia Raster CPU | 54.61/53.66/55.50 | 54.84/55.62/55.91 | 46.70/45.71/46.17 | 46.80/47.26/46.82 | 0.06/0.29/2.43 | 0.07/0.31/2.50 |
+| MoUI Skia GPU | 57.46/58.89/60.32 | 58.89/59.46/62.50 | 55.70/56.95/56.86 | 56.94/57.61/58.95 | 0.08/0.30/2.49 | 0.09/0.30/2.56 |
+| MoUI WGPU | 59.66/56.56/57.13 | 62.42/56.83/57.73 | 57.89/54.68/53.57 | 60.51/54.97/54.17 | 0.06/0.32/2.48 | 0.06/0.43/2.53 |
+| GPUI (md_mbt) | 140.20/129.66/134.98 | 154.27/135.13/139.67 | 17.67/17.64/18.42 | 17.77/17.91/19.33 | 0.33/0.33/2.00 | 1.00/1.00/2.00 |
+| Flutter Skia | 32.45/32.48/31.31 | 33.24/33.05/35.07 | 9.00/8.89/8.69 | 9.66/9.25/8.93 | 0.07/0.11/0.37 | 0.08/0.11/0.38 |
+| Flutter Impeller | 33.45/31.92/31.69 | 34.96/32.36/35.67 | 7.28/7.06/7.37 | 7.40/7.26/7.63 | 0.09/0.10/0.35 | 0.13/0.10/0.38 |
+| Electron | 15.37/16.00/16.73 | 15.40/17.60/16.90 | 15.37/16.00/16.73 | 15.40/17.60/16.90 | 3.35/2.87/3.04 | 5.24/2.98/3.22 |
 
 ## stress 5MB
 
 | 实现 | 首次可交互均值（ms） | 首次可交互 P95（ms） | 工作均值（ms） | 工作 P95（ms） | 文档加载均值（ms） | 文档加载 P95（ms） |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 100.80 | 157.89 | 64.32 | 101.28 | 26.37 | 30.29 |
-| MoUI Skia GPU | 76.01 | 76.14 | 56.47 | 56.69 | 24.25 | 24.91 |
-| MoUI WGPU | 67.56 | 67.87 | 47.96 | 48.13 | 24.09 | 24.81 |
-| GPUI | 109.53 | 113.36 | 2.06 | 2.11 | 25.00 | 27.00 |
-| GPUI2 (md_mbt) | 165.22 | 174.47 | 17.67 | 17.89 | 25.67 | 27.00 |
-| Flutter Skia | 85.46 | 87.20 | 7.94 | 8.20 | 2.65 | 2.68 |
-| Flutter Impeller | 85.50 | 88.56 | 6.15 | 6.25 | 2.70 | 2.72 |
-| Electron | 18.10 | 18.30 | 18.10 | 18.30 | 4.93 | 5.07 |
+| MoUI Skia Raster CPU | 72.16 | 74.47 | 46.85 | 48.23 | 24.65 | 25.57 |
+| MoUI Skia GPU | 77.67 | 78.89 | 57.57 | 58.73 | 20.92 | 25.44 |
+| MoUI WGPU | 74.07 | 75.72 | 53.95 | 55.82 | 25.58 | 25.85 |
+| GPUI (md_mbt) | 160.01 | 164.94 | 17.72 | 17.87 | 23.33 | 28.00 |
+| Flutter Skia | 65.40 | 65.61 | 8.73 | 8.79 | 2.59 | 2.67 |
+| Flutter Impeller | 62.53 | 64.67 | 6.97 | 7.13 | 2.58 | 2.63 |
+| Electron | 25.43 | 25.90 | 25.43 | 25.90 | 5.19 | 6.48 |
 
 # 滚动性能
 
@@ -211,35 +193,33 @@
 
 | 实现 | 工作均值（ms） | 工作 P95（ms） | 帧间隔均值（ms） | 帧间隔 P95（ms） | 丢帧数 | 离屏均值（ms） | 离屏 P95（ms） | 回读均值（ms） | 回读 P95（ms） |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 2.12/2.14/2.21 | 4.75/4.85/4.96 | 6.85/6.82/7.00 | 10.23/10.22/10.69 | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 4.12/4.08/4.17 | 4.76/4.73/4.99 |
-| MoUI Skia GPU | 8.15/8.03/8.03 | 9.43/9.09/9.13 | 8.85/8.69/8.66 | 10.84/10.08/9.93 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 |
-| MoUI WGPU | 7.72/7.73/7.71 | 9.03/8.94/9.05 | 8.33/8.34/8.33 | 9.42/9.36/9.48 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 |
-| GPUI | 2.23/2.34/2.34 | 2.93/3.00/3.14 | 9.95/10.01/9.97 | 11.93/11.87/10.71 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
-| GPUI2 (md_mbt) | 17.77/17.73/17.68 | 20.75/20.63/20.50 | 20.83/21.19/25.05 | 24.24/24.62/28.43 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
-| Flutter Skia | 1.59/1.92/1.96 | 2.46/2.73/2.72 | 10.00/10.00/9.97 | 10.00/10.00/10.00 | 2/1/1 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
-| Flutter Impeller | 1.51/1.97/1.94 | 1.85/2.77/2.83 | 10.03/10.03/10.03 | 10.00/10.00/10.00 | 1/1/1 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
-| Electron | 1.73/1.84/1.79 | 2.10/2.30/2.20 | 9.94/9.94/9.91 | 11.70/11.40/11.60 | 0/0/0 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
+| MoUI Skia Raster CPU | 2.08/2.17/2.10 | 4.73/4.88/4.80 | 6.67/6.95/6.68 | 10.18/10.50/10.10 | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 4.00/4.15/4.00 | 4.60/4.69/4.57 |
+| MoUI Skia GPU | 7.99/8.21/7.98 | 8.96/9.09/9.05 | 8.61/8.86/8.60 | 9.78/10.21/9.84 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 |
+| MoUI WGPU | 7.70/7.71/7.75 | 9.01/9.02/9.08 | 8.33/8.33/8.38 | 9.39/9.46/9.58 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | 0.00/0.00/0.00 | 0.00/0.00/0.00 |
+| GPUI (md_mbt) | 18.34/18.36/18.34 | 21.23/21.40/21.24 | 21.87/22.27/26.21 | 25.28/25.89/29.63 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
+| Flutter Skia | 2.04/2.09/2.33 | 3.03/3.89/3.91 | 10.03/9.97/10.00 | 10.00/10.00/10.00 | 1/1/1 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
+| Flutter Impeller | 2.15/2.46/2.52 | 3.00/3.98/4.11 | 9.97/10.03/10.03 | 10.00/10.00/10.00 | 0/1/1 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
+| Electron | 1.76/1.82/1.81 | 2.30/2.40/2.40 | 9.89/9.96/9.91 | 11.90/11.60/11.60 | 0/0/0 | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a | n/a/n/a/n/a |
 
 ## stress 5MB
 
 | 实现 | 工作均值（ms） | 工作 P95（ms） | 帧间隔均值（ms） | 帧间隔 P95（ms） | 丢帧数 | 离屏均值（ms） | 离屏 P95（ms） | 回读均值（ms） | 回读 P95（ms） |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| MoUI Skia Raster CPU | 2.31 | 5.18 | 7.30 | 11.32 | n/a | 0.00 | 0.00 | 4.33 | 5.11 |
-| MoUI Skia GPU | 8.01 | 9.06 | 8.63 | 10.02 | n/a | n/a | n/a | 0.00 | 0.00 |
-| MoUI WGPU | 7.73 | 8.96 | 8.35 | 9.44 | n/a | n/a | n/a | 0.00 | 0.00 |
-| GPUI | 1.99 | 2.96 | 9.99 | 11.21 | n/a | n/a | n/a | n/a | n/a |
-| GPUI2 (md_mbt) | 17.68 | 20.43 | 63.27 | 67.29 | n/a | n/a | n/a | n/a | n/a |
-| Flutter Skia | 1.97 | 2.77 | 9.97 | 10.00 | 0 | n/a | n/a | n/a | n/a |
-| Flutter Impeller | 2.01 | 2.80 | 10.00 | 10.00 | 0 | n/a | n/a | n/a | n/a |
-| Electron | 1.83 | 2.30 | 9.92 | 11.50 | 0 | n/a | n/a | n/a | n/a |
+| MoUI Skia Raster CPU | 2.09 | 4.73 | 6.67 | 10.02 | n/a | 0.00 | 0.00 | 4.01 | 4.68 |
+| MoUI Skia GPU | 7.99 | 9.11 | 8.61 | 9.81 | n/a | n/a | n/a | 0.00 | 0.00 |
+| MoUI WGPU | 7.71 | 9.01 | 8.33 | 9.38 | n/a | n/a | n/a | 0.00 | 0.00 |
+| GPUI (md_mbt) | 18.32 | 21.13 | 66.10 | 70.17 | n/a | n/a | n/a | n/a | n/a |
+| Flutter Skia | 2.40 | 3.98 | 9.94 | 10.00 | 0 | n/a | n/a | n/a | n/a |
+| Flutter Impeller | 2.43 | 3.94 | 10.03 | 10.00 | 1 | n/a | n/a | n/a | n/a |
+| Electron | 1.77 | 2.40 | 9.93 | 12.00 | 0 | n/a | n/a | n/a | n/a |
 
 # 异常项与优化优先级
 
 - 参考帧预算：`16.667 ms`（含 ±0.1 ms 量化容差）；长帧/输入尾延迟阈值为一帧预算；计时来源：框架回调诊断（非 compositor 时钟）。
-- P1 首帧：MoUI Skia Raster CPU stress 100.8 ms（max 157.9 ms）；GPUI small 113.4 ms（max 123.5 ms）；GPUI medium 114.7 ms（max 124.8 ms）；GPUI large 106.8 ms（max 108.6 ms）；GPUI stress 109.5 ms（max 113.4 ms）；GPUI2 (md_mbt) small 143.8 ms（max 147.7 ms）；GPUI2 (md_mbt) medium 134.8 ms（max 135.6 ms）；GPUI2 (md_mbt) large 137.3 ms（max 140.5 ms）；GPUI2 (md_mbt) stress 165.2 ms（max 174.5 ms）。
-- P1 输入尾延迟：GPUI2 (md_mbt) small P95 25.17 ms；GPUI2 (md_mbt) medium P95 28.16 ms；GPUI2 (md_mbt) large P95 37.28 ms；GPUI2 (md_mbt) stress P95 135.07 ms；Flutter Skia medium P95 17.03 ms；Flutter Impeller small P95 19.80 ms。
-- 长帧（超预算）：MoUI Skia Raster CPU: stress/scroll 2 次，max 18.12 ms；MoUI Skia GPU: small/scroll 1 次，max 24.74 ms, large/scroll 1 次，max 19.12 ms；GPUI: medium/scroll 1 次，max 18.06 ms, large/input 1 次，max 17.99 ms；GPUI2 (md_mbt): small/input 30 次，max 28.21 ms, small/scroll 360 次，max 30.93 ms, medium/input 30 次，max 28.30 ms, medium/scroll 360 次，max 30.65 ms, large/input 30 次，max 37.96 ms, large/scroll 360 次，max 35.53 ms, stress/input 30 次，max 138.91 ms, stress/scroll 360 次，max 70.57 ms；Flutter Skia: small/scroll 2 次，max 20.00 ms, medium/scroll 1 次，max 20.00 ms, large/scroll 1 次，max 20.00 ms；Flutter Impeller: small/scroll 1 次，max 20.00 ms, medium/scroll 1 次，max 20.00 ms, large/scroll 1 次，max 20.00 ms。
-- 丢帧（优先处理）：Flutter Skia: small/scroll 2 帧, medium/scroll 1 帧, large/scroll 1 帧；Flutter Impeller: small/scroll 1 帧, medium/scroll 1 帧, large/scroll 1 帧。
+- P1 首帧：GPUI (md_mbt) small 140.2 ms（max 154.3 ms）；GPUI (md_mbt) medium 129.7 ms（max 135.1 ms）；GPUI (md_mbt) large 135.0 ms（max 139.7 ms）；GPUI (md_mbt) stress 160.0 ms（max 164.9 ms）。
+- P1 输入尾延迟：GPUI (md_mbt) small P95 26.95 ms；GPUI (md_mbt) medium P95 29.18 ms；GPUI (md_mbt) large P95 35.35 ms；GPUI (md_mbt) stress P95 138.03 ms；Flutter Skia stress P95 17.23 ms。
+- 长帧（超预算）：MoUI Skia Raster CPU: medium/scroll 5 次，max 29.81 ms；MoUI Skia GPU: medium/scroll 4 次，max 33.46 ms；GPUI (md_mbt): small/input 30 次，max 28.38 ms, small/scroll 360 次，max 31.56 ms, medium/input 30 次，max 30.04 ms, medium/scroll 360 次，max 31.40 ms, large/input 30 次，max 37.53 ms, large/scroll 360 次，max 33.30 ms, stress/input 30 次，max 138.27 ms, stress/scroll 360 次，max 76.29 ms；Flutter Skia: small/scroll 1 次，max 20.00 ms, medium/scroll 1 次，max 20.00 ms, large/scroll 1 次，max 20.00 ms；Flutter Impeller: medium/scroll 1 次，max 20.00 ms, large/scroll 1 次，max 20.00 ms, stress/scroll 1 次，max 20.00 ms。
+- 丢帧（优先处理）：Flutter Skia: small/scroll 1 帧, medium/scroll 1 帧, large/scroll 1 帧；Flutter Impeller: medium/scroll 1 帧, large/scroll 1 帧, stress/scroll 1 帧。
 - 解释：首帧异常优先检查窗口/渲染器初始化；输入尾延迟检查 action 到下一可见帧的调度与同步重建；长帧检查解析、布局、文本 shaping 和 GPU 提交；`n/a` 表示未埋点，不等于 0。
 - 普通模式的长帧、帧间隔和输入延迟是各框架回调诊断，不能替代跨框架 compositor 排名；需要严格结论时运行 `UI_BENCHMARK_SYSTEM_TRACE=1 ./scripts/run_ui_benchmark.sh`。
 

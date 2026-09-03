@@ -1,7 +1,8 @@
-[submodule "gpui/vendor/gpui-moonbit"]
-	path = gpui/vendor/gpui-moonbit
-	url = https://github.com/wzzc-dev/gpui-moonbit.git
 [submodule "vendor/MoUI"]
 	path = vendor/MoUI
 	url = https://github.com/wzzc-dev/MoUI.git
+	branch = main
+[submodule "gpui"]
+	path = gpui
+	url = https://github.com/wzzc-dev/md_mbt.git
 	branch = main

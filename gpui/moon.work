@@ -1,4 +1,0 @@
-members = [
-  ".",
-  "./vendor/gpui-moonbit/moonbit-bindings",
-]
