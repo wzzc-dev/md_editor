@@ -6,7 +6,8 @@
 ///     line-based splitter (`split_blocks`) matching the GPUI, Electron and
 ///     Flutter adapters, so it is directly comparable across frameworks.
 ///   * `richtext-full` -- the same source formatted into a `RichTextDocument`
-///     via `markdown_document`, MoUI's real framework render-preparation path.
+///     via `MarkdownDocumentSession`, MoUI's real framework render-preparation
+///     path.
 ///     This is a heavier workload than the split-only rows and is NOT
 ///     comparable to the `headless-render` rows of the other adapters.
 extern "C" fn now_ms() -> Double = "md_editor_benchmark_now_ms"
@@ -194,7 +195,7 @@ fn main {
   // This is the cross-framework comparison layer.
   let parse_samples : Array[Double] = []
   let rich_samples : Array[Double] = []
-  // `markdown_document` (the framework's real rich-text preparation path)
+  // `MarkdownDocumentSession` (the framework's real rich-text preparation path)
   // recomputes per-run source ranges with a full-source character scan per
   // block (O(blocks * chars)), so it scales super-linearly (medium ~1.1 s,
   // large ~92 s). Cap the heavier richtext-full sample at the small fixture
@@ -209,10 +210,12 @@ fn main {
     }
     parse_samples.push((now_ms() - parse_start).max(0.0) / repeats.to_double())
     if rich_enabled {
-      // Format the same source into a full RichTextDocument via MoUI's
+      // Format the same source into a full rich-text snapshot via MoUI's
       // framework parser (per-run source ranges, outline, metadata).
       let rich_start = now_ms()
-      ignore(@richtext.markdown_document(value, base=font).blocks.length())
+      ignore(
+        @richtext.MarkdownDocumentSession::new(value).snapshot(base=font).blocks.length(),
+      )
       rich_samples.push((now_ms() - rich_start).max(0.0))
     }
   }

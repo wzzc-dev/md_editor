@@ -5,4 +5,5 @@ members = [
   "./vendor/MoUI/moui_skia",
   "./vendor/MoUI/moui_skia_renderer",
   "./vendor/MoUI/moui_wgpu_renderer",
+  "./vendor/MoUI/examples/markdown_editor",
 ]

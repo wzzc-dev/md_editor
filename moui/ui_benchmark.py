@@ -106,6 +106,15 @@ def main() -> None:
     parser.add_argument("renderer", choices=("skia-raster", "skia-gpu", "wgpu"))
     parser.add_argument("fixture", type=Path)
     parser.add_argument("scenario", choices=("open", "input", "scroll"))
+    parser.add_argument(
+        "--example",
+        action="store_true",
+        help=(
+            "measure the vendored official example app "
+            "(vendor/MoUI/examples/markdown_editor) instead of the simplified "
+            "benchmark app; the adapter labels gain an `md` segment"
+        ),
+    )
     args = parser.parse_args()
 
     binary = _benchmark_binary()
@@ -125,6 +134,7 @@ def main() -> None:
 
     _write_trace_pid()
     _wait_for_trace_gate()
+    protocol_flag = "--ui-benchmark-example" if args.example else "--ui-benchmark"
     env = os.environ.copy()
     env["MOUI_SKIA_RENDERER"] = args.renderer
     if args.renderer == "skia-gpu":
@@ -142,14 +152,14 @@ def main() -> None:
         import subprocess
 
         result = subprocess.run(
-            [str(binary), "--ui-benchmark", str(fixture), args.scenario],
+            [str(binary), protocol_flag, str(fixture), args.scenario],
             env=env,
             check=False,
         )
         raise SystemExit(result.returncode)
     os.execve(
         str(binary),
-        [str(binary), "--ui-benchmark", str(fixture), args.scenario],
+        [str(binary), protocol_flag, str(fixture), args.scenario],
         env,
     )
 

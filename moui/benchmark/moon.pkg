@@ -1,8 +1,10 @@
 import {
   "cross_framework/md_editor_moui/app",
+  "examples/markdown_editor" @md_editor,
   "wzzc-dev/moui/core",
   "wzzc-dev/moui/render",
   "wzzc-dev/moui/runtime",
+  "wzzc-dev/moui/services",
   "wzzc-dev/moui/backend",
   "wzzc-dev/moui/backend/common/lifecycle" @window_lifecycle,
   "wzzc-dev/moui/backend/macos" @macos_backend,

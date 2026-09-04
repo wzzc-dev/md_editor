@@ -26,8 +26,9 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = {"small": 5 * 1024, "medium": 50 * 1024, "large": 500 * 1024, "stress": 5 * 1024 * 1024}
 SCENARIOS = ("open", "input", "scroll")
 DEFAULT_ADAPTERS = (
-    "moui-skia-raster", "moui-skia-gpu", "moui-wgpu", "gpui", "flutter-skia",
-    "flutter-impeller", "electron",
+    "moui-skia-raster", "moui-skia-gpu", "moui-wgpu",
+    "moui-md-skia-raster", "moui-md-skia-gpu", "moui-md-wgpu", "gpui",
+    "flutter-skia", "flutter-impeller", "electron",
 )
 # A single strict trace can exceed a gigabyte, so every scratch directory that can
 # hold one is rooted here and swept by age. `--system-trace-dir` output stays
@@ -288,6 +289,19 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
             raise ValueError(f"ui-frame {field} aggregate is missing for measured samples")
         if not has_numeric and aggregate is not None:
             raise ValueError(f"ui-frame {field} must be null when all samples are unmeasured")
+    # Unified device-side field: adapters that can observe rasterization or
+    # present completion report it here; adapters that cannot omit the field.
+    if "device_present_samples_ms" in payload:
+        device_values = validate_sample_list(
+            payload, "device_present_samples_ms", expected, allow_null=True
+        )
+        if "device_present_ms" in payload:
+            has_numeric = any(value is not None for value in device_values)
+            aggregate = payload.get("device_present_ms")
+            if has_numeric and aggregate is None:
+                raise ValueError("ui-frame device_present_ms aggregate is missing for measured samples")
+            if not has_numeric and aggregate is not None:
+                raise ValueError("ui-frame device_present_ms must be null when all samples are unmeasured")
     validate_count(payload, "action_count", expected)
     validate_count(payload, "frame_sample_count", interval_expected)
     expected_warmups = 0 if scenario == "open" else 1
@@ -313,7 +327,7 @@ def validate_ui_payload(payload: dict, scenario: str) -> None:
         validate_nonnegative_number(frame_work, "frame_work_ms")
     elif any(value is not None for value in work_samples):
         raise ValueError("ui-frame frame_work_ms aggregate is missing for measured samples")
-    for field in ("offscreen_ms", "readback_ms", "offscreen_readback_ms"):
+    for field in ("offscreen_ms", "readback_ms", "offscreen_readback_ms", "device_present_ms"):
         value = payload.get(field)
         if value is not None:
             validate_nonnegative_number(value, field)

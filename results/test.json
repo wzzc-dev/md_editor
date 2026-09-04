@@ -1,6 +1,6 @@
 {
   "schema": "md-editor-benchmark/v2",
-  "generated_at_utc": "2026-09-03T13:47:40Z",
+  "generated_at_utc": "2026-09-03T17:59:46Z",
   "platform": "macOS-26.3-arm64-arm-64bit",
   "os_release": "25.3.0",
   "machine": "arm64",
@@ -138,6 +138,87 @@
     },
     {
       "adapter": "moui-wgpu",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-skia-raster",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-skia-raster",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-skia-raster",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-skia-gpu",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-skia-gpu",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-skia-gpu",
+      "fixture": "small",
+      "scenario": "scroll",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-wgpu",
+      "fixture": "small",
+      "scenario": "open",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-wgpu",
+      "fixture": "small",
+      "scenario": "input",
+      "repetitions": 3,
+      "warmups": 1,
+      "status": "skipped",
+      "reason": "no command supplied"
+    },
+    {
+      "adapter": "moui-md-wgpu",
       "fixture": "small",
       "scenario": "scroll",
       "repetitions": 3,
