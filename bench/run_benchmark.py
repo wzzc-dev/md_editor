@@ -361,6 +361,46 @@ def parse_adapters(values: list[str]) -> dict[str, str]:
     return adapters
 
 
+if os.name == "nt":
+    import ctypes
+    import ctypes.wintypes
+
+    class _ProcessEntry32W(ctypes.Structure):
+        _fields_ = [
+            ("dwSize", ctypes.wintypes.DWORD),
+            ("cntUsage", ctypes.wintypes.DWORD),
+            ("th32ProcessID", ctypes.wintypes.DWORD),
+            ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+            ("th32ModuleID", ctypes.wintypes.DWORD),
+            ("cntThreads", ctypes.wintypes.DWORD),
+            ("th32ParentProcessID", ctypes.wintypes.DWORD),
+            ("pcPriClassBase", ctypes.c_long),
+            ("dwFlags", ctypes.wintypes.DWORD),
+            ("szExeFile", ctypes.c_wchar * 260),
+        ]
+
+
+def _windows_process_parent_pairs() -> list[tuple[int, int]]:
+    """(pid, ppid) for every live process via the kernel32 Toolhelp snapshot."""
+    kernel32 = ctypes.windll.kernel32  # noqa: F821 - imported when os.name == "nt"
+    snapshot = kernel32.CreateToolhelp32Snapshot(0x00000002, 0)  # TH32CS_SNAPPROCESS
+    if snapshot in (None, -1, 0):
+        return []
+    pairs: list[tuple[int, int]] = []
+    try:
+        entry = _ProcessEntry32W()  # noqa: F821 - defined when os.name == "nt"
+        entry.dwSize = ctypes.sizeof(entry)  # noqa: F821
+        if not kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):  # noqa: F821
+            return []
+        while True:
+            pairs.append((int(entry.th32ProcessID), int(entry.th32ParentProcessID)))
+            if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
+                break
+    finally:
+        kernel32.CloseHandle(snapshot)
+    return pairs
+
+
 def run_command(
     command: str,
     fixture: Path,
@@ -514,16 +554,24 @@ def _run_command_case(
         assert descendant_stop is not None
         while not descendant_stop.wait(0.05):
             try:
-                lines = subprocess.check_output(
-                    ["ps", "-axo", "pid=,ppid="], text=True, stderr=subprocess.DEVNULL
-                ).splitlines()
                 parents: dict[int, list[int]] = {}
-                for line in lines:
-                    fields = line.split()
-                    if len(fields) != 2:
-                        continue
-                    child, parent = (int(fields[0]), int(fields[1]))
-                    parents.setdefault(parent, []).append(child)
+                if os.name == "nt":
+                    # Git Bash's `ps` cannot emit `-axo`, so read the process
+                    # snapshot from kernel32 directly: without it a timed-out
+                    # cell leaks its GUI tree, which then holds inherited
+                    # stdout pipes and application profile locks.
+                    for child, parent in _windows_process_parent_pairs():
+                        parents.setdefault(parent, []).append(child)
+                else:
+                    lines = subprocess.check_output(
+                        ["ps", "-axo", "pid=,ppid="], text=True, stderr=subprocess.DEVNULL
+                    ).splitlines()
+                    for line in lines:
+                        fields = line.split()
+                        if len(fields) != 2:
+                            continue
+                        child, parent = (int(fields[0]), int(fields[1]))
+                        parents.setdefault(parent, []).append(child)
                 pending = [process.pid]
                 seen = {process.pid}
                 while pending:
@@ -592,26 +640,56 @@ def _run_command_case(
         return trace_result.as_payload() if system_trace else {}
 
     def stop_process() -> None:
-        if process is None or process.poll() is not None:
+        if process is None:
             return
-        try:
-            if os.name == "nt":
-                process.terminate()
-            else:
-                os.killpg(process.pid, signal.SIGTERM)
-        except (OSError, ProcessLookupError):
-            pass
-        try:
-            process.communicate(timeout=2)
-        except subprocess.TimeoutExpired:
+        if process.poll() is None:
             try:
                 if os.name == "nt":
-                    process.kill()
+                    process.terminate()
                 else:
-                    os.killpg(process.pid, signal.SIGKILL)
+                    os.killpg(process.pid, signal.SIGTERM)
             except (OSError, ProcessLookupError):
                 pass
-            process.communicate()
+            try:
+                process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                try:
+                    if os.name == "nt":
+                        # The wrappers spawn the application as a child that
+                        # can inherit the captured stdout pipe. process.kill()
+                        # alone would leave that grandchild alive holding the
+                        # pipe's write end, so the drain below could never see
+                        # EOF; taskkill /T is the Windows form of killpg's
+                        # whole-group SIGKILL.
+                        subprocess.run(
+                            ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                            capture_output=True,
+                            check=False,
+                            timeout=15,
+                        )
+                    else:
+                        os.killpg(process.pid, signal.SIGKILL)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+                try:
+                    process.communicate(timeout=10)
+                except subprocess.TimeoutExpired:
+                    pass
+        if os.name == "nt":
+            # The `python3` entrypoint can be a launcher shim that exits
+            # before the real interpreter, which then reparents the whole
+            # GUI tree. The collected snapshot pids are the only handles left.
+            for pid in list(dict.fromkeys(trace_additional_pids)):
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(pid)],
+                    capture_output=True,
+                    check=False,
+                    timeout=15,
+                )
 
     try:
         if system_trace:
@@ -736,10 +814,13 @@ def _run_command_case(
                 start_new_session=os.name != "nt",
             )
             process_started_epoch_ms = time.time() * 1000.0
-            if system_trace:
+            # Strict mode needs the snapshot pids for the trace; on Windows a
+            # timed-out cell also needs them to kill a reparented GUI tree.
+            if system_trace or os.name == "nt":
                 descendant_stop = threading.Event()
                 descendant_thread = threading.Thread(target=collect_descendants, daemon=True)
                 descendant_thread.start()
+            if system_trace:
                 assert trace_gate_directory is not None
                 output_directory = system_trace_dir or (trace_gate_directory / "traces")
                 trace_session = TraceSession(
