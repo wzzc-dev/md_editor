@@ -180,6 +180,7 @@ class UiBenchmark {
   final double documentLoadMs;
   final Stopwatch _benchmarkWatch;
   final List<double> _frameWork = [];
+  final List<double> _deviceRaster = [];
   final List<double> _frameIntervals = [];
   final List<double> _inputToVisible = [];
   final List<double> _timingStamps = [];
@@ -192,8 +193,14 @@ class UiBenchmark {
 
   void _recordTimings(List<FrameTiming> timings) {
     for (final timing in timings) {
-      _frameWork.add(
-          (timing.buildDuration + timing.rasterDuration).inMicroseconds / 1000);
+      // Cross-adapter unified accounting: `frame_work` is the UI-thread frame
+      // production only (buildDuration, which spans build/layout/paint). The
+      // raster thread's time (rasterDuration, display-list rasterization plus
+      // GPU submit but no device-completion wait) is reported separately as
+      // `device_present` so every adapter's work number measures the same
+      // kind of work.
+      _frameWork.add(timing.buildDuration.inMicroseconds / 1000);
+      _deviceRaster.add(timing.rasterDuration.inMicroseconds / 1000);
       final stamp =
           timing.timestampInMicroseconds(FramePhase.vsyncStart) / 1000;
       if (_timingStamps.isNotEmpty) {
@@ -241,6 +248,9 @@ class UiBenchmark {
       await _waitForFrameSamples(1);
       if (_frameWork.length > 1) {
         _frameWork.removeRange(0, _frameWork.length - 1);
+      }
+      if (_deviceRaster.length > 1) {
+        _deviceRaster.removeRange(0, _deviceRaster.length - 1);
       }
       // A first interactive frame has no preceding vsync in this run. Any
       // timing callback buffered before it belongs to startup, not an open
@@ -295,6 +305,7 @@ class UiBenchmark {
     await SchedulerBinding.instance.endOfFrame;
     await Future<void>.delayed(Duration.zero);
     _frameWork.clear();
+    _deviceRaster.clear();
     _frameIntervals.clear();
     // FrameTiming callbacks can arrive after the warm-up frame. The scheduler
     // still exposes that frame's authoritative vsync timestamp synchronously;
@@ -320,6 +331,9 @@ class UiBenchmark {
     if (_frameWork.length > count) {
       _frameWork.removeRange(0, _frameWork.length - count);
     }
+    if (_deviceRaster.length > count) {
+      _deviceRaster.removeRange(0, _deviceRaster.length - count);
+    }
     if (_frameIntervals.length > count) {
       _frameIntervals.removeRange(0, _frameIntervals.length - count);
     }
@@ -329,8 +343,10 @@ class UiBenchmark {
   Future<void> _report(
       double firstInteractiveMs, FlutterView view, Size logicalSize) async {
     final samples = _frameWork;
+    final device = _deviceRaster;
     final intervals = _frameIntervals;
     final sorted = List<double>.of(samples)..sort();
+    final sortedDevice = List<double>.of(device)..sort();
     final sortedIntervals = List<double>.of(intervals)..sort();
     final sortedInput = List<double>.of(_inputToVisible)..sort();
     double at(double ratio) => sorted[((sorted.length - 1) * ratio).round()];
@@ -344,10 +360,10 @@ class UiBenchmark {
     stdout.writeln(jsonEncode({
       'adapter': 'flutter-${renderer == 'impeller' ? 'impeller' : 'skia'}',
       'measurement_scope': 'ui-frame',
-      'timing_source': 'flutter-FrameTiming.build+raster-and-vsyncStart',
+      'timing_source': 'flutter-FrameTiming.build-and-vsyncStart',
       'latency_source': 'action-to-SchedulerBinding.endOfFrame',
       'window_mode': 'native-window',
-      'work_scope': 'flutter-build-plus-raster',
+      'work_scope': 'flutter-ui-thread-build',
       'display_timestamp_source':
           'flutter-FrameTiming.vsyncStart-not-os-present',
       'scenario': scenario,
@@ -361,6 +377,13 @@ class UiBenchmark {
       'readback_samples_ms': List<Object?>.filled(samples.length, null),
       'offscreen_readback_samples_ms':
           List<Object?>.filled(samples.length, null),
+      'device_present_samples_ms': device,
+      'device_present_ms': device.isNotEmpty ? _mean(device) : null,
+      'device_present_p95_ms': sortedDevice.isNotEmpty
+          ? sortedDevice[((sortedDevice.length - 1) * .95).round()]
+          : null,
+      'device_present_source':
+          'flutter-FrameTiming.rasterDuration-raster-thread-no-device-completion-wait',
       'frame_work_ms': _mean(samples),
       'frame_interval_ms': intervals.isNotEmpty ? _mean(intervals) : null,
       'input_to_visible_ms':
@@ -730,8 +753,8 @@ class _MarkdownAppState extends State<MarkdownApp> {
 
   Widget _blockPreview(BuildContext context, int index) {
     const style = TextStyle(fontSize: 16, height: 1.55, color: Colors.black87);
-    final span = _previewCache.putIfAbsent(
-        index, () => MarkdownEditingController.previewSpan(_blocks[index], style));
+    final span = _previewCache.putIfAbsent(index,
+        () => MarkdownEditingController.previewSpan(_blocks[index], style));
     return InkWell(
       key: ValueKey<String>('preview-$index'),
       onTap: () => _activateBlock(index),

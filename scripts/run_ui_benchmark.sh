@@ -1,5 +1,8 @@
 #!/bin/sh
-# Build once, then run all seven desktop UI-process adapters through the harness.
+# Build once, then run all ten desktop UI-process adapters through the harness.
+# The three `moui-md-*` adapters measure the vendored official example app
+# (vendor/MoUI/examples/markdown_editor); strict system-trace mode does not
+# support them and records them as errors there.
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -73,6 +76,9 @@ MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --adapter moui-skia-raster='python3 moui/ui_benchmark.py skia-raster {fixture} {scenario}' \
   --adapter moui-skia-gpu='python3 moui/ui_benchmark.py skia-gpu {fixture} {scenario}' \
   --adapter moui-wgpu='python3 moui/ui_benchmark.py wgpu {fixture} {scenario}' \
+  --adapter moui-md-skia-raster='python3 moui/ui_benchmark.py --example skia-raster {fixture} {scenario}' \
+  --adapter moui-md-skia-gpu='python3 moui/ui_benchmark.py --example skia-gpu {fixture} {scenario}' \
+  --adapter moui-md-wgpu='python3 moui/ui_benchmark.py --example wgpu {fixture} {scenario}' \
   --adapter gpui='python3 bench/adapters/gpui/ui_benchmark.py {fixture} {scenario}' \
   --adapter flutter-skia='python3 flutter/ui_benchmark.py skia {fixture} {scenario}' \
   --adapter flutter-impeller='python3 flutter/ui_benchmark.py impeller {fixture} {scenario}' \

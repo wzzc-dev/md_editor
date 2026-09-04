@@ -256,11 +256,17 @@ fn ui_measure_frame(
   let (present_ms, offscreen_ms, readback_ms) = (benchmark_renderer.render)(
     profiled.frame(),
   )
+  // Cross-adapter unified accounting: `frame_work` covers the framework's
+  // CPU-side frame production only (build/layout/paint/draw), the same scope
+  // the native-window adapter declares as `moui-build-layout-paint-draw`.
+  // Device rasterization and present completion — the raster CPU pixel frame,
+  // the Metal/wgpu submit plus synchronous device wait — are reported
+  // separately as `device_present_*` samples so every adapter's work number
+  // measures the same kind of work.
   let frame_work_ms = timing.build_ms() +
     timing.layout_ms() +
     timing.paint_ms() +
-    timing.draw_ms() +
-    (present_ms - offscreen_ms - readback_ms).max(0.0)
+    timing.draw_ms()
   let frame_end = now_ms()
   samples.work_ms.push(frame_work_ms)
   let interval_start = if previous_frame_end > 0.0 {
@@ -353,6 +359,10 @@ fn ui_report_v2(
       total + value
     }) /
     samples.readback_ms.length().to_double()
+  let present_mean = samples.present_ms.fold(init=0.0, fn(total, value) {
+      total + value
+    }) /
+    samples.present_ms.length().to_double()
   "{\"adapter\":\"" +
   adapter +
   "\",\"measurement_scope\":\"ui-frame\",\"timing_source\":\"" +
@@ -379,6 +389,8 @@ fn ui_report_v2(
   ui_json_array(samples.readback_ms) +
   "],\"offscreen_readback_samples_ms\":[" +
   ui_null_array(samples.work_ms.length()) +
+  "],\"device_present_samples_ms\":[" +
+  ui_json_array(samples.present_ms) +
   "],\"frame_work_ms\":" +
   json_number(work_mean) +
   ",\"frame_interval_ms\":" +
@@ -395,6 +407,17 @@ fn ui_report_v2(
   json_number(readback_mean) +
   ",\"offscreen_readback_ms\":" +
   "null" +
+  ",\"device_present_ms\":" +
+  json_number(present_mean) +
+  ",\"device_present_p95_ms\":" +
+  json_number(percentile(samples.present_ms, 0.95)) +
+  ",\"device_present_scope\":\"" +
+  (if direct_gpu {
+    "gpu-submit-plus-synchronous-present-wait"
+  } else {
+    "cpu-raster-plus-pixel-readback"
+  }) +
+  "\"" +
   ",\"frame_work_p95_ms\":" +
   json_number(percentile(samples.work_ms, 0.95)) +
   ",\"frame_interval_p95_ms\":" +
@@ -426,7 +449,7 @@ fn ui_report_v2(
   surface_route +
   "\",\"presentation_kind\":\"" +
   presentation_kind +
-  "\",\"window_mode\":\"headless-host-surface\",\"work_scope\":\"moui-build-layout-paint-draw-plus-render-submit\",\"display_timestamp_source\":\"synchronous-render-completion-no-compositor-timestamp\",\"phase_samples_ms\":{\"build\":[" +
+  "\",\"window_mode\":\"headless-host-surface\",\"work_scope\":\"moui-build-layout-paint-draw\",\"display_timestamp_source\":\"synchronous-render-completion-no-compositor-timestamp\",\"phase_samples_ms\":{\"build\":[" +
   ui_json_array(samples.build_ms) +
   "],\"layout\":[" +
   ui_json_array(samples.layout_ms) +

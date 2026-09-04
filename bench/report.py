@@ -23,6 +23,9 @@ ADAPTERS = (
     "moui-skia-raster",
     "moui-skia-gpu",
     "moui-wgpu",
+    "moui-md-skia-raster",
+    "moui-md-skia-gpu",
+    "moui-md-wgpu",
     "gpui",
     "flutter-skia",
     "flutter-impeller",
@@ -32,6 +35,9 @@ LABELS = {
     "moui-skia-raster": "MoUI Skia Raster CPU",
     "moui-skia-gpu": "MoUI Skia GPU",
     "moui-wgpu": "MoUI WGPU",
+    "moui-md-skia-raster": "MoUI 示例编辑器 Skia Raster",
+    "moui-md-skia-gpu": "MoUI 示例编辑器 Skia GPU",
+    "moui-md-wgpu": "MoUI 示例编辑器 WGPU",
     "gpui": "GPUI (md_mbt)",
     "flutter-skia": "Flutter Skia",
     "flutter-impeller": "Flutter Impeller",
@@ -158,11 +164,14 @@ def status_text(records: list[dict]) -> str:
 
 
 SECTION_HEADERS = {
-    "frame": ("工作均值（ms）", "工作 P95（ms）", "帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数"),
-    "input": ("可见延迟均值（ms）", "可见延迟 P95（ms）", "工作均值（ms）", "工作 P95（ms）"),
-    "open": ("首次可交互均值（ms）", "首次可交互 P95（ms）", "工作均值（ms）", "工作 P95（ms）", "文档加载均值（ms）", "文档加载 P95（ms）"),
-    "scroll": ("工作均值（ms）", "工作 P95（ms）", "帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数", "离屏均值（ms）", "离屏 P95（ms）", "回读均值（ms）", "回读 P95（ms）"),
+    "frame": ("工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）", "帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数"),
+    "input": ("可见延迟均值（ms）", "可见延迟 P95（ms）", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）"),
+    "open": ("首次可交互均值（ms）", "首次可交互 P95（ms）", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）", "文档加载均值（ms）", "文档加载 P95（ms）"),
+    # 设备侧 replaces the raster-only 离屏/回读 pair; raw stage samples stay in
+    # the audit table and the JSON.
+    "scroll": ("工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）", "帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数"),
 }
+DEVICE_HEADER_PREFIX = "设备侧"
 
 STRICT_FRAME_HEADERS = (
     "动作到显示均值（ms）",
@@ -209,7 +218,12 @@ def section_headers(kind: str, strict_system: bool) -> tuple[str, ...]:
         "帧间隔 P95（ms）": "系统帧间隔 P95（ms）",
         "丢帧数": "系统丢帧数",
     })
-    return tuple(replacements.get(header, header) for header in headers)
+    replaced = tuple(replacements.get(header, header) for header in headers)
+    if strict_system:
+        # Strict mode ranks on system compositor present only; the framework
+        # device-side diagnostic is already inside that present, so hide it.
+        replaced = tuple(h for h in replaced if not h.startswith(DEVICE_HEADER_PREFIX))
+    return replaced
 
 
 def metric_cells(
@@ -227,6 +241,7 @@ def metric_cells(
         return [status_text(records)] + ["n/a"] * (count - 1)
     work = work_metric(valid)
     diagnostic_work = work_metric(valid)
+    device = metric(valid, "device_present")
     interval = system_metric(valid, "system_present_interval") if strict_system else metric(valid, "frame_interval")
     drop_count = system_dropped(valid) if strict_system else dropped(valid)
     action_to_present = system_action_metric(valid) if strict_system else (None, None)
@@ -238,16 +253,18 @@ def metric_cells(
             fmt_number(diagnostic_work[0]), fmt_number(diagnostic_work[1]),
         ]
     if kind == "frame":
-        return [fmt_number(work[0]), fmt_number(work[1]), fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a"]
+        return [fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]), fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a"]
     if kind == "input":
         visible = system_metric(valid, "system_input_to_present") if strict_system else metric(valid, "input_to_visible")
         if strict_system:
             return [fmt_number(visible[0]), fmt_number(visible[1]), fmt_number(diagnostic_work[0]), fmt_number(diagnostic_work[1])]
-        return [fmt_number(visible[0]), fmt_number(visible[1]), fmt_number(work[0]), fmt_number(work[1])]
+        return [fmt_number(visible[0]), fmt_number(visible[1]), fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1])]
     if kind == "open":
         interactive = scalar_metric(valid, "system_first_present_ms") if strict_system else scalar_metric(valid, "first_interactive_ms")
         load = scalar_metric(valid, "document_load_ms")
-        return [fmt_number(interactive[0]), fmt_number(interactive[1]), fmt_number(diagnostic_work[0]), fmt_number(diagnostic_work[1]), fmt_number(load[0]), fmt_number(load[1])]
+        if strict_system:
+            return [fmt_number(interactive[0]), fmt_number(interactive[1]), fmt_number(diagnostic_work[0]), fmt_number(diagnostic_work[1]), fmt_number(load[0]), fmt_number(load[1])]
+        return [fmt_number(interactive[0]), fmt_number(interactive[1]), fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]), fmt_number(load[0]), fmt_number(load[1])]
     offscreen = metric(valid, "offscreen")
     readback = metric(valid, "readback")
     if strict_system:
@@ -260,8 +277,7 @@ def metric_cells(
             fmt_number(readback[0]), fmt_number(readback[1]),
         ]
     return [
-        fmt_number(work[0]), fmt_number(work[1]), fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a",
-        fmt_number(offscreen[0]), fmt_number(offscreen[1]), fmt_number(readback[0]), fmt_number(readback[1]),
+        fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]), fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a",
     ]
 
 
@@ -297,8 +313,8 @@ def print_audit_table(
         print("| 实现 | 测试集合 | 场景 | 范围 | 动作到显示均值/P95 | 框架工作均值/P95（诊断） | 系统帧间隔均值/P95 | 系统丢帧数 | 系统首帧显示 | 离屏均值（诊断） | 回读均值（诊断） | 状态 |")
         print("| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
     else:
-        print("| 实现 | 测试集合 | 场景 | 范围 | 工作均值/P95 | 仅分发均值/P95 | 帧间隔均值/P95 | 输入到可见均值/P95 | 离屏均值 | 回读均值 | 首次可交互 | 丢帧数 | 状态 |")
-        print("| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
+        print("| 实现 | 测试集合 | 场景 | 范围 | 工作均值/P95 | 仅分发均值/P95 | 帧间隔均值/P95 | 输入到可见均值/P95 | 设备侧均值 | 离屏均值 | 回读均值 | 首次可交互 | 丢帧数 | 状态 |")
+        print("| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
     keys = [
         (adapter, fixture, scenario)
         for adapter in ADAPTERS
@@ -334,10 +350,11 @@ def print_audit_table(
         else:
             interactive = first(valid, "first_interactive_ms") if valid else None
             drop_count = dropped(valid) if valid else None
+            device_mean = metric(valid, "device_present")[0] if valid else None
             print(
                 f"| {adapter} | {fixture} | {scenario} | ui-frame | "
                 f"{audit_pair(work)} | {audit_pair(dispatch)} | {audit_pair(interval)} | {audit_pair(input_visible)} | "
-                f"{fmt(offscreen[0])} | {fmt(readback[0])} | {fmt(interactive)} | "
+                f"{fmt(device_mean)} | {fmt(offscreen[0])} | {fmt(readback[0])} | {fmt(interactive)} | "
                 f"{drop_count if drop_count is not None else 'n/a'} | {status_text(records)} |"
             )
     print("\n</details>\n")
@@ -454,7 +471,10 @@ def main() -> None:
         budget_text = ", ".join(f"{value:.3f} ms" for value in budgets) or "n/a"
         print("- 公平性口径：严格模式的帧间隔、丢帧、动作到下一次显示和首帧显示只来自 macOS compositor/display trace；目标 surface 无法被 xctrace 明确关联时显示 `n/a`，绝不回退到框架回调。当前 trace 推导的显示预算：" + budget_text + "。表中的 `动作到显示` 是统一端到端边界；框架内部 work 仅作为诊断，不参与跨实现排名。\n")
     else:
-        print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数；数值来自框架真实渲染/提交回调。MoUI ui-frame 是 headless host-surface；GPUI 的 frame work 覆盖 request_layout→prepaint→paint，action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，因此报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。\n")
+        print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数。`工作`（frame_work）统一为框架 CPU 侧帧生产工作，不含设备光栅化与上屏：MoUI 为 build+layout+paint+draw，Flutter 为 UI 线程 buildDuration，GPUI 为 request_layout→prepaint→paint，Electron 为 JS 可见的 DOM 更新+layout。设备光栅化与上屏统一单列为 `设备侧`（device_present）：MoUI 为同步光栅化/present 完成（无头 harness 逐帧同步，无流水线重叠），Flutter 为光栅线程 rasterDuration（不含设备完成等待），GPUI 与 Electron 无法在适配器侧观测显示链路，显示 `n/a`。MoUI ui-frame 是 headless host-surface；GPUI 的 action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，帧间隔覆盖完整链路，报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。\n")
+
+    if any(str(record.get("adapter", "")).startswith("moui-md-") for record in records):
+        print("- `moui-md-*` 行来自 `vendor/MoUI/examples/markdown_editor` 官方示例应用：fixture 通过应用自身的 `OpenRecentDocument` 服务路径打开，渲染经过示例自己的虚拟滚动与富文本缓存实现，不套用简化基准应用的 `fixed row 66px` 统一行高；viewport、fixture、动作数、warm-up 与重复次数与其他行完全一致。严格模式（`UI_BENCHMARK_SYSTEM_TRACE=1`）目前不为 `moui-md-*` 行采集系统 present，这些行会显示 error。\n")
 
     # Put the audit table first so command-line consumers can locate the
     # legacy-compatible raw summary without parsing the fixture matrix.
@@ -466,7 +486,8 @@ def main() -> None:
     print_anomalies(payload, grouped, strict_system)
     print("## 采集口径\n")
     print("- Metric definitions：严格模式的 `动作到显示` 为统一的系统 action marker 到目标 surface 下一次 compositor present；`system_present_interval_samples_ms` 为同一目标 surface 的相邻显示时间戳间隔。`frame_work_ms` 仍是适配器内部 phase 诊断，不能与系统 present 时间相加。")
-    print("- `frame_work_ms` 对 GPUI 来自 request_layout→prepaint→paint 的真实元素包络；action dispatch 作为独立的 `dispatch_work_samples_ms` 诊断字段保留，不与绘制时间混合。")
+    print("- `frame_work_ms` 统一为框架 CPU 侧帧生产工作，不含设备光栅化与上屏；对 GPUI 来自 request_layout→prepaint→paint 的真实元素包络；action dispatch 作为独立的 `dispatch_work_samples_ms` 诊断字段保留，不与绘制时间混合。")
+    print("- `device_present_ms`：设备/上屏侧统一字段。MoUI raster 为 Skia CPU 光栅化+像素回读整体；MoUI GPU/wgpu 为提交后同步等待设备完成（headless host-surface 逐帧同步，真实应用的 vsync 流水线可重叠掉一部分，该值应视为上屏成本上界）；Flutter 为 `FrameTiming.rasterDuration`（光栅线程任务时间，含显示列表光栅化与 GPU 提交、不含设备完成等待）；GPUI 与 Electron 适配器侧无法观测，显示 `n/a`。")
     print("- `input_to_visible_ms`：普通模式是输入动作到框架可见帧；严格模式使用同一 xctrace 中的 `md_editor_action` os_signpost 与目标 surface 的下一次 compositor present，写入 `system_action_to_present_samples_ms`。适配器提供的 wall-clock action 时间戳只用于裁剪 trace 窗口，不参与延迟计算。`system_dropped_display_frames` 使用同一 trace 的 VSync 周期按四舍五入后的刷新槽位 `max(round(interval / frame_budget_ms) - 1, 0)` 计算，以容忍系统时间戳量化抖动。")
     print("- `first_interactive_ms` 是首个可交互帧；严格模式改为进程启动到首个目标 compositor present，不使用进程总耗时替代；打开场景没有前一帧，所以不计算 interval/drop。")
     print("- `offscreen_ms` / `readback_ms` 只展示被实际计时的阶段；严格系统 trace 不会把 renderer 的提交时间或 readback 时间当作 compositor present。未埋点阶段显示 `n/a`，实测无 CPU 工作才显示数值 `0`。")

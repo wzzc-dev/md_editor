@@ -19,9 +19,6 @@ supported_targets = "native"
 pkgtype(kind: "executable")
 
 options(
-  "native-stub": [
-    "benchmark_clock.c",
-    "benchmark_surface.c",
-  ],
+  "native-stub": [ "benchmark_clock.c", "benchmark_surface.c" ],
   link: { "native": { "cc-link-flags": "d3d12.lib dxgi.lib" } },
 )
