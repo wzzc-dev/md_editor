@@ -13,6 +13,14 @@ if (process.platform === 'darwin') {
   app.commandLine.appendSwitch('use-angle', 'metal');
   app.commandLine.appendSwitch('enable-gpu-rasterization');
 }
+// The ui-benchmark action loop awaits requestAnimationFrame after every
+// action. Chromium's native window-occlusion tracking marks a fully covered
+// window hidden and stops delivering rAF callbacks, so a benchmark window
+// that is not frontmost would stall forever. Keep the animation clock
+// running; rAF stays vsync-paced, so interval semantics are unchanged.
+if (process.argv.includes('--ui-benchmark')) {
+  app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+}
 
 function createWindow(benchmark = null) {
   const window = new BrowserWindow({

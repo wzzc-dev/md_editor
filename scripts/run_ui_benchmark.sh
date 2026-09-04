@@ -65,7 +65,15 @@ fi
 # gpui (md_mbt) is macOS-arm64-only; build.py self-skips elsewhere and the
 # adapter then reports the documented `skipped` protocol row.
 "$ROOT/bench/adapters/gpui/build.sh"
-npm ci --prefix "$ROOT/electron"
+# npm ci is unrunnable when the Electron runtime is already installed but the
+# registry is unreachable or a package file is held open (EBUSY on Windows).
+# The adapter only needs the runtime and vditor assets, so reuse them.
+if [ -f "$ROOT/electron/node_modules/electron/dist/electron.exe" ] &&
+   [ -f "$ROOT/electron/node_modules/vditor/dist/index.min.js" ]; then
+  echo "electron runtime already installed; skipping npm ci"
+else
+  npm ci --prefix "$ROOT/electron"
+fi
 (
   cd "$ROOT/flutter"
   flutter pub get
