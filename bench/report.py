@@ -43,6 +43,9 @@ LABELS = {
     "flutter-impeller": "Flutter Impeller",
     "electron": "Electron",
 }
+# Captures recorded before the GPUI→GpMark.mbt rename carry the legacy
+# `gpui` adapter name; keep them renderable by the current generator.
+ADAPTER_ALIASES = {"gpui": "gpmark"}
 
 
 def numeric(values: Any) -> list[float]:
@@ -111,7 +114,9 @@ def grouped_records(payload: dict) -> dict[tuple[str, str, str], list[dict]]:
     grouped: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
     for record in payload.get("records", []):
         if record.get("measurement_scope") == "ui-frame":
-            key = (record.get("adapter", "?"), record.get("fixture", "?"), record.get("scenario", "?"))
+            adapter = record.get("adapter", "?")
+            adapter = ADAPTER_ALIASES.get(adapter, adapter)
+            key = (adapter, record.get("fixture", "?"), record.get("scenario", "?"))
             grouped[key].append(record)
     return grouped
 
@@ -164,12 +169,15 @@ def status_text(records: list[dict]) -> str:
 
 
 SECTION_HEADERS = {
-    "frame": ("工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）", "帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数"),
+    # 列序约定（普通模式）：同平台跨框架可比口径（帧间隔/丢帧数/可见延迟/
+    # 首次可交互/文档加载）在前，框架内部诊断口径（工作/设备侧，渲染时以
+    # `†` 标注）在后。严格模式走 STRICT_*_HEADERS，本就诊断列在末尾。
+    "frame": ("帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）"),
     "input": ("可见延迟均值（ms）", "可见延迟 P95（ms）", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）"),
-    "open": ("首次可交互均值（ms）", "首次可交互 P95（ms）", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）", "文档加载均值（ms）", "文档加载 P95（ms）"),
+    "open": ("首次可交互均值（ms）", "首次可交互 P95（ms）", "文档加载均值（ms）", "文档加载 P95（ms）", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）"),
     # 设备侧 replaces the raster-only 离屏/回读 pair; raw stage samples stay in
     # the audit table and the JSON.
-    "scroll": ("工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）", "帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数"),
+    "scroll": ("帧间隔均值（ms）", "帧间隔 P95（ms）", "丢帧数", "工作均值（ms）", "工作 P95（ms）", "设备侧均值（ms）", "设备侧 P95（ms）"),
 }
 DEVICE_HEADER_PREFIX = "设备侧"
 
@@ -253,7 +261,7 @@ def metric_cells(
             fmt_number(diagnostic_work[0]), fmt_number(diagnostic_work[1]),
         ]
     if kind == "frame":
-        return [fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]), fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a"]
+        return [fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a", fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1])]
     if kind == "input":
         visible = system_metric(valid, "system_input_to_present") if strict_system else metric(valid, "input_to_visible")
         if strict_system:
@@ -264,7 +272,7 @@ def metric_cells(
         load = scalar_metric(valid, "document_load_ms")
         if strict_system:
             return [fmt_number(interactive[0]), fmt_number(interactive[1]), fmt_number(diagnostic_work[0]), fmt_number(diagnostic_work[1]), fmt_number(load[0]), fmt_number(load[1])]
-        return [fmt_number(interactive[0]), fmt_number(interactive[1]), fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]), fmt_number(load[0]), fmt_number(load[1])]
+        return [fmt_number(interactive[0]), fmt_number(interactive[1]), fmt_number(load[0]), fmt_number(load[1]), fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1])]
     offscreen = metric(valid, "offscreen")
     readback = metric(valid, "readback")
     if strict_system:
@@ -277,7 +285,8 @@ def metric_cells(
             fmt_number(readback[0]), fmt_number(readback[1]),
         ]
     return [
-        fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]), fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a",
+        fmt_number(interval[0]), fmt_number(interval[1]), str(drop_count) if drop_count is not None else "n/a",
+        fmt_number(work[0]), fmt_number(work[1]), fmt_number(device[0]), fmt_number(device[1]),
     ]
 
 
@@ -294,12 +303,25 @@ def print_section(
         if note:
             print(f"{note}\n")
         headers = section_headers(kind, strict_system)
+        if not strict_system:
+            # `工作`/`设备侧` are framework-internal diagnostics with per-framework
+            # phase sets and observability; flag them so the comparable columns
+            # (interval/visible latency/interactive/drops) read first.
+            headers = tuple(
+                header + " †" if header.startswith(("工作", "设备侧")) else header
+                for header in headers
+            )
         print("| 实现 | " + " | ".join(headers) + " |")
         print("| --- | " + " | ".join("---:" for _ in headers) + " |")
         for adapter in ADAPTERS:
             per_fixture = [metric_cells(grouped, adapter, fixture, scenario, kind, strict_system) for fixture in fixtures]
             values = ["/".join(row[index] for row in per_fixture) for index in range(len(headers))]
             print(f"| {LABELS[adapter]} | " + " | ".join(values) + " |")
+        if not strict_system:
+            print(
+                "\n> 列口径：无 `†` 的列为同平台跨框架可比（同 fixture/viewport/动作数/重复，覆盖到显示链路或 wall-clock）；"
+                "带 `†` 的 `工作`/`设备侧` 为框架内部诊断（各框架统计相位与可观测面不同），仅用于同框架随 fixture 的缩放与回归比较，不应跨框架相除。"
+            )
         print()
 
 
@@ -471,7 +493,7 @@ def main() -> None:
         budget_text = ", ".join(f"{value:.3f} ms" for value in budgets) or "n/a"
         print("- 公平性口径：严格模式的帧间隔、丢帧、动作到下一次显示和首帧显示只来自 macOS compositor/display trace；目标 surface 无法被 xctrace 明确关联时显示 `n/a`，绝不回退到框架回调。当前 trace 推导的显示预算：" + budget_text + "。表中的 `动作到显示` 是统一端到端边界；框架内部 work 仅作为诊断，不参与跨实现排名。\n")
     else:
-        print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数。`工作`（frame_work）统一为框架 CPU 侧帧生产工作，不含设备光栅化与上屏：MoUI 为 build+layout+paint+draw，Flutter 为 UI 线程 buildDuration，GPUI 为 request_layout→prepaint→paint，Electron 为 JS 可见的 DOM 更新+layout。设备光栅化与上屏统一单列为 `设备侧`（device_present）：MoUI 为同步光栅化/present 完成（无头 harness 逐帧同步，无流水线重叠），Flutter 为光栅线程 rasterDuration（不含设备完成等待），GPUI 与 Electron 无法在适配器侧观测显示链路，显示 `n/a`。MoUI ui-frame 是 headless host-surface；GPUI 的 action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，帧间隔覆盖完整链路，报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。\n")
+        print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数。`工作`（frame_work）统一为框架 CPU 侧帧生产工作，不含设备光栅化与上屏：MoUI 为 build+layout+paint+draw，Flutter 为 UI 线程 buildDuration，GPUI 为 request_layout→prepaint→paint，Electron 为 JS 可见的 DOM 更新+layout。设备光栅化与上屏统一单列为 `设备侧`（device_present）：MoUI 为同步光栅化/present 完成（无头 harness 逐帧同步，无流水线重叠），Flutter 为光栅线程 rasterDuration（不含设备完成等待），GPUI 与 Electron 无法在适配器侧观测显示链路，显示 `n/a`。MoUI ui-frame 是 headless host-surface；GPUI 的 action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，帧间隔覆盖完整链路，报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。下方各对比表把同平台跨框架可比列（帧间隔/可见延迟/首次可交互/丢帧数等）排在前面，框架内部诊断列（`工作`/`设备侧`）排在后面并标注 `†`。\n")
 
     if any(str(record.get("adapter", "")).startswith("moui-md-") for record in records):
         print("- `moui-md-*` 行来自 `momark`（MoMark，原 `vendor/MoUI/examples/markdown_editor`）官方示例应用：fixture 通过应用自身的 `OpenRecentDocument` 服务路径打开，渲染经过示例自己的虚拟滚动与富文本缓存实现，不套用简化基准应用的 `fixed row 66px` 统一行高；viewport、fixture、动作数、warm-up 与重复次数与其他行完全一致。严格模式（`UI_BENCHMARK_SYSTEM_TRACE=1`）目前不为 `moui-md-*` 行采集系统 present，这些行会显示 error。\n")
