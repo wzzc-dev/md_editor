@@ -111,7 +111,7 @@ def main() -> None:
         action="store_true",
         help=(
             "measure the vendored official example app "
-            "(vendor/MoUI/examples/markdown_editor) instead of the simplified "
+            "(the `momark` submodule) instead of the simplified "
             "benchmark app; the adapter labels gain an `md` segment"
         ),
     )

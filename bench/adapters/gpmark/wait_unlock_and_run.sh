@@ -1,6 +1,6 @@
 #!/bin/sh
 # Wait for the macOS console session to be unlocked, then run the full UI
-# benchmark matrix. The gpui adapter drives its benchmark loop from GPUI
+# benchmark matrix. The GpMark.mbt adapter drives its benchmark loop from GPUI
 # on_next_frame (vsync pacing) and needs a window the WindowServer can
 # present; while the console is locked at the lock screen the frame pump
 # never ticks and the process stalls at 0% CPU in NSApplication run.

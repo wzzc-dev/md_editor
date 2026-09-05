@@ -51,7 +51,7 @@ Use the checked-in hardware command rather than reconstructing adapter strings:
 | Adapter | Work source | Display interval source | Input latency endpoint |
 | --- | --- | --- | --- |
 | MoUI | `profile_draw_frame` phases plus renderer submission | synchronous render completion on a headless host surface | action-to-render completion |
-| GPUI (md_mbt) | `request_layout` → `prepaint` → `paint` element probe (shared vendored fork frame loop); input actions are real `EVENT_TEXT` dispatches | interval between `Window::on_next_frame` callbacks | action-to-`on_next_frame` |
+| GpMark.mbt (GPUI) | `request_layout` → `prepaint` → `paint` element probe (shared vendored fork frame loop); input actions are real `EVENT_TEXT` dispatches | interval between `Window::on_next_frame` callbacks | action-to-`on_next_frame` |
 | Flutter | `buildDuration + rasterDuration` | `FrameTiming.vsyncStart` deltas | action-to-`SchedulerBinding.endOfFrame` |
 | Electron | DOM/update work | Chromium `requestAnimationFrame` interval | action-to-next animation frame |
 

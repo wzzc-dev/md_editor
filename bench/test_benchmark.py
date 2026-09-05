@@ -273,7 +273,7 @@ class FixtureTests(unittest.TestCase):
         fixture = ROOT / "data" / "small.md"
         command = (
             "python3 -c 'import json; print(json.dumps({{"
-            "\"adapter\":\"gpui\",\"measurement_scope\":\"ui-frame\","
+            "\"adapter\":\"gpmark\",\"measurement_scope\":\"ui-frame\","
             "\"scenario\":\"{scenario}\",\"frame_work_samples_ms\":[1]*120,\"frame_interval_samples_ms\":[1]*120,"
             "\"input_to_visible_samples_ms\":[1]*120,\"offscreen_samples_ms\":[0]*120,\"readback_samples_ms\":[0]*120,\"offscreen_readback_samples_ms\":[0]*120,"
             "\"frame_work_ms\":1,\"frame_interval_ms\":1,\"input_to_visible_ms\":None,\"offscreen_ms\":0,\"readback_ms\":0,\"dropped_display_frames\":0,"
@@ -283,7 +283,7 @@ class FixtureTests(unittest.TestCase):
             "\"first_interactive_ms\":1,\"viewport\":{{\"width\":1280,\"height\":800}}"
             "}}))'"
         )
-        result = run_command(command, fixture, "scroll", "gpui")
+        result = run_command(command, fixture, "scroll", "gpmark")
         self.assertEqual(result[0]["status"], "error")
         self.assertIn("must not contain input-to-visible samples", result[0]["error"])
 
@@ -469,7 +469,7 @@ class TraceScratchTests(unittest.TestCase):
         with patch.object(run_benchmark, "_run_command_case", exploding_case):
             with self.assertRaises(RuntimeError):
                 run_command(
-                    "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpui",
+                    "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpmark",
                     system_trace=True,
                 )
 
@@ -479,7 +479,7 @@ class TraceScratchTests(unittest.TestCase):
 
     def test_scratch_is_removed_when_the_adapter_is_unavailable(self):
         result = run_command(
-            "md-editor-definitely-missing-adapter", ROOT / "data" / "small.md", "open", "gpui",
+            "md-editor-definitely-missing-adapter", ROOT / "data" / "small.md", "open", "gpmark",
             system_trace=True,
         )
         self.assertEqual(result[0]["status"], "skipped")
@@ -488,7 +488,7 @@ class TraceScratchTests(unittest.TestCase):
     @patch.object(run_benchmark, "display_session_locked", return_value=True)
     def test_locked_display_rejects_strict_case_before_launch(self, _locked):
         result = run_command(
-            "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpui",
+            "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpmark",
             system_trace=True,
         )
         self.assertEqual(result[0]["status"], "error")

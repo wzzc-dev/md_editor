@@ -2,8 +2,9 @@
 
 This repository contains intentionally small desktop Markdown editors and one
 repeatable benchmark protocol. The same source document, 1280x800 viewport and
-interaction script are used for MoUI (Skia raster/GPU), GPUI, Flutter (Skia/
-Impeller) and Electron/Vditor. Desktop UI-process adapters emit `ui-frame` records;
+interaction script are used for MoUI (Skia raster/GPU), MoMark, GpMark.mbt
+(GPUI), Flutter (Skia/Impeller) and Electron/Vditor. Desktop UI-process
+adapters emit `ui-frame` records;
 separate command-line adapters retain a renderer-independent
 `headless-render` diagnostic baseline.
 
@@ -17,7 +18,8 @@ normalized. Unsupported constructs remain editable source text.
 | Directory | Implementation |
 | --- | --- |
 | `moui/` | MoonBit + local MoUI rich-text editor, native Skia and WGPU entrypoints |
-| `gpui/` | Git submodule: the md_mbt editor (MoonBit velotype-style block WYSIWYG) on GPUI over the vendored Rust native binding |
+| `momark/` | Git submodule: [MoMark](https://github.com/wzzc-dev/MoMark) — the standalone Markdown editor example app (extracted from MoUI `examples/markdown_editor`) |
+| `gpmark/` | Git submodule: [GpMark.mbt](https://github.com/wzzc-dev/GpMark.mbt) — MoonBit velotype-style block WYSIWYG on GPUI over the vendored Rust native binding |
 | `flutter/` | Flutter Material 3 WYSIWYG comparison editor |
 | `electron/` | Electron + Vditor WYSIWYG comparison editor |
 | `data/` | Deterministic Small/Medium/Large/Stress Markdown fixtures |
@@ -46,8 +48,8 @@ The current audited macOS arm64 capture is
 [`results/macos-arm64-ui.json`](results/macos-arm64-ui.json) with the rendered
 [`Markdown report`](results/macos-arm64-ui.md): 252/252 desktop UI-process
 records (seven adapters x four fixtures x three scenarios x three repetitions)
-are measured on an Apple M4 16 GiB host at 1280x800, with the `gpui` row
-emitted by the md_mbt submodule editor. The report intentionally shows
+are measured on an Apple M4 16 GiB host at 1280x800, with the `gpmark` row
+emitted by the GpMark.mbt submodule editor. The report intentionally shows
 where the strict 2x screen passes and fails; frame clocks are framework-specific
 and are not compositor-equivalent. A dedicated Windows amd64 16 GiB capture is
 still required and is documented in [`docs/windows.md`](docs/windows.md).
@@ -59,7 +61,7 @@ claims still require an instrumented GUI run.
 
 Electron uses Vditor 3.11.3 in `mode: "wysiwyg"` and loads all assets locally;
 its headless benchmark additionally emits a Small-only full Lute DOM row.
-The `gpui/` submodule runs the md_mbt editor: its MoonBit core owns the
+The `gpmark/` submodule runs the GpMark.mbt editor: its MoonBit core owns the
 command tree, editor state, Markdown model, event handlers, file operations and
 process entrypoint, linked to the vendored `gpui-moonbit` Rust static library
 that is limited to the GPUI native capability bridge.

@@ -24,15 +24,15 @@ if [ "$MOUI_BENCHMARK_PACKAGE" = "moui/windows_benchmark" ]; then
   MOUI_NATIVE_ENV="CL='/std:c11 /experimental:c11atomics' MBT_WGPU_LINK_MODE=dynamic MBT_WGPU_NATIVE_ROOT='$(cygpath -w "$(dirname "$0")/../.cache/wgpu-native-msvc")' "
 fi
 
-# Build the gpui (md_mbt) app once; it is macOS-arm64-only, build.py
+# Build the GpMark.mbt app once; it is macOS-arm64-only, build.py
 # self-skips elsewhere and the adapter then reports a `skipped` protocol row.
 # The adapter below only invokes the stable benchmark entrypoint.
-"$(dirname "$0")/../bench/adapters/gpui/build.sh"
+"$(dirname "$0")/../bench/adapters/gpmark/build.sh"
 
 python3 "$(dirname "$0")/../bench/run_benchmark.py" \
   --adapter moui-skia-raster="${MOUI_NATIVE_ENV}MOUI_SKIA_RENDERER=skia-raster moon run $MOUI_BENCHMARK_PACKAGE --target native --release -- {fixture} {scenario}" \
   --adapter moui-skia-gpu="${MOUI_NATIVE_ENV}MOUI_SKIA_RENDERER=skia-gpu moon run $MOUI_BENCHMARK_PACKAGE --target native --release -- {fixture} {scenario}" \
-  --adapter gpui='python3 bench/adapters/gpui/benchmark.py {fixture} {scenario}' \
+  --adapter gpmark='python3 bench/adapters/gpmark/benchmark.py {fixture} {scenario}' \
   --adapter flutter-skia='FLUTTER_RENDERER=skia dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
   --adapter flutter-impeller='FLUTTER_RENDERER=impeller dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
   --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \

@@ -77,12 +77,12 @@ jobs:
         run: |
           moon check moui/app --target native
           moon test moui/app --target native
-          cd gpui
+          cd gpmark
           moon check core adapter --target native
           moon test core --target native
 
       - name: Rust GPUI check
-        run: cargo check --manifest-path gpui/third_party/gpui-moonbit/gpui-sys/Cargo.toml
+        run: cargo check --manifest-path gpmark/third_party/gpui-moonbit/gpui-sys/Cargo.toml
 
       - name: Flutter checks and tests
         working-directory: flutter
@@ -108,7 +108,7 @@ jobs:
             --fixture small --repetitions 1 --warmups 0 \
             --adapter moui-skia-raster='MOUI_SKIA_RENDERER=skia-raster moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
             --adapter moui-skia-gpu='MOUI_SKIA_RENDERER=skia-gpu moon run moui/benchmark --target native --release -- {fixture} {scenario}' \
-            --adapter gpui='python3 bench/adapters/gpui/benchmark.py {fixture} {scenario}' \
+            --adapter gpmark='python3 bench/adapters/gpmark/benchmark.py {fixture} {scenario}' \
             --adapter flutter-skia='FLUTTER_RENDERER=skia dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
             --adapter flutter-impeller='FLUTTER_RENDERER=impeller dart run flutter/tool/benchmark.dart {fixture} {scenario}' \
             --adapter electron='npm run --prefix electron benchmark -- {fixture} {scenario}' \

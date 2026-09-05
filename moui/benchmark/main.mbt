@@ -169,7 +169,7 @@ async fn main {
   if args.length() >= 4 && args[1] == "--ui-benchmark-example" {
     if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
       abort(
-        "strict system-present tracing is not implemented for the official markdown_editor example adapters",
+        "strict system-present tracing is not implemented for the official MoMark example adapters",
       )
     }
     run_example_ui_benchmark(args[2], args[3])

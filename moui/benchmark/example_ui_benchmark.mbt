@@ -1,6 +1,6 @@
 ///|
 /// ui-frame benchmark over the vendored official example app
-/// (`vendor/MoUI/examples/markdown_editor`). The fixture is delivered through
+/// (`momark`, the standalone MoMark app). The fixture is delivered through
 /// the app's real `OpenRecentDocument` service path via a deterministic,
 /// synchronous file service, so every measured frame runs the same document
 /// session and richtext preparation a manual open would produce. The driving
@@ -37,7 +37,7 @@ fn example_ui_runtime(fixture : String) -> (@runtime.AppRuntime, Double) {
       read_text=path => {
         let started = now_ms()
         let text = @fs.read_file_to_string(path) catch {
-          _ => abort("MoUI markdown_editor benchmark fixture is unreadable")
+          _ => abort("MoMark benchmark fixture is unreadable")
         }
         opened_documents.val = opened_documents.val + 1
         document_load_ms.val = (now_ms() - started).max(0.0)
@@ -66,7 +66,7 @@ fn example_ui_runtime(fixture : String) -> (@runtime.AppRuntime, Double) {
   // OpenRecentDocument path; measuring the built-in sample document instead
   // would silently produce a small-fixture number for every scenario.
   if opened_documents.val != 1 {
-    abort("MoUI markdown_editor benchmark did not open the fixture document")
+    abort("MoMark benchmark did not open the fixture document")
   }
   (runtime, document_load_ms.val)
 }
@@ -97,10 +97,10 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
   } else {
     if scenario == "input" {
       if !runtime.focus_key(example_editor_key()) {
-        abort("MoUI markdown_editor benchmark could not focus the editor")
+        abort("MoMark benchmark could not focus the editor")
       }
       if !runtime.focused_text_input().focused {
-        abort("MoUI markdown_editor benchmark editor is not focused")
+        abort("MoMark benchmark editor is not focused")
       }
     }
     let text_length_before_input = runtime.focused_text_input().text.length()
@@ -123,7 +123,7 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
     // sample meaningless.
     if scenario == "input" &&
       runtime.focused_text_input().text.length() <= text_length_before_input {
-      abort("MoUI markdown_editor benchmark input did not change the document")
+      abort("MoMark benchmark input did not change the document")
     }
     let count = if scenario == "scroll" { 120 } else { 10 }
     for index in 0..<count {
@@ -140,7 +140,7 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
   }
   if (benchmark_renderer.unsupported_command_count)() != 0 {
     abort(
-      "MoUI markdown_editor benchmark emitted unsupported renderer commands",
+      "MoMark benchmark emitted unsupported renderer commands",
     )
   }
   println(

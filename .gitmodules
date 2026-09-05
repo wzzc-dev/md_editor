@@ -2,7 +2,11 @@
 	path = vendor/MoUI
 	url = https://github.com/wzzc-dev/MoUI.git
 	branch = main
-[submodule "gpui"]
-	path = gpui
-	url = https://github.com/wzzc-dev/md_mbt.git
+[submodule "gpmark"]
+	path = gpmark
+	url = https://github.com/wzzc-dev/GpMark.mbt.git
+	branch = main
+[submodule "momark"]
+	path = momark
+	url = https://github.com/wzzc-dev/MoMark.git
 	branch = main

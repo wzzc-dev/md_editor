@@ -5,7 +5,10 @@
 The checked-in project uses MoUI as the `vendor/MoUI` Git submodule. Its
 framework, rich-text, Skia, Skia renderer, and WGPU renderer modules are
 workspace members in `moon.work`, so their checked-out sources override the
-versions recorded in `moui/moon.mod`.
+versions recorded in `moui/moon.mod`. The official Markdown editor example app
+is now the standalone [MoMark](https://github.com/wzzc-dev/MoMark) repository,
+checked in as the `momark/` Git submodule and likewise a `moon.work` member
+(`moui` imports it as `wzzc-dev/momark` for the `moui-md-*` benchmark rows).
 
 ```sh
 git submodule update --init --recursive
@@ -45,22 +48,24 @@ python3 moui/ui_benchmark.py skia-raster data/small.md scroll
 MOUI_GPU_ROUTE=metal python3 moui/ui_benchmark.py skia-gpu data/small.md scroll
 ```
 
-## GPUI (md_mbt)
+## GpMark.mbt (GPUI)
 
-`gpui/` is the md_mbt Git submodule: a velotype-style MoonBit block-WYSIWYG
+`gpmark/` is the [GpMark.mbt](https://github.com/wzzc-dev/GpMark.mbt) Git
+submodule: a velotype-style MoonBit block-WYSIWYG
 core (live inline transforms, snapshot undo, estimator-windowed block
 rendering) on GPUI, vendoring the benchmark-instrumented
-wzzc-dev/gpui-moonbit fork under `gpui/third_party`:
+wzzc-dev/gpui-moonbit fork under `gpmark/third_party`:
 
 ```sh
-git submodule update --init --recursive   # gpui and its vendored gpui-moonbit
-./bench/adapters/gpui/build.sh
+git submodule update --init --recursive   # gpmark and its vendored gpui-moonbit
+./bench/adapters/gpmark/build.sh
 ```
 
 `build.py` runs `moon build --target native --release` inside the submodule
 (unless `CARGO_HOME` is set explicitly, it uses the ignored repository-local
-`.tools/gpui-cargo-home` so the vendored binding stays reproducible) and
-installs `bench/adapters/gpui/dist/gpui-markdown-editor`. Pass a Markdown path
+`.tools/gpmark-cargo-home` so the vendored binding stays reproducible) and
+installs `bench/adapters/gpmark/dist/gpmark-markdown-editor`. Pass a Markdown
+path
 as the first argument to open the document in the interactive 1280x800 GPUI
 window. MoonBit owns the command tree, block model, input handlers, file I/O,
 benchmark and native process entrypoint; the vendored Rust `gpui-sys` static
@@ -70,14 +75,16 @@ native binding.
 The benchmark wrappers invoke the built executable without rebuilding:
 
 ```sh
-python3 bench/adapters/gpui/ui_benchmark.py data/small.md input
-python3 bench/adapters/gpui/benchmark.py data/small.md open
+python3 bench/adapters/gpmark/ui_benchmark.py data/small.md input
+python3 bench/adapters/gpmark/benchmark.py data/small.md open
 ```
 
 The Rust window benchmark loop labels the ui-frame row through
-`UI_BENCHMARK_ADAPTER_NAME` (set by the wrapper to `gpui`). Input actions reach
+`UI_BENCHMARK_ADAPTER_NAME` (set by the wrapper to `gpmark`). Input actions
+reach
 the editor as real `EVENT_TEXT` dispatches and scroll drives the retained
-`ScrollHandle`. md_mbt is validated on macOS arm64 only; on other platforms the
+`ScrollHandle`. GpMark.mbt is validated on macOS arm64 only; on other platforms
+the
 adapter emits the shared `skipped` protocol row.
 
 ## Flutter and Electron
