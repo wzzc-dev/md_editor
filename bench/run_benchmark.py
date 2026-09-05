@@ -27,7 +27,7 @@ FIXTURES = {"small": 5 * 1024, "medium": 50 * 1024, "large": 500 * 1024, "stress
 SCENARIOS = ("open", "input", "scroll")
 DEFAULT_ADAPTERS = (
     "moui-skia-raster", "moui-skia-gpu", "moui-wgpu",
-    "moui-md-skia-raster", "moui-md-skia-gpu", "moui-md-wgpu", "gpui",
+    "moui-md-skia-raster", "moui-md-skia-gpu", "moui-md-wgpu", "gpmark",
     "flutter-skia", "flutter-impeller", "electron",
 )
 # A single strict trace can exceed a gigabyte, so every scratch directory that can
@@ -541,7 +541,7 @@ def _run_command_case(
         # hands the process back, without forwarding its stdout or scheduling
         # the first frame. Start GPUI normally and attach Instruments instead;
         # the adapter gate still holds it until the recorder is ready.
-        and adapter_name != "gpui"
+        and adapter_name != "gpmark"
     )
     trace_finished = False
     descendant_stop: threading.Event | None = None

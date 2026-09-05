@@ -23,7 +23,7 @@ npm ci --prefix electron
 flutter doctor -v
 ```
 
-The gpui adapter (md_mbt) is validated on macOS arm64 only; its build script
+The gpmark adapter (GpMark.mbt) is validated on macOS arm64 only; its build script
 self-skips on Windows and the adapter reports the documented `skipped` row.
 
 ## Full UI matrix

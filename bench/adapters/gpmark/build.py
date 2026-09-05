@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build the md_mbt GPUI application and install its benchmark binary.
+"""Build the GpMark.mbt GPUI application and install its benchmark binary.
 
-`gpui/` is the md_mbt submodule (MoonBit core + GPUI adapter over the
+`gpmark/` is the GpMark.mbt submodule (MoonBit core + GPUI adapter over the
 benchmark-instrumented wzzc-dev/gpui-moonbit fork). This script only drives
 `moon build` in that checkout and installs the resulting executable next to
 the adapter wrappers; all editor logic lives in the submodule.
@@ -18,10 +18,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 REPO_ROOT = ROOT.parents[2]
-MD_MBT = Path(os.environ.get("MD_MBT_DIR", str(REPO_ROOT / "gpui"))).resolve()
+GPMARK = Path(os.environ.get("GPMARK_DIR", str(REPO_ROOT / "gpmark"))).resolve()
 # Machine-wide registry replacement settings must not make the vendored
 # binding unreproducible, so the adapter pins a repository-local CARGO_HOME.
-DEFAULT_CARGO_HOME = REPO_ROOT / ".tools" / "gpui-cargo-home"
+DEFAULT_CARGO_HOME = REPO_ROOT / ".tools" / "gpmark-cargo-home"
 
 
 def run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
@@ -57,26 +57,26 @@ def remove_stale_release_outputs() -> None:
     the gpui-bindings prebuild hook, so a stale executable could silently keep
     an older benchmark loop.
     """
-    for path in (MD_MBT / "_build" / "native" / "release" / "build").glob("**/main/main.exe"):
+    for path in (GPMARK / "_build" / "native" / "release" / "build").glob("**/main/main.exe"):
         path.unlink(missing_ok=True)
 
 
 def main() -> None:
     if platform.system() != "Darwin":
-        print(f"gpui (md_mbt) is verified on macOS arm64 only; skipping the build on {platform.system()}.")
+        print(f"GpMark.mbt (GPUI) is verified on macOS arm64 only; skipping the build on {platform.system()}.")
         return
-    if not MD_MBT.is_dir():
-        raise SystemExit(f"{MD_MBT} is missing; run `git submodule update --init gpui`")
+    if not GPMARK.is_dir():
+        raise SystemExit(f"{GPMARK} is missing; run `git submodule update --init gpmark`")
     environment = os.environ.copy()
     environment.setdefault("CARGO_HOME", str(DEFAULT_CARGO_HOME))
     remove_stale_release_outputs()
-    run(["moon", "build", "--target", "native", "--release"], cwd=MD_MBT, env=environment)
-    candidates = list((MD_MBT / "_build" / "native" / "release" / "build").glob("**/main/main.exe"))
+    run(["moon", "build", "--target", "native", "--release"], cwd=GPMARK, env=environment)
+    candidates = list((GPMARK / "_build" / "native" / "release" / "build").glob("**/main/main.exe"))
     if not candidates:
-        raise SystemExit("MoonBit executable not found under gpui/_build/native/release/build")
+        raise SystemExit("MoonBit executable not found under gpmark/_build/native/release/build")
     executable = max(candidates, key=lambda path: path.stat().st_mtime)
-    install_atomic(executable, ROOT / "dist" / "gpui-markdown-editor")
-    print(f"Built {ROOT / 'dist' / 'gpui-markdown-editor'} from {MD_MBT}")
+    install_atomic(executable, ROOT / "dist" / "gpmark-markdown-editor")
+    print(f"Built {ROOT / 'dist' / 'gpmark-markdown-editor'} from {GPMARK}")
 
 
 if __name__ == "__main__":

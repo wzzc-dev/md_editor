@@ -69,7 +69,7 @@ Use the build-once wrapper for comparable UI records:
 ./scripts/run_ui_benchmark.sh
 ```
 
-The wrapper directly invokes built MoUI and GPUI binaries, Flutter Profile and
+The wrapper directly invokes built MoUI, MoMark and GpMark.mbt binaries, Flutter Profile and
 the installed Electron runtime. It writes `results/<platform>-ui.json` and the
 corresponding Markdown report. Pass any harness options after the script, for
 example `--fixture small --repetitions 1 --warmups 0`.

@@ -26,7 +26,7 @@ ADAPTERS = (
     "moui-md-skia-raster",
     "moui-md-skia-gpu",
     "moui-md-wgpu",
-    "gpui",
+    "gpmark",
     "flutter-skia",
     "flutter-impeller",
     "electron",
@@ -35,10 +35,10 @@ LABELS = {
     "moui-skia-raster": "MoUI Skia Raster CPU",
     "moui-skia-gpu": "MoUI Skia GPU",
     "moui-wgpu": "MoUI WGPU",
-    "moui-md-skia-raster": "MoUI 示例编辑器 Skia Raster",
-    "moui-md-skia-gpu": "MoUI 示例编辑器 Skia GPU",
-    "moui-md-wgpu": "MoUI 示例编辑器 WGPU",
-    "gpui": "GPUI (md_mbt)",
+    "moui-md-skia-raster": "MoMark Skia Raster",
+    "moui-md-skia-gpu": "MoMark Skia GPU",
+    "moui-md-wgpu": "MoMark WGPU",
+    "gpmark": "GpMark.mbt (GPUI)",
     "flutter-skia": "Flutter Skia",
     "flutter-impeller": "Flutter Impeller",
     "electron": "Electron",
@@ -474,7 +474,7 @@ def main() -> None:
         print("- 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数。`工作`（frame_work）统一为框架 CPU 侧帧生产工作，不含设备光栅化与上屏：MoUI 为 build+layout+paint+draw，Flutter 为 UI 线程 buildDuration，GPUI 为 request_layout→prepaint→paint，Electron 为 JS 可见的 DOM 更新+layout。设备光栅化与上屏统一单列为 `设备侧`（device_present）：MoUI 为同步光栅化/present 完成（无头 harness 逐帧同步，无流水线重叠），Flutter 为光栅线程 rasterDuration（不含设备完成等待），GPUI 与 Electron 无法在适配器侧观测显示链路，显示 `n/a`。MoUI ui-frame 是 headless host-surface；GPUI 的 action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，帧间隔覆盖完整链路，报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。\n")
 
     if any(str(record.get("adapter", "")).startswith("moui-md-") for record in records):
-        print("- `moui-md-*` 行来自 `vendor/MoUI/examples/markdown_editor` 官方示例应用：fixture 通过应用自身的 `OpenRecentDocument` 服务路径打开，渲染经过示例自己的虚拟滚动与富文本缓存实现，不套用简化基准应用的 `fixed row 66px` 统一行高；viewport、fixture、动作数、warm-up 与重复次数与其他行完全一致。严格模式（`UI_BENCHMARK_SYSTEM_TRACE=1`）目前不为 `moui-md-*` 行采集系统 present，这些行会显示 error。\n")
+        print("- `moui-md-*` 行来自 `momark`（MoMark，原 `vendor/MoUI/examples/markdown_editor`）官方示例应用：fixture 通过应用自身的 `OpenRecentDocument` 服务路径打开，渲染经过示例自己的虚拟滚动与富文本缓存实现，不套用简化基准应用的 `fixed row 66px` 统一行高；viewport、fixture、动作数、warm-up 与重复次数与其他行完全一致。严格模式（`UI_BENCHMARK_SYSTEM_TRACE=1`）目前不为 `moui-md-*` 行采集系统 present，这些行会显示 error。\n")
 
     # Put the audit table first so command-line consumers can locate the
     # legacy-compatible raw summary without parsing the fixture matrix.
