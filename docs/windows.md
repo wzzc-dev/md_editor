@@ -23,8 +23,12 @@ npm ci --prefix electron
 flutter doctor -v
 ```
 
-The gpmark adapter (GpMark.mbt) is validated on macOS arm64 only; its build script
-self-skips on Windows and the adapter reports the documented `skipped` row.
+The gpmark adapter (GpMark.mbt) builds on Windows amd64 through the vendored
+`gpui-moonbit` fork: its `nakake/gpui-bindings` prebuild hook compiles
+`gpui-sys` with cargo for `x86_64-pc-windows-msvc` (static CRT, release profile
+with embedded shaders) and `moon build` links `bench/adapters/gpmark/dist/
+gpmark-markdown-editor.exe`. The 2026-09-05 capture below measures all ten
+adapters on Windows, including the gpmark native-window ui-frame rows.
 
 ## Full UI matrix
 

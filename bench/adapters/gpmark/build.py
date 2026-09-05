@@ -62,9 +62,6 @@ def remove_stale_release_outputs() -> None:
 
 
 def main() -> None:
-    if platform.system() != "Darwin":
-        print(f"GpMark.mbt (GPUI) is verified on macOS arm64 only; skipping the build on {platform.system()}.")
-        return
     if not GPMARK.is_dir():
         raise SystemExit(f"{GPMARK} is missing; run `git submodule update --init gpmark`")
     environment = os.environ.copy()
@@ -75,8 +72,11 @@ def main() -> None:
     if not candidates:
         raise SystemExit("MoonBit executable not found under gpmark/_build/native/release/build")
     executable = max(candidates, key=lambda path: path.stat().st_mtime)
-    install_atomic(executable, ROOT / "dist" / "gpmark-markdown-editor")
-    print(f"Built {ROOT / 'dist' / 'gpmark-markdown-editor'} from {GPMARK}")
+    # Windows PE launches require the .exe suffix; keep the extensionless
+    # macOS/Linux install name unchanged.
+    installed_name = "gpmark-markdown-editor.exe" if platform.system() == "Windows" else "gpmark-markdown-editor"
+    install_atomic(executable, ROOT / "dist" / installed_name)
+    print(f"Built {ROOT / 'dist' / installed_name} from {GPMARK}")
 
 
 if __name__ == "__main__":

@@ -67,6 +67,19 @@ the GPUI/Flutter/Electron adapters
 (see [`docs/benchmark-protocol.md`](docs/benchmark-protocol.md)). A dedicated
 Windows amd64 16 GiB capture is
 still required and is documented in [`docs/windows.md`](docs/windows.md).
+The current audited captures are the dated pairs
+[`results/macos-arm64-ui-20260905.json`](results/macos-arm64-ui-20260905.json)
+with its rendered
+[`Markdown report`](results/macos-arm64-ui-20260905.md) (Apple M4 16 GiB,
+360/360 desktop UI-process records — ten adapters x four fixtures x three
+scenarios x three repetitions) and
+[`results/windows-amd64-ui-20260905.json`](results/windows-amd64-ui-20260905.json)
+with its [`Markdown report`](results/windows-amd64-ui-20260905.md) (Windows 11
+amd64 16 GiB, 360/360 records including the `gpmark` native-window rows from
+the GpMark.mbt submodule editor over the vendored `gpui-moonbit` MSVC bridge).
+The reports intentionally show where the strict 2x screen passes and fails;
+frame clocks are framework-specific and are not compositor-equivalent.
+Reproduction on Windows is documented in [`docs/windows.md`](docs/windows.md).
 
 For a protocol-only Flutter baseline (when Dart is installed), use
 `dart run flutter/tool/benchmark.dart {fixture} {scenario}`. This measures the
