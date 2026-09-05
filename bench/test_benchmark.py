@@ -357,7 +357,8 @@ class FixtureTests(unittest.TestCase):
                 text=True,
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
-        self.assertEqual(len(row.strip("|").split("|")), 13)
+        header = next(line for line in report.splitlines() if line.startswith("| 实现 |"))
+        self.assertEqual(len(row.strip("|").split("|")), len(header.strip("|").split("|")))
 
     def test_strict_report_never_falls_back_to_framework_intervals(self):
         record = {

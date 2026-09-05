@@ -168,6 +168,18 @@ fn main {
     run_ui_benchmark(args[2], args[3])
     return
   }
+  if args.length() >= 4 && args[1] == "--ui-benchmark-example" {
+    if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
+      // The strict system-present path is refused for the official example
+      // adapters on every platform; Windows additionally has no equivalent
+      // xctrace trace source (see the --ui-benchmark branch above).
+      abort(
+        "strict system-present tracing is not implemented for the official MoMark example adapters",
+      )
+    }
+    run_example_ui_benchmark(args[2], args[3])
+    return
+  }
   if args.length() < 3 {
     println(
       "usage: moon run moui/windows_benchmark --target native --release -- <fixture> <open|input|scroll>",

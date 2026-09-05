@@ -1,5 +1,7 @@
 import {
   "cross_framework/md_editor_moui/app",
+  "wzzc-dev/momark" @md_editor,
+  "wzzc-dev/moui/services" @services,
   "wzzc-dev/moui/core",
   "wzzc-dev/moui/runtime",
   "wzzc-dev/moui_richtext" @richtext,
