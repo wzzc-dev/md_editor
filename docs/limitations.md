@@ -70,8 +70,10 @@ runs on macOS 26.3, but compatibility with older macOS releases is not claimed.
 - Input actions are injected as real `EVENT_TEXT` dispatches through the same
   AppKit-equivalent callback path as a keystroke (GpMark.mbt commits no native
   text input), so the input row measures real edit + rebuild + recommit work.
-- GpMark.mbt is validated on macOS arm64 only; on other platforms the adapter
-  emits the shared `skipped` row.
+- GpMark.mbt was originally validated on macOS arm64 only; the 2026-09-05
+  Windows amd64 capture measures all 36 gpmark cells through the vendored
+  `gpui-moonbit` MSVC prebuild, so the adapter no longer emits the shared
+  `skipped` row there.
 
 ### Flutter
 

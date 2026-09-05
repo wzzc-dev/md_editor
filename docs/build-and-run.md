@@ -98,9 +98,10 @@ The Rust window benchmark loop labels the ui-frame row through
 `UI_BENCHMARK_ADAPTER_NAME` (set by the wrapper to `gpmark`). Input actions
 reach
 the editor as real `EVENT_TEXT` dispatches and scroll drives the retained
-`ScrollHandle`. GpMark.mbt is validated on macOS arm64 only; on other platforms
-the
-adapter emits the shared `skipped` protocol row.
+`ScrollHandle`. GpMark.mbt was originally validated on macOS arm64 only; on
+Windows amd64 the vendored `gpui-moonbit` prebuild compiles `gpui-sys` for
+`x86_64-pc-windows-msvc` and installs `gpmark-markdown-editor.exe`, so the
+adapter now measures there as well (2026-09-05 capture).
 
 ## Flutter and Electron
 

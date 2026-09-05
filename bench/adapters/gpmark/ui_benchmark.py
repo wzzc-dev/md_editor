@@ -17,16 +17,10 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-binary = ROOT / "dist" / "gpmark-markdown-editor"
-if platform.system() != "Darwin":
-    # GpMark.mbt is only validated on macOS arm64; report the same `skipped`
-    # protocol the harness uses for unavailable tools instead of an error.
-    print(json.dumps({
-        "adapter": "gpmark",
-        "status": "skipped",
-        "reason": "GpMark.mbt (GPUI) is verified on macOS arm64 only",
-    }))
-    raise SystemExit(0)
+# Windows PE launches require the .exe suffix; keep the extensionless
+# macOS/Linux name unchanged.
+binary_name = "gpmark-markdown-editor.exe" if platform.system() == "Windows" else "gpmark-markdown-editor"
+binary = ROOT / "dist" / binary_name
 if not binary.exists():
     raise SystemExit(f"{binary} is missing; run bench/adapters/gpmark/build.py first")
 
