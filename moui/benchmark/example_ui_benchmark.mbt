@@ -156,3 +156,51 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
     ),
   )
 }
+
+///|
+/// Windowed variant of the official-example benchmark (`UI_BENCHMARK_WINDOWED=1`):
+/// the app runs in a real AppKit window with the same renderer wiring as
+/// `momark/macos_skia`, while the fixture delivery (the app's real
+/// `OpenRecentDocument` service path), actions and timing follow the shared
+/// native-window harness.
+async fn run_example_native_ui_benchmark(
+  fixture : String,
+  scenario : String,
+) -> Unit {
+  let renderer = @env.get_env_var("MOUI_SKIA_RENDERER").unwrap_or(
+    "skia-raster",
+  )
+  let adapter = if renderer == "wgpu" {
+    "moui-md-wgpu"
+  } else if renderer == "skia-gpu" {
+    "moui-md-skia-gpu"
+  } else {
+    "moui-md-skia-raster"
+  }
+  let (runtime, document_load_ms) = example_ui_runtime(fixture)
+  let started = now_ms()
+  let first_frame_end_ms = Ref(0.0)
+  let requests = @window_lifecycle.WindowRequestQueue::new()
+  let window_task : async () -> Unit = async fn() {
+    native_window_pump(
+      "MoMark UI Benchmark",
+      runtime,
+      requests,
+      renderer,
+      native_window_frame_clock(first_frame_end_ms),
+    )
+  }
+  let benchmark_task : async () -> Unit = async fn() {
+    native_drive_benchmark(
+      runtime,
+      requests,
+      adapter,
+      scenario,
+      started,
+      document_load_ms,
+      example_editor_key(),
+      first_frame_end_ms,
+    )
+  }
+  ignore(@async.all([window_task, benchmark_task]))
+}

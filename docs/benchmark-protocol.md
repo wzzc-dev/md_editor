@@ -74,6 +74,26 @@ framework-callback fallbacks.
 The runner also stops before recording when the macOS console session is
 locked; WindowServer cannot scan out application surfaces at the lock screen.
 
+### Windowed MoUI mode
+
+Set `UI_BENCHMARK_WINDOWED=1` to run the six MoUI/MoMark adapters in a real
+AppKit window instead of the headless host surface. The harness is the same
+one the strict system-present trace uses (real window, real renderer
+presentation, `window_mode: "native-window"`), including the `moui-md-*`
+official-example adapters, which run the `momark` app with the same renderer
+wiring as its own `macos_skia` entry. Without a trace attached, the published
+frame interval, input latency and dropped-frame counts are wall-clock
+samples observed on an approximately 12 ms cadence after each action —
+the same class of framework-callback diagnostic as the GPUI/Flutter/Electron
+rows, not compositor timestamps; the `display_timestamp_source` field reports
+`moui-native-frame-callback` instead of `macos-compositor-trace` to make that
+explicit. `first_interactive_ms` is the completion of the first window frame
+observed through the host frame clock and therefore includes AppKit window
+creation cost. The default remains the headless host surface, which keeps
+frame work and synchronous present costs comparable with every earlier
+capture in `results/`; compositor-grade cross-framework conclusions still
+require the strict mode above.
+
 Adapter wall-clock action timestamps only delimit the compositor trace window;
 they are not used as latency endpoints. Each native adapter also emits the
 same `md_editor_action` os_signpost, and strict input/scroll latency matches

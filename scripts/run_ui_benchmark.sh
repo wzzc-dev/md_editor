@@ -3,6 +3,10 @@
 # The three `moui-md-*` adapters measure the vendored official example app
 # (the `momark` submodule); strict system-trace mode does not
 # support them and records them as errors there.
+#
+# By default the MoUI/MoMark adapters render on a headless host surface (no
+# window). Set UI_BENCHMARK_WINDOWED=1 to run them in a real AppKit window
+# like the GPUI/Flutter/Electron adapters; see docs/benchmark-protocol.md.
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)

@@ -36,6 +36,10 @@ normalized. Unsupported constructs remain editable source text.
 UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
   ./scripts/run_ui_benchmark.sh --fixture small \
   --out results/smoke-ui.json
+
+# Run the MoUI/MoMark adapters in a real AppKit window instead of the
+# default headless host surface (framework-callback diagnostics only).
+UI_BENCHMARK_WINDOWED=1 ./scripts/run_ui_benchmark.sh --out results/windowed-ui.json
 ```
 
 Workspace builds (`moon run`/`moon build`/`moon test` with a target path) must
@@ -56,7 +60,12 @@ records (seven adapters x four fixtures x three scenarios x three repetitions)
 are measured on an Apple M4 16 GiB host at 1280x800, with the `gpmark` row
 emitted by the GpMark.mbt submodule editor. The report intentionally shows
 where the strict 2x screen passes and fails; frame clocks are framework-specific
-and are not compositor-equivalent. A dedicated Windows amd64 16 GiB capture is
+and are not compositor-equivalent. By default the MoUI/MoMark adapters render
+on a headless host surface (no window); `UI_BENCHMARK_WINDOWED=1` runs them in
+a real AppKit window with the same class of framework-callback diagnostics as
+the GPUI/Flutter/Electron adapters
+(see [`docs/benchmark-protocol.md`](docs/benchmark-protocol.md)). A dedicated
+Windows amd64 16 GiB capture is
 still required and is documented in [`docs/windows.md`](docs/windows.md).
 
 For a protocol-only Flutter baseline (when Dart is installed), use
