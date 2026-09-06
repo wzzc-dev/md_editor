@@ -10,6 +10,21 @@ is now the standalone [MoMark](https://github.com/wzzc-dev/MoMark) repository,
 checked in as the `momark/` Git submodule and likewise a `moon.work` member
 (`moui` imports it as `wzzc-dev/momark` for the `moui-md-*` benchmark rows).
 
+> **Run workspace builds from the repository root.** The `vendor/MoUI`
+> checkout only takes effect when moon resolves the build through the
+> `moon.work` workspace — i.e. when the command runs from the project root
+> with a target path, for example:
+>
+> ```sh
+> # from /path/to/md_editor
+> moon run momark/macos_skia --target native
+> ```
+>
+> Invoking moon from inside a submodule directory (or without a target, e.g.
+> a bare `moon check`) resolves that module's dependencies from its own
+> `.mooncakes`/registry copies instead, so local `vendor/MoUI` edits are
+> silently skipped. Always launch workspace builds from the repository root.
+
 ```sh
 git submodule update --init --recursive
 ```
