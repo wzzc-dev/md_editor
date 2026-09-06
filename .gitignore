@@ -18,3 +18,5 @@ results/*
 !results/macos-arm64-*
 !results/windows-amd64-*
 gpui2/dist/
+.vscode/*
+.zcode/*
