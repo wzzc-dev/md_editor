@@ -14,6 +14,7 @@ double md_editor_benchmark_now_ms(void) {
 #include <mach/mach_time.h>
 #include <os/signpost.h>
 #include <os/log.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -62,6 +63,14 @@ int32_t md_editor_benchmark_trace_tail_ms(void) {
   if (end == value || parsed < 0) return 15000;
   if (parsed > 120000) parsed = 120000;
   return (int32_t)parsed;
+}
+
+void md_editor_benchmark_probe_dispatch(double value) {
+  fprintf(stderr, "probe dispatch_mean_ms=%.3f\n", value);
+}
+
+void md_editor_benchmark_probe_dispatch2(double value) {
+  fprintf(stderr, "probe measure_mean_ms=%.3f\n", value);
 }
 #else
 #include <time.h>

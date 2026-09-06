@@ -288,9 +288,53 @@ fn ui_measure_frame(
 }
 
 ///|
+extern "C" fn probe_dispatch(value : Double) -> Unit = "md_editor_benchmark_probe_dispatch"
+
+///|
+extern "C" fn probe_dispatch2(value : Double) -> Unit = "md_editor_benchmark_probe_dispatch2"
+
+///|
+let probe_dispatch_us : Ref[Double] = Ref(0.0)
+
+///|
+let probe_dispatch_count : Ref[Int] = Ref(0)
+
+///|
+let probe_measure_us : Ref[Double] = Ref(0.0)
+
+///|
+fn probe_reset() -> Unit {
+  probe_dispatch_us.val = 0.0
+  probe_dispatch_count.val = 0
+  probe_measure_us.val = 0.0
+}
+
+///|
 fn ui_drive_input(runtime : @runtime.AppRuntime, index : Int) -> Unit {
   let tokens = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+  let probe_started = now_ms()
   runtime.dispatch_event(TextInput(InsertText(tokens[index % tokens.length()])))
+  probe_dispatch_us.val = probe_dispatch_us.val +
+    (now_ms() - probe_started)
+  probe_dispatch_count.val = probe_dispatch_count.val + 1
+}
+
+///|
+/// Temporary diagnostic: emit the accumulated synchronous event-dispatch
+/// time (control edit + transaction + session apply + app bookkeeping) and
+/// the manual frame-measure time as means per input action, on stderr so
+/// the runner's stdout JSON stays untouched. Gated behind
+/// `MOUI_BENCHMARK_DISPATCH_PROBE=1`; every input adapter emits
+/// `dispatch + measure == input_to_visible` for the same samples.
+fn probe_emit_means() -> Unit {
+  if @env.get_env_var("MOUI_BENCHMARK_DISPATCH_PROBE").unwrap_or("") != "1" {
+    return
+  }
+  if probe_dispatch_count.val > 0 {
+    let count = probe_dispatch_count.val.to_double()
+    probe_dispatch(probe_dispatch_us.val / count)
+    probe_dispatch2(probe_measure_us.val / count)
+  }
 }
 
 ///|

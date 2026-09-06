@@ -126,6 +126,7 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
       abort("MoMark benchmark input did not change the document")
     }
     let count = if scenario == "scroll" { 120 } else { 10 }
+    probe_reset()
     for index in 0..<count {
       let action_started = now_ms()
       if scenario == "input" {
@@ -133,9 +134,15 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
       } else {
         ui_drive_scroll(runtime, index + 1)
       }
+      let measure_started = now_ms()
       previous_frame_end = ui_measure_frame(
         runtime, benchmark_renderer, samples, action_started, previous_frame_end,
       )
+      probe_measure_us.val = probe_measure_us.val +
+        (now_ms() - measure_started)
+    }
+    if scenario == "input" {
+      probe_emit_means()
     }
   }
   if (benchmark_renderer.unsupported_command_count)() != 0 {
