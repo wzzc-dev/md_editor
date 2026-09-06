@@ -277,6 +277,12 @@ function summarize(
 
 async function runUiBenchmark(config, initializedAt) {
   const firstFrame = await nextFrame();
+  // Honest "first interactive": the editor for the first visible row has
+  // mounted and finished its initial Markdown conversion — the same state
+  // the interactive app requires before typing. Without this await the
+  // open metric would report while Vditor's editor DOM (deferred behind a
+  // double rAF in benchmark mode) does not even exist yet.
+  await editorReady;
   const firstInteractiveMs = performance.now() - initializedAt;
   if (config.scenario === 'open') {
     window.benchmarkApi.report(
