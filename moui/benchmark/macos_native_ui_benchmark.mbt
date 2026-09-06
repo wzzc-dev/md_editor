@@ -1,6 +1,9 @@
 ///|
-/// Strict macOS path: a real AppKit window and native host surface. The
-/// compositor timestamps themselves are collected externally by xctrace.
+/// Native macOS path: a real AppKit window and native host surface. It backs
+/// two modes: the strict system-present trace (compositor timestamps are
+/// collected externally by xctrace) and the opt-in windowed mode
+/// (`UI_BENCHMARK_WINDOWED=1`) that runs the same real-window harness and
+/// publishes framework-callback diagnostics, without a trace.
 
 ///|
 extern "C" fn native_signpost_event(action_id : Int) -> Unit = "md_editor_benchmark_signpost_event"
@@ -10,6 +13,11 @@ extern "C" fn native_delay_ms(milliseconds : Int) -> Unit = "md_editor_benchmark
 
 ///|
 extern "C" fn native_trace_tail_ms() -> Int = "md_editor_benchmark_trace_tail_ms"
+
+///|
+fn native_system_trace_mode() -> Bool {
+  @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1"
+}
 
 ///|
 fn native_null_samples(length : Int) -> String {
@@ -67,6 +75,14 @@ fn native_ui_report(
   let dropped = samples.interval_ms.fold(init=0, fn(total, value) {
     total + ((value / 16.667).ceil().to_int() - 1).max(0)
   })
+  // Under a system trace the compositor supplies the display clock; the
+  // standalone windowed mode only has this harness's frame observation, so
+  // the source must not claim compositor timestamps.
+  let display_timestamp_source = if native_system_trace_mode() {
+    "macos-compositor-trace"
+  } else {
+    "moui-native-frame-callback"
+  }
   "{\"adapter\":\"" +
   adapter +
   "\",\"measurement_scope\":\"ui-frame\",\"timing_source\":\"moui-native-runtime-frame-phases\",\"latency_source\":\"action-to-native-frame-observation\",\"scenario\":\"" +
@@ -123,7 +139,30 @@ fn native_ui_report(
   json_number(first_interactive_ms) +
   ",\"document_load_ms\":" +
   json_number(document_load_ms) +
-  ",\"surface_route\":\"appkit-native-surface\",\"presentation_kind\":\"native-window\",\"window_mode\":\"native-window\",\"work_scope\":\"moui-build-layout-paint-draw\",\"display_timestamp_source\":\"macos-compositor-trace\",\"viewport\":{\"width\":1280,\"height\":800},\"font\":\"system-ui 16px\",\"line_height\":1.55,\"overscan\":3,\"virtual_row_height\":66}"
+  ",\"surface_route\":\"appkit-native-surface\",\"presentation_kind\":\"native-window\",\"window_mode\":\"native-window\",\"work_scope\":\"moui-build-layout-paint-draw\",\"display_timestamp_source\":\"" +
+  display_timestamp_source +
+  "\",\"viewport\":{\"width\":1280,\"height\":800},\"font\":\"system-ui 16px\",\"line_height\":1.55,\"overscan\":3,\"virtual_row_height\":66}"
+}
+
+///|
+/// Frame clock for the windowed harness. The host driver calls the clock
+/// around every runtime-owned frame phase, and the initial frame always
+/// performs a full rebuild, so its ninth call (the total marker, three
+/// start/end phase pairs, and the draw pair) marks first-frame completion.
+/// The benchmark task uses that as the observed first interactive frame
+/// instead of a fixed startup sleep.
+fn native_window_frame_clock(first_frame_end_ms : Ref[Double]) -> () -> Double {
+  let calls = Ref(0)
+  fn() -> Double {
+    let t = now_ms()
+    if first_frame_end_ms.val == 0.0 {
+      calls.val = calls.val + 1
+      if calls.val == 9 {
+        first_frame_end_ms.val = t
+      }
+    }
+    t
+  }
 }
 
 ///|
@@ -134,16 +173,25 @@ async fn native_drive_benchmark(
   scenario : String,
   started : Double,
   document_load_ms : Double,
+  editor_key : String,
+  first_frame_end_ms : Ref[Double],
 ) -> Unit {
-  @async.sleep(120)
-  let first_interactive_ms = (now_ms() - started).max(0.0)
+  let deadline = now_ms() + 30000.0
+  while first_frame_end_ms.val == 0.0 && now_ms() < deadline {
+    @async.sleep(4)
+  }
+  let first_interactive_ms = if first_frame_end_ms.val > 0.0 {
+    (first_frame_end_ms.val - started).max(0.0)
+  } else {
+    (now_ms() - started).max(0.0)
+  }
   let samples = ui_samples()
   let action_timestamps_epoch_ms : Array[Double] = []
   let mut action_window_end_epoch_ms = 0.0
   if scenario == "open" {
     samples.work_ms.push(native_frame_work(runtime))
   } else {
-    if scenario == "input" && !runtime.focus_key("moui-markdown-editor") {
+    if scenario == "input" && !runtime.focus_key(editor_key) {
       abort("MoUI native benchmark could not focus the editor")
     }
     if scenario == "input" {
@@ -178,10 +226,61 @@ async fn native_drive_benchmark(
   )
   // Give an attached xctrace session time to flush compositor/os-log stores
   // before the native window teardown ends the target process.
-  if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
+  if native_system_trace_mode() {
     native_delay_ms(native_trace_tail_ms())
   }
   requests.close_window(@backend.WindowId::new(1))
+}
+
+///|
+/// Real-window AppKit pump shared by the simplified benchmark app and the
+/// official MoMark example app. Renderer wiring matches `momark`'s own
+/// `macos_skia` entry: Skia via `from_env` (raster or GPU route from the
+/// environment), WGPU with the CoreText + cosmic fallback text engine.
+async fn native_window_pump(
+  title : String,
+  runtime : @runtime.AppRuntime,
+  requests : @window_lifecycle.WindowRequestQueue,
+  renderer : String,
+  frame_clock : () -> Double,
+) -> Unit {
+  if renderer == "wgpu" {
+    @runtime.run_app(title, runtime)
+    .render(
+      @render_wgpu.native(
+        platform=@render_wgpu.WgpuNativePlatform::MacOS,
+        text_engine=@render_wgpu.native_platform_text_engine_with_fallback(
+          @wgpu_coretext.coretext_text_provider(),
+          fallback=@wgpu_cosmic.cosmic_text_engine(),
+        ),
+      ),
+    )
+    .window_requests(requests.requests())
+    .backend(
+      @macos_backend.entry(
+        options=@macos_backend.MacosHostAppOptions::new(
+          frame_clock=Some(frame_clock),
+        ),
+      ),
+    )
+    .run_async_pump(frame_interval_ms=8)
+  } else {
+    @runtime.run_app(title, runtime)
+    .render_all(
+      @skia_renderer.from_env(
+        platform=@skia_renderer.NativeGpuPlatform::MacOS,
+      ),
+    )
+    .window_requests(requests.requests())
+    .backend(
+      @macos_backend.entry(
+        options=@macos_backend.MacosHostAppOptions::new(
+          frame_clock=Some(frame_clock),
+        ),
+      ),
+    )
+    .run_async_pump(frame_interval_ms=8)
+  }
 }
 
 ///|
@@ -210,45 +309,17 @@ async fn run_macos_native_ui_benchmark(
     width=1280.0,
     height=800.0,
   )
+  let started = now_ms()
+  let first_frame_end_ms = Ref(0.0)
   let requests = @window_lifecycle.WindowRequestQueue::new()
   let window_task : async () -> Unit = async fn() {
-    if renderer == "wgpu" {
-      @runtime.run_app("MoUI Native UI Benchmark", runtime)
-      .render(
-        @render_wgpu.native(
-          platform=@render_wgpu.WgpuNativePlatform::MacOS,
-          text_engine=@render_wgpu.native_platform_text_engine_with_fallback(
-            @wgpu_coretext.coretext_text_provider(),
-            fallback=@wgpu_cosmic.cosmic_text_engine(),
-          ),
-        ),
-      )
-      .window_requests(requests.requests())
-      .backend(
-        @macos_backend.entry(
-          options=@macos_backend.MacosHostAppOptions::new(
-            frame_clock=Some(now_ms),
-          ),
-        ),
-      )
-      .run_async_pump(frame_interval_ms=8)
-    } else {
-      @runtime.run_app("MoUI Native UI Benchmark", runtime)
-      .render_all(
-        @skia_renderer.from_env(
-          platform=@skia_renderer.NativeGpuPlatform::MacOS,
-        ),
-      )
-      .window_requests(requests.requests())
-      .backend(
-        @macos_backend.entry(
-          options=@macos_backend.MacosHostAppOptions::new(
-            frame_clock=Some(now_ms),
-          ),
-        ),
-      )
-      .run_async_pump(frame_interval_ms=8)
-    }
+    native_window_pump(
+      "MoUI Native UI Benchmark",
+      runtime,
+      requests,
+      renderer,
+      native_window_frame_clock(first_frame_end_ms),
+    )
   }
   let benchmark_task : async () -> Unit = async fn() {
     native_drive_benchmark(
@@ -256,8 +327,10 @@ async fn run_macos_native_ui_benchmark(
       requests,
       adapter,
       scenario,
-      now_ms(),
+      started,
       document_load_ms,
+      "moui-markdown-editor",
+      first_frame_end_ms,
     )
   }
   ignore(@async.all([window_task, benchmark_task]))

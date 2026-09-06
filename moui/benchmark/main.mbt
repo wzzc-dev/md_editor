@@ -156,10 +156,19 @@ fn split_blocks(source : String) -> Int {
 }
 
 ///|
+/// The real-window mode drives the benchmark through an AppKit window and
+/// native host surface instead of the default headless host surface. It is
+/// the same harness the strict system-present trace uses, minus the trace.
+fn native_window_mode_requested() -> Bool {
+  native_system_trace_mode() ||
+  @env.get_env_var("UI_BENCHMARK_WINDOWED").unwrap_or("") == "1"
+}
+
+///|
 async fn main {
   let args = @env.args()
   if args.length() >= 4 && args[1] == "--ui-benchmark" {
-    if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
+    if native_window_mode_requested() {
       run_macos_native_ui_benchmark(args[2], args[3])
     } else {
       run_ui_benchmark(args[2], args[3])
@@ -172,7 +181,11 @@ async fn main {
         "strict system-present tracing is not implemented for the official MoMark example adapters",
       )
     }
-    run_example_ui_benchmark(args[2], args[3])
+    if @env.get_env_var("UI_BENCHMARK_WINDOWED").unwrap_or("") == "1" {
+      run_example_native_ui_benchmark(args[2], args[3])
+    } else {
+      run_example_ui_benchmark(args[2], args[3])
+    }
     return
   }
   if args.length() < 3 {

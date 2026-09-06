@@ -1,20 +1,22 @@
 {
   "schema": "md-editor-benchmark/v2",
-  "generated_at_utc": "2026-09-05T15:18:36Z",
-  "platform": "Windows-11-10.0.26200-SP0",
-  "os_release": "11",
-  "machine": "AMD64",
-  "cpu": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
-  "memory_gb": 15.89,
-  "python": "3.12.10",
-  "gpu": "OrayIddDriver Device",
+  "generated_at_utc": "2026-09-06T12:20:14Z",
+  "platform": "macOS-26.3-arm64-arm-64bit",
+  "os_release": "25.3.0",
+  "machine": "arm64",
+  "cpu": "arm",
+  "memory_gb": 16.0,
+  "python": "3.12.11",
+  "gpu": "Apple M4",
   "renderer_env": {},
   "toolchains": {
-    "python": "3.12.10",
+    "python": "3.12.11",
     "moon": "moon 0.1.20260824 (dae026a 2026-08-24)",
-    "rustc": "rustc 1.92.0 (ded5c06cf 2025-12-08)",
-    "cargo": "cargo 1.92.0 (344c4567c 2025-10-21)",
-    "node": "v22.20.0"
+    "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "cargo": "cargo 1.94.0 (85eff7c80 2026-01-15)",
+    "node": "v25.2.1",
+    "npm": "11.6.2",
+    "flutter": "Flutter 3.47.1 \u2022 channel stable \u2022 https://github.com/flutter/flutter.git"
   },
   "viewport": {
     "width": 1280,
@@ -22,7 +24,7 @@
     "refresh_hz": 60,
     "frame_budget_ms": 16.667
   },
-  "gpu_backend": "Direct3D",
+  "gpu_backend": "Metal",
   "comparison_mode": "framework-callback-diagnostic",
   "trace_scratch_sweep": {
     "max_age_seconds": null,
@@ -46,19 +48,19 @@
   "fixtures": {
     "small": {
       "bytes": 5120,
-      "path": "data\\small.md"
+      "path": "data/small.md"
     },
     "medium": {
       "bytes": 51200,
-      "path": "data\\medium.md"
+      "path": "data/medium.md"
     },
     "large": {
       "bytes": 512000,
-      "path": "data\\large.md"
+      "path": "data/large.md"
     },
     "stress": {
       "bytes": 5242880,
-      "path": "data\\stress.md"
+      "path": "data/stress.md"
     }
   },
   "records": [
