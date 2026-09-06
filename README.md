@@ -38,6 +38,11 @@ UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
   --out results/smoke-ui.json
 ```
 
+Workspace builds (`moon run`/`moon build`/`moon test` with a target path) must
+run from the repository root — only then do the `vendor/MoUI` submodule sources
+override the published versions for `momark` and `moui`. See
+[`docs/build-and-run.md`](docs/build-and-run.md).
+
 The GUI entrypoints are documented in [`docs/build-and-run.md`](docs/build-and-run.md).
 The benchmark never invents timings: unavailable commands are reported as
 `skipped`, while every measured sample contains host metadata, renderer,
