@@ -1,6 +1,6 @@
 # Markdown editor benchmark report
 
-- Schema：`md-editor-benchmark/v2`；生成时间：`2026-09-07T12:45:23Z`
+- Schema：`md-editor-benchmark/v2`；生成时间：`2026-09-07T15:06:43Z`
 - 数据状态：`360 measured`，`0 skipped/error`；原始样本保留在 JSON。
 - Host：`macOS-26.3-arm64-arm-64bit` / `arm64` / `16.0 GiB`；GPU：`Apple M4`
 - OS：`25.3.0`；CPU：`arm`；toolchains：`python=3.12.11, moon=moon 0.1.20260824 (dae026a 2026-08-24), rustc=rustc 1.94.0 (4a4ef493e 2026-03-02), cargo=cargo 1.94.0 (85eff7c80 2026-01-15), node=v25.2.1, npm=11.6.2, flutter=Flutter 3.47.1 • channel stable • https://github.com/flutter/flutter.git`
@@ -8,6 +8,8 @@
 - Fixture：`small=5KB/100 blocks`，`medium=50KB/1,000 blocks`，`large=500KB/10,000 blocks`，`stress=5MB/100,000 blocks`。
 - 本次执行集合：`small, medium, large, stress`；未执行集合在矩阵中显示 `n/a`，不参与比较。
 - 汇总口径：mean/P95 合并原始样本；每格 repetition `3`、process warm-up `1`；drop 为各 repetition dropped_display_frames 之和。
+- 重跑说明（2026-09-07 傍晚，UTC 15:06）：`gpmark` 行在加入 `startup_prewarm`（gpui-sys 层：后台线程预 `dlopen` AppKit 窗口阶段框架 + Metal 设备枚举；零 gpui 源码改动）后重跑；其余 adapter 行仍为 12:45Z 会话测量，跨会话对比需注意机器噪声。
+  open 首帧改善以同会话交错 A/B 为准（stress：中位 194.4 → 182.9 ms；`open_window` 段 102.2 → 92.9 ms，约 −10 ms）；本次重跑中 gpmark 输入尾延迟与上午的差值经 A/B（禁用预热）复核为会话噪声，非预热干扰。成本归因与实现细节见 `gpmark/docs/open-cost-breakdown.md`。
 - 公平性口径：所有 ui-frame 记录使用相同 fixture、viewport、动作数、warm-up 和重复次数。`工作`（frame_work）统一为框架 CPU 侧帧生产工作，不含设备光栅化与上屏：MoUI 为 build+layout+paint+draw，Flutter 为 UI 线程 buildDuration，GPUI 为 request_layout→prepaint→paint，Electron 为 JS 可见的 DOM 更新+layout。设备光栅化与上屏统一单列为 `设备侧`（device_present）：MoUI 为同步光栅化/present 完成（无头 harness 逐帧同步，无流水线重叠），Flutter 为光栅线程 rasterDuration（不含设备完成等待），GPUI 与 Electron 无法在适配器侧观测显示链路，显示 `n/a`。MoUI ui-frame 是 headless host-surface；GPUI 的 action dispatch 另列为诊断字段。不同框架的显示时间戳由各自平台 API 提供，帧间隔覆盖完整链路，报告不做跨时钟的综合排名。`n/a` 表示没有采集，绝不等同于 0。下方各对比表把同平台跨框架可比列（帧间隔/可见延迟/首次可交互/丢帧数等）排在前面，框架内部诊断列（`工作`/`设备侧`）排在后面并标注 `†`。
 
 - `moui-md-*` 行来自 `momark`（MoMark，原 `vendor/MoUI/examples/markdown_editor`）官方示例应用：fixture 通过应用自身的 `OpenRecentDocument` 服务路径打开，渲染经过示例自己的虚拟滚动与富文本缓存实现，不套用简化基准应用的 `fixed row 66px` 统一行高；viewport、fixture、动作数、warm-up 与重复次数与其他行完全一致。严格模式（`UI_BENCHMARK_SYSTEM_TRACE=1`）目前不为 `moui-md-*` 行采集系统 present，这些行会显示 error。
@@ -88,18 +90,18 @@
 | moui-md-wgpu | stress | open | ui-frame | 50.934/52.181 | - | - | - | 15.46 ms | n/a | 0.00 ms | 207.62 ms | n/a | measured |
 | moui-md-wgpu | stress | input | ui-frame | 1.739/1.983 | - | 23.672/27.213 | 23.353/24.634 | 2.84 ms | n/a | 0.00 ms | 208.14 ms | n/a | measured |
 | moui-md-wgpu | stress | scroll | ui-frame | 1.432/1.774 | - | 15.529/27.069 | - | 13.73 ms | n/a | 0.00 ms | 205.81 ms | n/a | measured |
-| gpmark | small | open | ui-frame | 5.426/5.587 | - | - | - | n/a | n/a | n/a | 230.10 ms | n/a | measured |
-| gpmark | small | input | ui-frame | 5.494/5.745 | 0.323/0.396 | 11.362/23.195 | 11.359/23.193 | n/a | n/a | n/a | 224.78 ms | n/a | measured |
-| gpmark | small | scroll | ui-frame | 6.514/7.920 | 0.002/0.004 | 10.241/15.383 | - | n/a | n/a | n/a | 215.99 ms | n/a | measured |
-| gpmark | medium | open | ui-frame | 5.279/5.293 | - | - | - | n/a | n/a | n/a | 219.41 ms | n/a | measured |
-| gpmark | medium | input | ui-frame | 5.581/5.846 | 0.353/0.440 | 11.566/25.828 | 11.563/25.826 | n/a | n/a | n/a | 227.33 ms | n/a | measured |
-| gpmark | medium | scroll | ui-frame | 6.521/7.857 | 0.002/0.004 | 10.163/14.527 | - | n/a | n/a | n/a | 217.75 ms | n/a | measured |
-| gpmark | large | open | ui-frame | 5.402/5.445 | - | - | - | n/a | n/a | n/a | 235.11 ms | n/a | measured |
-| gpmark | large | input | ui-frame | 5.545/5.955 | 0.729/0.901 | 11.686/31.753 | 11.683/31.751 | n/a | n/a | n/a | 215.19 ms | n/a | measured |
-| gpmark | large | scroll | ui-frame | 6.564/7.915 | 0.003/0.005 | 10.239/13.674 | - | n/a | n/a | n/a | 237.54 ms | n/a | measured |
-| gpmark | stress | open | ui-frame | 5.318/5.531 | - | - | - | n/a | n/a | n/a | 220.57 ms | n/a | measured |
-| gpmark | stress | input | ui-frame | 5.564/5.883 | 5.386/6.351 | 14.233/22.834 | 14.230/22.833 | n/a | n/a | n/a | 217.74 ms | n/a | measured |
-| gpmark | stress | scroll | ui-frame | 6.582/7.941 | 0.003/0.006 | 10.227/14.338 | - | n/a | n/a | n/a | 211.28 ms | n/a | measured |
+| gpmark | small | open | ui-frame | 7.495/10.980 | - | - | - | n/a | n/a | n/a | 208.40 ms | n/a | measured |
+| gpmark | small | input | ui-frame | 6.380/12.208 | 0.374/0.683 | 14.419/34.739 | 14.415/34.733 | n/a | n/a | n/a | 207.78 ms | n/a | measured |
+| gpmark | small | scroll | ui-frame | 6.804/8.270 | 0.002/0.005 | 10.473/14.606 | - | n/a | n/a | n/a | 205.64 ms | n/a | measured |
+| gpmark | medium | open | ui-frame | 5.465/5.564 | - | - | - | n/a | n/a | n/a | 202.08 ms | n/a | measured |
+| gpmark | medium | input | ui-frame | 5.730/6.058 | 0.407/0.584 | 12.878/26.167 | 12.875/26.156 | n/a | n/a | n/a | 196.85 ms | n/a | measured |
+| gpmark | medium | scroll | ui-frame | 6.828/8.124 | 0.003/0.006 | 10.493/14.577 | - | n/a | n/a | n/a | 195.52 ms | n/a | measured |
+| gpmark | large | open | ui-frame | 5.618/5.729 | - | - | - | n/a | n/a | n/a | 193.19 ms | n/a | measured |
+| gpmark | large | input | ui-frame | 5.757/6.090 | 0.777/1.164 | 12.563/27.601 | 12.560/27.599 | n/a | n/a | n/a | 197.01 ms | n/a | measured |
+| gpmark | large | scroll | ui-frame | 6.827/8.233 | 0.002/0.004 | 10.494/14.459 | - | n/a | n/a | n/a | 217.95 ms | n/a | measured |
+| gpmark | stress | open | ui-frame | 5.742/5.921 | - | - | - | n/a | n/a | n/a | 183.71 ms | n/a | measured |
+| gpmark | stress | input | ui-frame | 5.869/6.858 | 5.792/6.777 | 17.035/31.453 | 17.032/31.451 | n/a | n/a | n/a | 186.16 ms | n/a | measured |
+| gpmark | stress | scroll | ui-frame | 6.816/8.173 | 0.002/0.005 | 10.515/14.668 | - | n/a | n/a | n/a | 183.79 ms | n/a | measured |
 | flutter-skia | small | open | ui-frame | 0.342/0.395 | - | - | - | 9.64 ms | n/a | n/a | 83.40 ms | 0 | measured |
 | flutter-skia | small | input | ui-frame | 0.610/0.870 | - | 11.334/20.004 | 9.797/10.293 | 0.67 ms | n/a | n/a | 88.12 ms | 4 | measured |
 | flutter-skia | small | scroll | ui-frame | 1.473/2.808 | - | 10.000/10.002 | - | 0.42 ms | n/a | n/a | 82.36 ms | 0 | measured |
@@ -153,7 +155,7 @@
 | MoMark Skia Raster | 3.83/3.78/3.78 | 4.69/4.49/4.52 | n/a/n/a/n/a | 1.03/1.03/1.04 | 1.30/1.27/1.34 | 2.60/2.56/2.54 | 3.24/3.13/3.09 |
 | MoMark Skia GPU | 8.70/8.71/8.76 | 9.90/9.96/10.07 | n/a/n/a/n/a | 1.25/1.24/1.24 | 1.80/1.77/1.68 | 7.17/7.19/7.23 | 8.26/8.28/8.40 |
 | MoMark WGPU | 15.56/15.58/15.76 | 27.04/27.22/27.31 | n/a/n/a/n/a | 1.40/1.42/1.45 | 1.82/1.72/1.84 | 13.84/13.85/13.98 | 25.43/25.73/25.72 |
-| GpMark.mbt (GPUI) | 10.24/10.16/10.24 | 15.38/14.53/13.67 | n/a/n/a/n/a | 6.51/6.52/6.56 | 7.92/7.86/7.92 | n/a/n/a/n/a | n/a/n/a/n/a |
+| GpMark.mbt (GPUI) | 10.47/10.49/10.49 | 14.61/14.58/14.46 | n/a/n/a/n/a | 6.80/6.83/6.83 | 8.27/8.12/8.23 | n/a/n/a/n/a | n/a/n/a/n/a |
 | Flutter Skia | 10.00/10.08/10.08 | 10.00/10.00/10.00 | 0/5/2 | 1.47/1.88/1.87 | 2.81/2.63/2.73 | 0.42/0.45/0.42 | 0.75/0.74/0.68 |
 | Flutter Impeller | 10.08/10.00/10.06 | 10.00/10.00/10.00 | 3/1/3 | 1.55/1.88/1.95 | 2.83/2.68/2.80 | 0.44/0.42/0.45 | 0.83/0.68/0.80 |
 | Electron | 9.96/9.96/9.94 | 10.80/12.00/11.80 | 0/0/0 | 1.95/2.04/2.05 | 2.40/2.50/2.60 | n/a/n/a/n/a | n/a/n/a/n/a |
@@ -170,7 +172,7 @@
 | MoMark Skia Raster | 3.86 | 4.62 | n/a | 1.05 | 1.34 | 2.57 | 3.15 |
 | MoMark Skia GPU | 8.77 | 9.96 | n/a | 1.25 | 1.72 | 7.22 | 8.31 |
 | MoMark WGPU | 15.53 | 27.07 | n/a | 1.43 | 1.77 | 13.73 | 25.32 |
-| GpMark.mbt (GPUI) | 10.23 | 14.34 | n/a | 6.58 | 7.94 | n/a | n/a |
+| GpMark.mbt (GPUI) | 10.52 | 14.67 | n/a | 6.82 | 8.17 | n/a | n/a |
 | Flutter Skia | 10.00 | 10.00 | 2 | 1.89 | 2.67 | 0.43 | 0.68 |
 | Flutter Impeller | 10.06 | 10.00 | 3 | 1.95 | 2.67 | 0.42 | 0.62 |
 | Electron | 9.95 | 11.60 | 0 | 2.03 | 2.60 | n/a | n/a |
@@ -191,7 +193,7 @@
 | MoMark Skia Raster | 6.94/7.22/8.70 | 7.50/7.66/9.46 | 3.62/3.68/3.83 | 4.16/4.17/4.40 | 2.97/3.05/3.01 | 3.73/3.48/3.51 |
 | MoMark Skia GPU | 10.26/9.93/10.23 | 11.56/10.43/10.64 | 3.56/3.60/3.83 | 3.77/3.99/4.27 | 6.37/5.85/4.57 | 6.93/6.30/5.01 |
 | MoMark WGPU | 12.56/11.01/11.49 | 25.77/25.86/24.51 | 1.63/1.77/1.69 | 1.89/2.58/2.04 | 10.55/8.67/7.66 | 23.52/23.77/20.99 |
-| GpMark.mbt (GPUI) | 11.36/11.56/11.68 | 23.19/25.83/31.75 | 5.49/5.58/5.55 | 5.75/5.85/5.95 | n/a/n/a/n/a | n/a/n/a/n/a |
+| GpMark.mbt (GPUI) | 14.42/12.88/12.56 | 34.73/26.16/27.60 | 6.38/5.73/5.76 | 12.21/6.06/6.09 | n/a/n/a/n/a | n/a/n/a/n/a |
 | Flutter Skia | 9.80/10.33/9.57 | 10.29/17.35/10.42 | 0.61/0.64/0.62 | 0.87/0.97/0.97 | 0.67/0.72/0.71 | 1.28/1.38/1.38 |
 | Flutter Impeller | 10.47/9.77/9.58 | 10.41/10.56/10.34 | 0.66/0.67/0.64 | 0.98/0.91/0.98 | 0.65/0.68/0.73 | 1.16/1.44/1.63 |
 | Electron | 8.84/8.75/8.77 | 10.90/10.90/10.10 | 2.18/2.15/1.98 | 4.00/3.50/2.70 | n/a/n/a/n/a | n/a/n/a/n/a |
@@ -208,7 +210,7 @@
 | MoMark Skia Raster | 26.02 | 27.63 | 4.33 | 4.83 | 3.38 | 4.24 |
 | MoMark Skia GPU | 29.64 | 30.35 | 4.13 | 4.66 | 6.73 | 9.15 |
 | MoMark WGPU | 23.35 | 24.63 | 1.74 | 1.98 | 2.84 | 3.80 |
-| GpMark.mbt (GPUI) | 14.23 | 22.83 | 5.56 | 5.88 | n/a | n/a |
+| GpMark.mbt (GPUI) | 17.03 | 31.45 | 5.87 | 6.86 | n/a | n/a |
 | Flutter Skia | 9.59 | 10.36 | 0.60 | 0.89 | 0.75 | 1.84 |
 | Flutter Impeller | 10.88 | 23.82 | 0.73 | 1.01 | 0.90 | 2.28 |
 | Electron | 8.63 | 10.10 | 2.14 | 4.10 | n/a | n/a |
@@ -229,7 +231,7 @@
 | MoMark Skia Raster | 73.01/71.63/85.33 | 75.38/72.30/86.94 | 0.07/0.29/2.30 | 0.10/0.30/2.78 | 57.49/55.31/56.47 | 60.78/56.03/57.83 | 13.61/13.24/13.80 | 15.14/13.58/14.64 |
 | MoMark Skia GPU | 120.32/124.92/136.63 | 123.99/133.59/141.22 | 0.07/0.30/2.52 | 0.09/0.31/2.60 | 54.02/55.43/53.89 | 54.26/58.29/55.76 | 64.55/66.44/67.50 | 68.23/72.26/70.91 |
 | MoMark WGPU | 69.62/69.16/79.78 | 71.26/69.37/82.22 | 0.09/0.45/2.76 | 0.12/0.49/2.86 | 50.76/50.86/48.30 | 52.73/51.00/50.26 | 17.01/15.02/16.10 | 17.97/15.29/16.32 |
-| GpMark.mbt (GPUI) | 230.10/219.41/235.11 | 236.89/234.98/236.28 | 0.33/0.33/2.33 | 1.00/1.00/3.00 | 5.43/5.28/5.40 | 5.59/5.29/5.44 | n/a/n/a/n/a | n/a/n/a/n/a |
+| GpMark.mbt (GPUI) | 208.40/202.08/193.19 | 225.79/210.12/210.70 | 0.00/0.33/2.33 | 0.00/1.00/3.00 | 7.49/5.47/5.62 | 10.98/5.56/5.73 | n/a/n/a/n/a | n/a/n/a/n/a |
 | Flutter Skia | 83.40/80.74/79.83 | 99.19/87.52/86.97 | 0.09/0.15/0.43 | 0.10/0.19/0.51 | 0.34/0.43/0.33 | 0.40/0.56/0.35 | 9.64/9.85/10.03 | 9.91/10.00/10.42 |
 | Flutter Impeller | 77.70/78.53/88.88 | 87.03/87.67/105.72 | 0.11/0.12/0.40 | 0.16/0.16/0.44 | 0.46/0.35/0.43 | 0.53/0.41/0.51 | 7.69/7.26/7.65 | 7.72/7.58/8.10 |
 | Electron | 105.97/113.00/110.97 | 124.80/125.70/121.20 | 11.34/7.88/11.72 | 22.26/14.66/15.91 | 105.97/113.00/110.97 | 124.80/125.70/121.20 | n/a/n/a/n/a | n/a/n/a/n/a |
@@ -246,7 +248,7 @@
 | MoMark Skia Raster | 212.83 | 219.58 | 26.87 | 27.16 | 55.07 | 55.78 | 13.62 | 14.74 |
 | MoMark Skia GPU | 261.43 | 262.27 | 24.39 | 27.47 | 53.21 | 55.71 | 68.31 | 71.10 |
 | MoMark WGPU | 207.62 | 213.73 | 24.51 | 27.42 | 50.93 | 52.18 | 15.46 | 15.64 |
-| GpMark.mbt (GPUI) | 220.57 | 225.83 | 23.67 | 27.00 | 5.32 | 5.53 | n/a | n/a |
+| GpMark.mbt (GPUI) | 183.71 | 197.14 | 23.67 | 27.00 | 5.74 | 5.92 | n/a | n/a |
 | Flutter Skia | 116.43 | 136.42 | 2.90 | 3.00 | 0.42 | 0.51 | 9.30 | 9.37 |
 | Flutter Impeller | 126.96 | 133.38 | 2.96 | 3.14 | 0.44 | 0.55 | 7.63 | 7.76 |
 | Electron | 110.23 | 115.00 | 6.67 | 6.81 | 110.23 | 115.00 | n/a | n/a |
@@ -267,7 +269,7 @@
 | MoMark Skia Raster | 3.83/3.78/3.78 | 4.69/4.49/4.52 | n/a/n/a/n/a | 1.03/1.03/1.04 | 1.30/1.27/1.34 | 2.60/2.56/2.54 | 3.24/3.13/3.09 |
 | MoMark Skia GPU | 8.70/8.71/8.76 | 9.90/9.96/10.07 | n/a/n/a/n/a | 1.25/1.24/1.24 | 1.80/1.77/1.68 | 7.17/7.19/7.23 | 8.26/8.28/8.40 |
 | MoMark WGPU | 15.56/15.58/15.76 | 27.04/27.22/27.31 | n/a/n/a/n/a | 1.40/1.42/1.45 | 1.82/1.72/1.84 | 13.84/13.85/13.98 | 25.43/25.73/25.72 |
-| GpMark.mbt (GPUI) | 10.24/10.16/10.24 | 15.38/14.53/13.67 | n/a/n/a/n/a | 6.51/6.52/6.56 | 7.92/7.86/7.92 | n/a/n/a/n/a | n/a/n/a/n/a |
+| GpMark.mbt (GPUI) | 10.47/10.49/10.49 | 14.61/14.58/14.46 | n/a/n/a/n/a | 6.80/6.83/6.83 | 8.27/8.12/8.23 | n/a/n/a/n/a | n/a/n/a/n/a |
 | Flutter Skia | 10.00/10.08/10.08 | 10.00/10.00/10.00 | 0/5/2 | 1.47/1.88/1.87 | 2.81/2.63/2.73 | 0.42/0.45/0.42 | 0.75/0.74/0.68 |
 | Flutter Impeller | 10.08/10.00/10.06 | 10.00/10.00/10.00 | 3/1/3 | 1.55/1.88/1.95 | 2.83/2.68/2.80 | 0.44/0.42/0.45 | 0.83/0.68/0.80 |
 | Electron | 9.96/9.96/9.94 | 10.80/12.00/11.80 | 0/0/0 | 1.95/2.04/2.05 | 2.40/2.50/2.60 | n/a/n/a/n/a | n/a/n/a/n/a |
@@ -284,7 +286,7 @@
 | MoMark Skia Raster | 3.86 | 4.62 | n/a | 1.05 | 1.34 | 2.57 | 3.15 |
 | MoMark Skia GPU | 8.77 | 9.96 | n/a | 1.25 | 1.72 | 7.22 | 8.31 |
 | MoMark WGPU | 15.53 | 27.07 | n/a | 1.43 | 1.77 | 13.73 | 25.32 |
-| GpMark.mbt (GPUI) | 10.23 | 14.34 | n/a | 6.58 | 7.94 | n/a | n/a |
+| GpMark.mbt (GPUI) | 10.52 | 14.67 | n/a | 6.82 | 8.17 | n/a | n/a |
 | Flutter Skia | 10.00 | 10.00 | 2 | 1.89 | 2.67 | 0.43 | 0.68 |
 | Flutter Impeller | 10.06 | 10.00 | 3 | 1.95 | 2.67 | 0.42 | 0.62 |
 | Electron | 9.95 | 11.60 | 0 | 2.03 | 2.60 | n/a | n/a |
@@ -294,9 +296,9 @@
 # 异常项与优化优先级
 
 - 参考帧预算：`16.667 ms`（含 ±0.1 ms 量化容差）；长帧/输入尾延迟阈值为一帧预算；计时来源：框架回调诊断（非 compositor 时钟）。
-- P1 首帧：MoMark Skia Raster stress 212.8 ms（max 219.6 ms）；MoMark Skia GPU small 120.3 ms（max 124.0 ms）；MoMark Skia GPU medium 124.9 ms（max 133.6 ms）；MoMark Skia GPU large 136.6 ms（max 141.2 ms）；MoMark Skia GPU stress 261.4 ms（max 262.3 ms）；MoMark WGPU stress 207.6 ms（max 213.7 ms）；GpMark.mbt (GPUI) small 230.1 ms（max 236.9 ms）；GpMark.mbt (GPUI) medium 219.4 ms（max 235.0 ms）；GpMark.mbt (GPUI) large 235.1 ms（max 236.3 ms）；GpMark.mbt (GPUI) stress 220.6 ms（max 225.8 ms）；Flutter Skia stress 116.4 ms（max 136.4 ms）；Flutter Impeller large 88.9 ms（max 105.7 ms）；Flutter Impeller stress 127.0 ms（max 133.4 ms）；Electron small 106.0 ms（max 124.8 ms）；Electron medium 113.0 ms（max 125.7 ms）；Electron large 111.0 ms（max 121.2 ms）；Electron stress 110.2 ms（max 115.0 ms）。
-- P1 输入尾延迟：MoMark Skia Raster stress P95 27.63 ms；MoMark Skia GPU stress P95 30.35 ms；MoMark WGPU small P95 25.77 ms；MoMark WGPU medium P95 25.86 ms；MoMark WGPU large P95 24.51 ms；MoMark WGPU stress P95 24.63 ms；GpMark.mbt (GPUI) small P95 23.19 ms；GpMark.mbt (GPUI) medium P95 25.83 ms；GpMark.mbt (GPUI) large P95 31.75 ms；GpMark.mbt (GPUI) stress P95 22.83 ms；Flutter Skia medium P95 17.35 ms；Flutter Impeller stress P95 23.82 ms。
-- 长帧（超预算）：MoMark Skia Raster: stress/input 30 次，max 30.55 ms；MoMark Skia GPU: small/input 1 次，max 18.37 ms, large/input 1 次，max 19.26 ms, large/scroll 1 次，max 20.88 ms, stress/input 30 次，max 30.43 ms, stress/scroll 2 次，max 22.03 ms；MoMark WGPU: small/input 8 次，max 26.62 ms, small/scroll 151 次，max 35.91 ms, medium/input 5 次，max 27.16 ms, medium/scroll 157 次，max 34.21 ms, large/input 5 次，max 25.50 ms, large/scroll 149 次，max 29.07 ms, stress/input 30 次，max 42.81 ms, stress/scroll 148 次，max 34.70 ms；GpMark.mbt (GPUI): small/input 3 次，max 32.48 ms, small/scroll 6 次，max 38.74 ms, medium/input 4 次，max 30.57 ms, medium/scroll 5 次，max 31.05 ms, large/input 3 次，max 34.44 ms, large/scroll 6 次，max 36.69 ms, stress/input 5 次，max 22.98 ms, stress/scroll 5 次，max 39.54 ms；Flutter Skia: small/input 4 次，max 30.00 ms, medium/input 4 次，max 30.00 ms, medium/scroll 5 次，max 20.01 ms, large/input 6 次，max 30.00 ms, large/scroll 2 次，max 30.00 ms, stress/input 3 次，max 20.00 ms, stress/scroll 2 次，max 20.00 ms；Flutter Impeller: small/input 3 次，max 30.00 ms, small/scroll 3 次，max 30.00 ms, medium/input 4 次，max 30.01 ms, medium/scroll 1 次，max 20.00 ms, large/input 5 次，max 30.00 ms, large/scroll 3 次，max 30.00 ms, stress/input 3 次，max 30.00 ms, stress/scroll 3 次，max 30.00 ms；Electron: small/input 1 次，max 20.00 ms。
+- P1 首帧：MoMark Skia Raster stress 212.8 ms（max 219.6 ms）；MoMark Skia GPU small 120.3 ms（max 124.0 ms）；MoMark Skia GPU medium 124.9 ms（max 133.6 ms）；MoMark Skia GPU large 136.6 ms（max 141.2 ms）；MoMark Skia GPU stress 261.4 ms（max 262.3 ms）；MoMark WGPU stress 207.6 ms（max 213.7 ms）；GpMark.mbt (GPUI) small 208.4 ms（max 225.8 ms）；GpMark.mbt (GPUI) medium 202.1 ms（max 210.1 ms）；GpMark.mbt (GPUI) large 193.2 ms（max 210.7 ms）；GpMark.mbt (GPUI) stress 183.7 ms（max 197.1 ms）；Flutter Skia stress 116.4 ms（max 136.4 ms）；Flutter Impeller large 88.9 ms（max 105.7 ms）；Flutter Impeller stress 127.0 ms（max 133.4 ms）；Electron small 106.0 ms（max 124.8 ms）；Electron medium 113.0 ms（max 125.7 ms）；Electron large 111.0 ms（max 121.2 ms）；Electron stress 110.2 ms（max 115.0 ms）。
+- P1 输入尾延迟：MoMark Skia Raster stress P95 27.63 ms；MoMark Skia GPU stress P95 30.35 ms；MoMark WGPU small P95 25.77 ms；MoMark WGPU medium P95 25.86 ms；MoMark WGPU large P95 24.51 ms；MoMark WGPU stress P95 24.63 ms；GpMark.mbt (GPUI) small P95 34.73 ms；GpMark.mbt (GPUI) medium P95 26.16 ms；GpMark.mbt (GPUI) large P95 27.60 ms；GpMark.mbt (GPUI) stress P95 31.45 ms；Flutter Skia medium P95 17.35 ms；Flutter Impeller stress P95 23.82 ms。
+- 长帧（超预算）：MoMark Skia Raster: stress/input 30 次，max 30.55 ms；MoMark Skia GPU: small/input 1 次，max 18.37 ms, large/input 1 次，max 19.26 ms, large/scroll 1 次，max 20.88 ms, stress/input 30 次，max 30.43 ms, stress/scroll 2 次，max 22.03 ms；MoMark WGPU: small/input 8 次，max 26.62 ms, small/scroll 151 次，max 35.91 ms, medium/input 5 次，max 27.16 ms, medium/scroll 157 次，max 34.21 ms, large/input 5 次，max 25.50 ms, large/scroll 149 次，max 29.07 ms, stress/input 30 次，max 42.81 ms, stress/scroll 148 次，max 34.70 ms；GpMark.mbt (GPUI): small/input 8 次，max 35.06 ms, small/scroll 13 次，max 45.03 ms, medium/input 5 次，max 54.51 ms, medium/scroll 13 次，max 42.40 ms, large/input 4 次，max 36.03 ms, large/scroll 10 次，max 52.64 ms, stress/input 11 次，max 31.94 ms, stress/scroll 17 次，max 43.15 ms；Flutter Skia: small/input 4 次，max 30.00 ms, medium/input 4 次，max 30.00 ms, medium/scroll 5 次，max 20.01 ms, large/input 6 次，max 30.00 ms, large/scroll 2 次，max 30.00 ms, stress/input 3 次，max 20.00 ms, stress/scroll 2 次，max 20.00 ms；Flutter Impeller: small/input 3 次，max 30.00 ms, small/scroll 3 次，max 30.00 ms, medium/input 4 次，max 30.01 ms, medium/scroll 1 次，max 20.00 ms, large/input 5 次，max 30.00 ms, large/scroll 3 次，max 30.00 ms, stress/input 3 次，max 30.00 ms, stress/scroll 3 次，max 30.00 ms；Electron: small/input 1 次，max 20.00 ms。
 - 丢帧（优先处理）：Flutter Skia: small/input 4 帧, medium/input 4 帧, medium/scroll 5 帧, large/input 6 帧, large/scroll 2 帧, stress/input 3 帧, stress/scroll 2 帧；Flutter Impeller: small/input 3 帧, small/scroll 3 帧, medium/input 4 帧, medium/scroll 1 帧, large/input 5 帧, large/scroll 3 帧, stress/input 3 帧, stress/scroll 3 帧；Electron: small/input 1 帧。
 - 解释：首帧异常优先检查窗口/渲染器初始化；输入尾延迟检查 action 到下一可见帧的调度与同步重建；长帧检查解析、布局、文本 shaping 和 GPU 提交；`n/a` 表示未埋点，不等于 0。
 - 普通模式的长帧、帧间隔和输入延迟是各框架回调诊断，不能替代跨框架 compositor 排名；需要严格结论时运行 `UI_BENCHMARK_SYSTEM_TRACE=1 ./scripts/run_ui_benchmark.sh`。
