@@ -139,9 +139,7 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
     }
   }
   if (benchmark_renderer.unsupported_command_count)() != 0 {
-    abort(
-      "MoMark benchmark emitted unsupported renderer commands",
-    )
+    abort("MoMark benchmark emitted unsupported renderer commands")
   }
   println(
     ui_report_v2(

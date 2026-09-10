@@ -314,8 +314,7 @@ fn ui_drive_input(runtime : @runtime.AppRuntime, index : Int) -> Unit {
   let tokens = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
   let probe_started = now_ms()
   runtime.dispatch_event(TextInput(InsertText(tokens[index % tokens.length()])))
-  probe_dispatch_us.val = probe_dispatch_us.val +
-    (now_ms() - probe_started)
+  probe_dispatch_us.val = probe_dispatch_us.val + (now_ms() - probe_started)
   probe_dispatch_count.val = probe_dispatch_count.val + 1
 }
 
