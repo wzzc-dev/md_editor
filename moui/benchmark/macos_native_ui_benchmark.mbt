@@ -267,9 +267,7 @@ async fn native_window_pump(
   } else {
     @runtime.run_app(title, runtime)
     .render_all(
-      @skia_renderer.from_env(
-        platform=@skia_renderer.NativeGpuPlatform::MacOS,
-      ),
+      @skia_renderer.from_env(platform=@skia_renderer.NativeGpuPlatform::MacOS),
     )
     .window_requests(requests.requests())
     .backend(
@@ -323,13 +321,7 @@ async fn run_macos_native_ui_benchmark(
   }
   let benchmark_task : async () -> Unit = async fn() {
     native_drive_benchmark(
-      runtime,
-      requests,
-      adapter,
-      scenario,
-      started,
-      document_load_ms,
-      "moui-markdown-editor",
+      runtime, requests, adapter, scenario, started, document_load_ms, "moui-markdown-editor",
       first_frame_end_ms,
     )
   }

@@ -138,17 +138,14 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
       previous_frame_end = ui_measure_frame(
         runtime, benchmark_renderer, samples, action_started, previous_frame_end,
       )
-      probe_measure_us.val = probe_measure_us.val +
-        (now_ms() - measure_started)
+      probe_measure_us.val = probe_measure_us.val + (now_ms() - measure_started)
     }
     if scenario == "input" {
       probe_emit_means()
     }
   }
   if (benchmark_renderer.unsupported_command_count)() != 0 {
-    abort(
-      "MoMark benchmark emitted unsupported renderer commands",
-    )
+    abort("MoMark benchmark emitted unsupported renderer commands")
   }
   println(
     ui_report_v2(
@@ -174,9 +171,7 @@ async fn run_example_native_ui_benchmark(
   fixture : String,
   scenario : String,
 ) -> Unit {
-  let renderer = @env.get_env_var("MOUI_SKIA_RENDERER").unwrap_or(
-    "skia-raster",
-  )
+  let renderer = @env.get_env_var("MOUI_SKIA_RENDERER").unwrap_or("skia-raster")
   let adapter = if renderer == "wgpu" {
     "moui-md-wgpu"
   } else if renderer == "skia-gpu" {
