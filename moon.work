@@ -6,6 +6,8 @@ members = [
   "./vendor/MoUI/moui_skia_renderer",
   "./vendor/MoUI/moui_wgpu_renderer",
   "./vendor/MoUI/moui_sun_renderer",
+  "./vendor/MoUI/window/modules/window",
+  "./vendor/MoUI/window/modules/windowing",
   "./vendor/MoUI/moui_sun",
   "./momark",
 ]

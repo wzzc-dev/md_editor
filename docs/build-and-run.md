@@ -5,7 +5,11 @@
 The checked-in project uses MoUI as the `vendor/MoUI` Git submodule. Its
 framework, rich-text, Skia, Skia renderer, and WGPU renderer modules are
 workspace members in `moon.work`, so their checked-out sources override the
-versions recorded in `moui/moon.mod`. The official Markdown editor example app
+versions recorded in `moui/moon.mod`. The vendored `window` submodule inside
+`vendor/MoUI` is resolved the same way (mirroring MoUI's own
+`scripts/window-dev-mode.sh`), so `vendor/MoUI/window/modules/window` and
+`.../windowing` are workspace members too: AppKit host fixes land in the
+entrypoints without waiting for a published `wzzc-dev/window` bump. The official Markdown editor example app
 is now the standalone [MoMark](https://github.com/wzzc-dev/MoMark) repository,
 checked in as the `momark/` Git submodule and likewise a `moon.work` member
 (`moui` imports it as `wzzc-dev/momark` for the `moui-md-*` benchmark rows).
