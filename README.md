@@ -44,7 +44,10 @@ UI_BENCHMARK_WINDOWED=1 ./scripts/run_ui_benchmark.sh --out results/windowed-ui.
 
 Workspace builds (`moon run`/`moon build`/`moon test` with a target path) must
 run from the repository root — only then do the `vendor/MoUI` submodule sources
-override the published versions for `momark` and `moui`. See
+override the published versions for `momark` and `moui`. `moon.work` also lists
+the vendored `vendor/MoUI/window/modules/{window,windowing}` packages, so the
+native window/AppKit layer used by the entrypoints is the checked-out source
+rather than the published `wzzc-dev/window`. See
 [`docs/build-and-run.md`](docs/build-and-run.md).
 
 The GUI entrypoints are documented in [`docs/build-and-run.md`](docs/build-and-run.md).
