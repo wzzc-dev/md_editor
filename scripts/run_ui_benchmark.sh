@@ -84,6 +84,7 @@ fi
   flutter build "$FLUTTER_TARGET" --profile
 )
 
+harness_status=0
 MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   --adapter moui-skia-raster='python3 moui/ui_benchmark.py skia-raster {fixture} {scenario}' \
   --adapter moui-skia-gpu='python3 moui/ui_benchmark.py skia-gpu {fixture} {scenario}' \
@@ -102,6 +103,10 @@ MOUI_GPU_ROUTE=$MOUI_GPU_ROUTE python3 "$ROOT/bench/run_benchmark.py" \
   $SYSTEM_TRACE_FLAG \
   $SYSTEM_TRACE_ARGS \
   --out "$OUT" \
-  "$@"
-python3 "$ROOT/bench/report.py" "$OUT" > "${OUT%.json}.md"
+  "$@" || harness_status=$?
+# 失败也要出报告：harness 在非零退出之前已经把 JSON 写完，这份 Markdown 是失败时
+# 唯一逐行可读的证据（CI 会连它一起上传；以前脚本在报告之前就退出了）。
+python3 "$ROOT/bench/report.py" "$OUT" > "${OUT%.json}.md" \
+  || echo "报告生成失败，但 $OUT 仍然有效" >&2
 echo "wrote $OUT and ${OUT%.json}.md"
+exit "$harness_status"

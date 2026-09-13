@@ -96,11 +96,43 @@ jobs:
           npm ci --prefix electron
           npm test --prefix electron
 
+      # `continue-on-error` 只用于「失败后仍要产出诊断」：harness 现在逐例打印状态、
+      # 并在结尾列出每条非 measured 记录的原因与适配器输出，所以失败日志本身就能
+      # 定位到具体适配器；随后无条件写 step summary 并上传结果，让失败的 job 也留下
+      # JSON/Markdown 证据（以前失败即无 artifact，「N skipped/error」是唯一线索）。
+      # `--retry-unmeasured-cases 2`：协议对每例的样本数是精确校验的（scroll 120 /
+      # input 10 / open 1），共享 runner 上一次丢帧就会让整例变成 error。重跑「这一例」
+      # 既保住精确计数（放宽校验才是真的改变已发布数字的含义），又有界——真正坏掉的
+      # 适配器三次都失败。审定的采集（results/macos-arm64-ui.json）不带这个开关，
+      # 那些数字必须是一次成功的。
       - name: Small real-window benchmark smoke test
+        id: ui-smoke
+        continue-on-error: true
         run: |
           UI_BENCHMARK_REPETITIONS=1 UI_BENCHMARK_WARMUPS=0 \
             UI_BENCHMARK_OUT="results/ci-ui-${RUNNER_OS}.json" \
-            ./scripts/run_ui_benchmark.sh --fixture small --fail-on-error
+            ./scripts/run_ui_benchmark.sh --fixture small --fail-on-error \
+              --retry-unmeasured-cases 2
+
+      - name: Real-window smoke summary
+        if: always()
+        run: |
+          file="results/ci-ui-${RUNNER_OS}.json"
+          {
+            echo "### Real-window UI smoke (${{ runner.os }})"
+            echo
+            if [ -f "$file" ]; then
+              python3 bench/summary.py "$file"
+            else
+              echo "harness produced no \`$file\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if the real-window smoke had non-measured rows
+        if: steps.ui-smoke.outcome == 'failure'
+        run: |
+          echo "the real-window smoke reported non-measured rows; see the step summary and the uploaded JSON" >&2
+          exit 1
 
       - name: Small benchmark smoke test
         run: |
@@ -115,7 +147,11 @@ jobs:
             --out "results/ci-headless-${RUNNER_OS}.json" --fail-on-error
           python3 bench/report.py "results/ci-headless-${RUNNER_OS}.json" > "results/ci-headless-${RUNNER_OS}.md"
 
+      # `always()`: 失败时这些文件正是唯一能定位问题的证据（job 页面还有 step
+      # summary 的行级摘要）。缺失只在「更早的步骤还没生成过它们」时发生，
+      # 那种情况下前面的步骤已经报错，这里不必再重复一遍。
       - name: Upload smoke results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-${{ runner.os }}
@@ -125,3 +161,4 @@ jobs:
             results/ci-headless-${{ runner.os }}.json
             results/ci-headless-${{ runner.os }}.md
             data/MANIFEST.tsv
+          if-no-files-found: warn

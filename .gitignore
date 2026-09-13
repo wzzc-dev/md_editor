@@ -22,3 +22,4 @@ gpui2/dist/
 .zcode/*
 .workbuddy/*
 .freebuff/*
+.gh-cache/*

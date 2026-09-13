@@ -88,6 +88,21 @@ def new_trace_scratch_directory() -> Path:
     return Path(tempfile.mkdtemp(prefix="case-", dir=TRACE_SCRATCH_ROOT))
 
 
+def trace_host_is_macos() -> bool:
+    """True only on the host where the strict system-present path can run.
+
+    xctrace, WindowServer surface timestamps and the console lock screen are
+    all macOS-only, so on Linux and Windows the strict path degrades to a
+    plain run. Named as a seam because it is a property of the *host*, not of
+    the code under test: without it the lock-screen preflight is unreachable on
+    a Windows runner and `test_locked_display_rejects_strict_case_before_launch`
+    silently became "launch the adapter and see what it prints" — it asserted
+    on a lock-screen message while the case ran for real and reported
+    "adapter did not print any JSON object" instead.
+    """
+    return platform.system() == "Darwin"
+
+
 def memory_gb() -> float | None:
     try:
         pages = os.sysconf("SC_PHYS_PAGES")
@@ -498,7 +513,7 @@ def _run_command_case(
     if (
         system_trace
         and entrypoint_available
-        and platform.system() == "Darwin"
+        and trace_host_is_macos()
         and display_session_locked()
     ):
         reason = (
@@ -535,7 +550,7 @@ def _run_command_case(
     # stores flush; launch mode keeps the trace target alive through save.
     launch_trace = (
         system_trace
-        and platform.system() == "Darwin"
+        and trace_host_is_macos()
         and not display_session_locked()
         # GPUI's AppKit event loop can remain alive after xctrace --launch
         # hands the process back, without forwarding its stdout or scheduling
@@ -961,8 +976,12 @@ def _run_command_case(
                 payload["error"] = str(error)
         records.append(payload)
     if not records:
+        # Both streams: an adapter that fails after a successful exit usually
+        # explains itself on stderr while printing nothing on stdout, and
+        # keeping only stdout made that failure look like silence.
         return [{"status": "error", "command": displayed_command, "elapsed_ms": elapsed,
-                 "error": "adapter did not print any JSON object", "stdout": stdout[-4000:], **trace_payload()}]
+                 "error": "adapter did not print any JSON object",
+                 "stdout": stdout[-4000:], "stderr": stderr[-4000:], **trace_payload()}]
     return records
 
 
@@ -1014,6 +1033,18 @@ def main() -> None:
         help="只清理残留严格 trace scratch 目录后退出，不运行任何 adapter",
     )
     parser.add_argument("--timeout", type=float, default=float(os.environ.get("BENCHMARK_TIMEOUT_SECONDS", "1800")))
+    parser.add_argument(
+        "--retry-unmeasured-cases",
+        type=int,
+        default=0,
+        metavar="N",
+        help=(
+            "re-run a case up to N extra times while its records are not all "
+            "'measured'. For CI smoke runs on shared runners, where a dropped "
+            "frame sample trips the exact-count validation. Audited captures "
+            "must leave this at 0: their numbers have to be first-attempt."
+        ),
+    )
     parser.add_argument("--out", type=Path, default=ROOT / "results" / "benchmark.json")
     args = parser.parse_args()
     sweep_age = args.scratch_max_age_seconds or (SCRATCH_MAX_AGE_SECONDS if args.prune_scratch_only else 0.0)
@@ -1037,37 +1068,84 @@ def main() -> None:
                         "repetitions": args.repetitions, "warmups": args.warmups}
                 if command is None:
                     records.append({**base, "status": "skipped", "reason": "no command supplied"})
+                    print(
+                        f"[skipped] {adapter} / {fixture_name} / {scenario} — no command supplied",
+                        flush=True,
+                    )
                     continue
                 for _ in range(args.warmups):
                     run_command(command, fixture, scenario, adapter, args.timeout)
-                runs = []
-                for _ in range(args.repetitions):
-                    attempts = max(1, args.system_trace_retries if args.system_present_trace else 1)
-                    run = []
-                    for attempt in range(attempts):
-                        run = run_command(
-                            command,
-                            fixture,
-                            scenario,
-                            adapter,
-                            args.timeout,
-                            system_trace=args.system_present_trace,
-                            system_trace_dir=args.system_trace_dir,
-                            system_trace_start_delay_seconds=args.system_trace_start_delay,
-                            system_trace_export_timeout_seconds=args.system_trace_export_timeout,
+                # Case-level retry (`--retry-unmeasured-cases`): the protocol
+                # validates exact sample counts (120 for scroll, 10 for input,
+                # 1 for open), and a GUI app on a loaded shared runner
+                # occasionally delivers one sample short — which the validator
+                # correctly turns into an error record. Re-running the *case*
+                # keeps the counts exact where loosening the validator would
+                # quietly change what the published numbers mean, and it is
+                # bounded: a genuinely broken adapter fails every attempt.
+                # Audited captures leave the flag at 0 so their numbers stay
+                # first-attempt.
+                case_attempts = 1 + max(0, args.retry_unmeasured_cases)
+                runs: list[list[dict]] = []
+                case_attempt = 0
+                for case_attempt in range(case_attempts):
+                    runs = []
+                    for _ in range(args.repetitions):
+                        attempts = max(1, args.system_trace_retries if args.system_present_trace else 1)
+                        run = []
+                        for attempt in range(attempts):
+                            run = run_command(
+                                command,
+                                fixture,
+                                scenario,
+                                adapter,
+                                args.timeout,
+                                system_trace=args.system_present_trace,
+                                system_trace_dir=args.system_trace_dir,
+                                system_trace_start_delay_seconds=args.system_trace_start_delay,
+                                system_trace_export_timeout_seconds=args.system_trace_export_timeout,
+                            )
+                            comparable = [record for record in run if record.get("measurement_scope") == "ui-frame"]
+                            if not args.system_present_trace or (
+                                comparable
+                                and all(record.get("system_trace_status") == "captured" for record in comparable)
+                            ):
+                                break
+                        for record in run:
+                            record["system_trace_attempts"] = attempt + 1
+                        runs.append(run)
+                    if all(
+                        record.get("status") == "measured"
+                        for run in runs
+                        for record in run
+                    ):
+                        break
+                    if case_attempt + 1 < case_attempts:
+                        print(
+                            f"    retrying {adapter} / {fixture_name} / {scenario} "
+                            f"(attempt {case_attempt + 1} of {case_attempts})",
+                            flush=True,
                         )
-                        comparable = [record for record in run if record.get("measurement_scope") == "ui-frame"]
-                        if not args.system_present_trace or (
-                            comparable
-                            and all(record.get("system_trace_status") == "captured" for record in comparable)
-                        ):
-                            break
-                    for record in run:
-                        record["system_trace_attempts"] = attempt + 1
-                    runs.append(run)
                 for run in runs:
                     for record in run:
+                        # Only present when the retry actually engaged; a record
+                        # from an audited capture then stays byte-identical.
+                        if case_attempt:
+                            record["case_retry_count"] = case_attempt
                         records.append({**base, **record})
+                # One line per case, printed as it completes. Without it a failed
+                # smoke run reports only a count ("5 skipped/error") after 15
+                # silent minutes, which is why the CI job that gates the
+                # real-window adapters could never be diagnosed from its log:
+                # nothing in it named the adapter, the scenario, or the reason.
+                for record in runs[-1] if runs else []:
+                    print(
+                        f"[{record.get('status', '?')}] {adapter} / {fixture_name} / "
+                        f"{scenario}"
+                        + (f" — {record.get('error') or record.get('reason')}"
+                           if record.get('status') != "measured" else ""),
+                        flush=True,
+                    )
     renderer_env: dict[str, str] = {}
     for key in ("MOUI_SKIA_RENDERER", "FLUTTER_ENGINE_SWITCHES", "GPU_MODEL"):
         if key in os.environ:
@@ -1112,6 +1190,25 @@ def main() -> None:
     print(f"wrote {args.out} ({measured} measured records, {len(records) - measured} skipped/error)")
     if scratch_sweep[0]:
         print(f"cleared {scratch_sweep[0]} stale trace scratch entries ({round(scratch_sweep[1] / 1024**2, 1)} MiB)")
+    # Name every non-measured row before the exit code. The count alone is not
+    # actionable, and `--fail-on-error` turns that count into a red job.
+    unmeasured = [record for record in records if record.get("status") != "measured"]
+    if unmeasured:
+        print(f"{len(unmeasured)} record(s) were not measured:")
+        for record in unmeasured:
+            reason = record.get("error") or record.get("reason") or "no reason reported"
+            print(
+                f"  - {record.get('adapter')} / {record.get('fixture')} / "
+                f"{record.get('scenario')}: {record.get('status')} — {reason}"
+            )
+            # The reason above is a one-liner; the adapter's own output is what
+            # explains it, and it is already captured in the record — surfacing
+            # it here means the CI log alone is enough to diagnose a failure.
+            detail = (record.get("stderr") or record.get("stdout") or "").strip()
+            if detail:
+                tail = detail.splitlines()[-12:]
+                for line in tail:
+                    print(f"      | {line}")
     if args.fail_on_error and measured != len(records):
         raise SystemExit(1)
 

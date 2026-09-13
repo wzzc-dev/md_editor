@@ -10,6 +10,28 @@ from pathlib import Path
 from typing import Any
 
 
+def _force_utf8_output() -> None:
+    """Pin this script's output encoding to UTF-8 on every platform.
+
+    The report is Chinese by design (headers,公平性口径, 采集口径), and the
+    default stdout encoding is not UTF-8 in every host we run on: a Windows
+    runner handed a pipe encodes as the ANSI code page and the first Chinese
+    header raises `UnicodeEncodeError`, so the script exits non-zero instead of
+    printing a report. That is what turned
+    `test_report_error_rows_keep_the_table_shape` red on Windows CI while the
+    same payload rendered fine on macOS.
+
+    Reconciling here rather than in the caller keeps the contract in one place:
+    bytes on stdout are always UTF-8, so redirecting to a file (`report.py …
+    > results/x.md`) is correct everywhere. Readers must decode UTF-8 to match.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
+
+
+
 FIXTURES = ("small", "medium", "large", "stress")
 FIXTURE_GROUPS = (
     (
@@ -462,6 +484,7 @@ def print_anomalies(
 
 
 def main() -> None:
+    _force_utf8_output()
     if len(sys.argv) != 2:
         raise SystemExit("usage: report.py results/benchmark.json")
     payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))

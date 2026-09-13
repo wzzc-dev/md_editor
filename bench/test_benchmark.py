@@ -144,7 +144,9 @@ class FixtureTests(unittest.TestCase):
             [sys.executable, str(ROOT / "bench" / "report.py"), str(out)],
             check=True,
             capture_output=True,
-            text=True,
+            # See test_report_error_rows_keep_the_table_shape: the child writes
+            # UTF-8 and the locale encoding is not UTF-8 on Windows.
+            encoding="utf-8",
         ).stdout
         self.assertIn("丢帧数", report)
         self.assertIn("首次可交互", report)
@@ -326,7 +328,11 @@ class FixtureTests(unittest.TestCase):
                 [sys.executable, str(ROOT / "bench" / "report.py"), str(path)],
                 check=True,
                 capture_output=True,
-                text=True,
+                # `text=True` alone decodes with the *locale* encoding, which is
+                # not UTF-8 on a Windows runner: the child emits UTF-8
+                # (report.py pins it), so every Chinese header below would come
+                # back as mojibake and the lookups would miss. Pin both ends.
+                encoding="utf-8",
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
         columns = [column.strip() for column in row.strip("|").split("|")]
@@ -354,11 +360,59 @@ class FixtureTests(unittest.TestCase):
                 [sys.executable, str(ROOT / "bench" / "report.py"), str(path)],
                 check=True,
                 capture_output=True,
-                text=True,
+                # `text=True` alone decodes with the *locale* encoding, which is
+                # not UTF-8 on a Windows runner: the child emits UTF-8
+                # (report.py pins it), so every Chinese header below would come
+                # back as mojibake and the lookups would miss. Pin both ends.
+                encoding="utf-8",
             ).stdout
         row = next(line for line in report.splitlines() if line.startswith("| electron |"))
         header = next(line for line in report.splitlines() if line.startswith("| 实现 |"))
         self.assertEqual(len(row.strip("|").split("|")), len(header.strip("|").split("|")))
+
+    def test_summary_names_every_unmeasured_row(self):
+        """The CI step summary is the only in-job diagnostic for a failed smoke.
+
+        It must name the adapter/fixture/scenario and the reason, collapse the
+        reason onto one line (a Markdown table cell cannot span lines), and stay
+        quiet when every row measured.
+        """
+        payload = {
+            "schema": "md-editor-benchmark/v2",
+            "records": [
+                {"adapter": "electron", "fixture": "small", "scenario": "open",
+                 "status": "error", "error": "adapter timed out after 120 seconds"},
+                {"adapter": "gpmark", "fixture": "small", "scenario": "input",
+                 "status": "skipped", "reason": "adapter executable unavailable: x"},
+                {"adapter": "moui-wgpu", "fixture": "small", "scenario": "scroll",
+                 "status": "measured"},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "benchmark.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            summary = subprocess.run(
+                [sys.executable, str(ROOT / "bench" / "summary.py"), str(path)],
+                check=True,
+                capture_output=True,
+                encoding="utf-8",
+            ).stdout
+        self.assertIn("1/3 measured", summary)
+        self.assertIn("| electron | small | open | error | adapter timed out", summary)
+        self.assertIn("| gpmark | small | input | skipped |", summary)
+        self.assertNotIn("moui-wgpu", summary)
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "benchmark.json"
+            payload["records"] = [payload["records"][2]]
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            summary = subprocess.run(
+                [sys.executable, str(ROOT / "bench" / "summary.py"), str(path)],
+                check=True,
+                capture_output=True,
+                encoding="utf-8",
+            ).stdout
+        self.assertEqual(summary.strip(), "1/1 measured")
 
     def test_strict_report_never_falls_back_to_framework_intervals(self):
         record = {
@@ -395,7 +449,11 @@ class FixtureTests(unittest.TestCase):
                 [sys.executable, str(ROOT / "bench" / "report.py"), str(path)],
                 check=True,
                 capture_output=True,
-                text=True,
+                # `text=True` alone decodes with the *locale* encoding, which is
+                # not UTF-8 on a Windows runner: the child emits UTF-8
+                # (report.py pins it), so every Chinese header below would come
+                # back as mojibake and the lookups would miss. Pin both ends.
+                encoding="utf-8",
             ).stdout
         self.assertIn("系统帧间隔均值（ms）", report)
         row = next(
@@ -416,6 +474,78 @@ class FixtureTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "120 action-to-present samples"):
             validate_system_trace_payload(payload)
+
+    def test_retry_unmeasured_cases_reruns_only_transient_failures(self):
+        """A shared-runner smoke must survive one dropped frame sample.
+
+        The protocol validates exact sample counts, so an adapter that delivers
+        one sample short is recorded as an error — correct for an audited
+        capture, but a coin flip for a CI smoke. `--retry-unmeasured-cases`
+        re-runs the *case*; the counts stay exact and the flag stays off for
+        captures. This drives a stub adapter that fails its first invocation
+        only, so the assertion is about the retry, not about the payload.
+        """
+        stub = r'''
+import json, pathlib, sys
+fixture, scenario = sys.argv[1], sys.argv[2]
+counter = pathlib.Path(__file__).with_suffix(".count")
+runs = int(counter.read_text()) + 1 if counter.exists() else 1
+counter.write_text(str(runs))
+if runs == 1:
+    sys.stderr.write("transient: no frame presented\n")
+    sys.exit(1)
+n = 1 if scenario == "open" else (120 if scenario == "scroll" else 10)
+intervals = 0 if scenario == "open" else n
+print(json.dumps({
+    "adapter": "electron", "fixture": "small", "scenario": scenario,
+    "measurement_scope": "ui-frame",
+    "frame_work_samples_ms": [1.0] * n,
+    "frame_interval_samples_ms": [16.7] * intervals,
+    "input_to_visible_samples_ms": [1.0] * n if scenario == "input" else [],
+    "offscreen_samples_ms": [None] * n,
+    "readback_samples_ms": [None] * n,
+    "offscreen_readback_samples_ms": [None] * n,
+    "action_count": n, "frame_sample_count": intervals,
+    "warmup_action_count": 0 if scenario == "open" else 1,
+    "viewport": {"width": 1280, "height": 800},
+    "first_interactive_ms": 1.0, "document_load_ms": 1.0, "frame_work_ms": 1.0,
+    "frame_interval_ms": None if scenario == "open" else 16.7,
+    "input_to_visible_ms": 1.0 if scenario == "input" else None,
+    "status": "measured",
+}))
+'''
+
+        def run(extra: list[str]) -> list[dict]:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / "stub.py").write_text(stub, encoding="utf-8")
+                out = root / "benchmark.json"
+                subprocess.run(
+                    [
+                        sys.executable, str(ROOT / "bench" / "run_benchmark.py"),
+                        "--adapter", f"electron={sys.executable} {root / 'stub.py'}",
+                        "--fixture", "small", "--repetitions", "1", "--warmups", "0",
+                        "--out", str(out), *extra,
+                    ],
+                    check=True,
+                    capture_output=True,
+                    encoding="utf-8",
+                )
+                payload = json.loads(out.read_text(encoding="utf-8"))
+                return [r for r in payload["records"] if r["adapter"] == "electron"]
+
+        first_attempt = run([])
+        self.assertEqual(
+            [record["status"] for record in first_attempt],
+            ["error", "measured", "measured"],
+        )
+        self.assertNotIn("case_retry_count", first_attempt[0])
+
+        retried = run(["--retry-unmeasured-cases", "2"])
+        self.assertEqual([record["status"] for record in retried], ["measured"] * 3)
+        self.assertEqual(retried[0]["case_retry_count"], 1)
+        # Later cases never failed, so they must not claim a retry either.
+        self.assertNotIn("case_retry_count", retried[2])
 
 
 def plant_ktrace(root: Path, name: str, age_seconds: float, *, directory: bool = False) -> Path:
@@ -486,8 +616,12 @@ class TraceScratchTests(unittest.TestCase):
         self.assertEqual(result[0]["status"], "skipped")
         self.assertEqual(list(self.gate_root.iterdir()), [])
 
+    # `trace_host_is_macos` is patched alongside the lock itself: the preflight
+    # only exists on the macOS host, so without it this test is a no-op on a
+    # Windows runner and the case really launches (see the seam's docstring).
+    @patch.object(run_benchmark, "trace_host_is_macos", return_value=True)
     @patch.object(run_benchmark, "display_session_locked", return_value=True)
-    def test_locked_display_rejects_strict_case_before_launch(self, _locked):
+    def test_locked_display_rejects_strict_case_before_launch(self, _locked, _macos):
         result = run_command(
             "python3 -c 'pass'", ROOT / "data" / "small.md", "open", "gpmark",
             system_trace=True,
