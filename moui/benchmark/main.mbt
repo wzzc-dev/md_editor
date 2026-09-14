@@ -190,7 +190,7 @@ async fn main {
         "strict system-present tracing is not implemented for the official MoMark example adapters",
       )
     }
-    if @env.get_env_var("UI_BENCHMARK_WINDOWED").unwrap_or("") == "1" {
+    if native_window_mode_requested() {
       run_example_native_ui_benchmark(args[2], args[3])
     } else {
       run_example_ui_benchmark(args[2], args[3])
