@@ -181,7 +181,8 @@ async fn run_example_native_ui_benchmark(
     "moui-md-skia-raster"
   }
   let (runtime, document_load_ms) = example_ui_runtime(fixture)
-  let started = now_ms()
+  // 统一口径：first_interactive 从进程起点（main 入口打点）起算。
+  let started = scope_started.val
   let first_frame_end_ms = Ref(0.0)
   let requests = @window_lifecycle.WindowRequestQueue::new()
   let window_task : async () -> Unit = async fn() {

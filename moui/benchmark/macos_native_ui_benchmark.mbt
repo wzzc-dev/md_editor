@@ -307,7 +307,9 @@ async fn run_macos_native_ui_benchmark(
     width=1280.0,
     height=800.0,
   )
-  let started = now_ms()
+  // 统一口径：first_interactive 从进程起点（main 入口打点）起算，
+  // runtime 构建与窗口创建全部计入。
+  let started = scope_started.val
   let first_frame_end_ms = Ref(0.0)
   let requests = @window_lifecycle.WindowRequestQueue::new()
   let window_task : async () -> Unit = async fn() {

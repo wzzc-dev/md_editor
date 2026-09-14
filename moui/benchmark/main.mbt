@@ -157,11 +157,14 @@ fn split_blocks(source : String) -> Int {
 
 ///|
 /// The real-window mode drives the benchmark through an AppKit window and
-/// native host surface instead of the default headless host surface. It is
-/// the same harness the strict system-present trace uses, minus the trace.
+/// native AppKit window. This is the unified-scope default (same
+/// window/compositor conditions as the Flutter/Electron/GPUI adapters);
+/// the legacy headless host-surface mode stays reachable through
+/// UI_BENCHMARK_HEADLESS=1. Strict system-present tracing always runs in
+/// a real window.
 fn native_window_mode_requested() -> Bool {
   native_system_trace_mode() ||
-  @env.get_env_var("UI_BENCHMARK_WINDOWED").unwrap_or("") == "1"
+  @env.get_env_var("UI_BENCHMARK_HEADLESS").unwrap_or("") != "1"
 }
 
 ///|
