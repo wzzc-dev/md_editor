@@ -165,7 +165,13 @@ fn native_window_mode_requested() -> Bool {
 }
 
 ///|
+/// 统一口径（进程起点 → 首帧可交互）：main 入口即打点，headless 两条
+/// 基准路径的 first_interactive 都从这一刻起算（含渲染器构建）。
+let scope_started : Ref[Double] = Ref::new(0.0)
+
+///|
 async fn main {
+  scope_started.val = now_ms()
   let args = @env.args()
   if args.length() >= 4 && args[1] == "--ui-benchmark" {
     if native_window_mode_requested() {

@@ -12,6 +12,15 @@ public func mdEditorBenchmarkSignpostEvent(_ actionID: Int32) {
 
 @main
 class AppDelegate: FlutterAppDelegate {
+  override public init() {
+    // 统一口径（进程起点 → 首帧可交互）：最早的 Swift 时刻打点，经环境
+    // 变量传给 Dart 侧的 first_interactive 计算。Flutter 引擎在此之后
+    // 才拉起，Dart 的 Platform.environment 能读到该值。
+    let epochMs = Int(Date().timeIntervalSince1970 * 1000)
+    setenv("MD_BENCHMARK_START_EPOCH", String(epochMs), 1)
+    super.init()
+  }
+
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return true
   }

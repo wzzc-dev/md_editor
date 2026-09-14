@@ -31,10 +31,18 @@ void main(List<String> args) {
       exit(64);
     }
     WidgetsFlutterBinding.ensureInitialized();
+    // 统一口径（进程起点 → 首帧可交互）：优先取 runner 在进程起点打的
+    // epoch；env 缺失时退回 Dart 最早可测时刻。文件读取计入 first_interactive。
+    final scopeStartEpoch =
+        int.tryParse(Platform.environment['MD_BENCHMARK_START_EPOCH'] ?? '') ??
+            0;
+    final effectiveScopeStart = scopeStartEpoch > 0
+        ? scopeStartEpoch
+        : DateTime.now().millisecondsSinceEpoch;
     final loadWatch = Stopwatch()..start();
     final source = File(args[1]).readAsStringSync();
     final benchmark =
-        UiBenchmark(args[2], loadWatch.elapsedMicroseconds / 1000);
+        UiBenchmark(args[2], loadWatch.elapsedMicroseconds / 1000, effectiveScopeStart);
     runApp(MarkdownApp(initialSource: source, benchmark: benchmark));
     return;
   }
@@ -171,7 +179,7 @@ List<String> _documentBlocks(String source) {
 }
 
 class UiBenchmark {
-  UiBenchmark(this.scenario, this.documentLoadMs)
+  UiBenchmark(this.scenario, this.documentLoadMs, this.scopeStartEpochMs)
       : _benchmarkWatch = (Stopwatch()..start()) {
     SchedulerBinding.instance.addTimingsCallback(_recordTimings);
   }
@@ -179,6 +187,9 @@ class UiBenchmark {
   final String scenario;
   final double documentLoadMs;
   final Stopwatch _benchmarkWatch;
+  // 统一口径起点：进程启动的 epoch（runner 打点）。first_interactive 用
+  // 系统时钟相对它计算；帧间隔/延迟仍用单调 watch。
+  final int scopeStartEpochMs;
   final List<double> _frameWork = [];
   final List<double> _deviceRaster = [];
   final List<double> _frameIntervals = [];
@@ -243,7 +254,9 @@ class UiBenchmark {
       stderr.writeln('Flutter benchmark viewport did not reach 1280x800');
       exit(70);
     }
-    final firstInteractiveMs = _benchmarkWatch.elapsedMicroseconds / 1000;
+    final firstInteractiveMs =
+        (DateTime.now().millisecondsSinceEpoch - scopeStartEpochMs)
+            .toDouble();
     if (scenario == 'open') {
       await _waitForFrameSamples(1);
       if (_frameWork.length > 1) {

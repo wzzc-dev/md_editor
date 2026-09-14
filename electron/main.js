@@ -4,6 +4,10 @@ const fs = require('fs/promises');
 const path = require('path');
 const { performance } = require('perf_hooks');
 
+// 统一口径（进程起点 → 首帧可交互）：main.js 的首个可测点即进程启动后
+// 最早的 JS 时刻；Chromium 主进程初始化、窗口创建与页面加载全部计入。
+const PROCESS_START_EPOCH = Date.now();
+
 const markdownFilter = [{ name: 'Markdown', extensions: ['md', 'markdown'] }];
 
 // Keep Electron on the same native GPU path as MoUI and GPUI on macOS. The
@@ -140,7 +144,7 @@ if (process.argv.includes('--benchmark')) {
     const fixture = path.resolve(process.cwd(), fixtureArg);
     const loadStarted = performance.now();
     const source = await fs.readFile(fixture, 'utf8');
-    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted, viewport: { width: 1280, height: 800 }, gpu_backend: process.platform === 'darwin' ? 'Metal' : 'native' });
+    createWindow({ source, scenario, document_load_ms: performance.now() - loadStarted, process_start_epoch: PROCESS_START_EPOCH, viewport: { width: 1280, height: 800 }, gpu_backend: process.platform === 'darwin' ? 'Metal' : 'native' });
   });
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin' || process.argv.includes('--ui-benchmark')) app.quit();

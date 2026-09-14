@@ -77,7 +77,8 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
     "skia-raster",
   )
   let benchmark_renderer = example_benchmark_renderer(renderer_name)
-  let started = now_ms()
+  // 统一口径：first_interactive 从进程起点（main 入口打点）起算。
+  let started = scope_started.val
   let (runtime, document_load_ms) = example_ui_runtime(fixture)
   match benchmark_renderer.text_system {
     Some(text_system) => runtime.set_text_system(text_system)

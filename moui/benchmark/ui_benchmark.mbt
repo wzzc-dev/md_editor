@@ -520,7 +520,9 @@ fn run_ui_benchmark(fixture : String, scenario : String) -> Unit {
   } else {
     ui_skia_benchmark_renderer(renderer_name, 1280.0, 800.0)
   }
-  let started = now_ms()
+  // 统一口径：first_interactive 从进程起点（main 入口打点）起算，
+  // 渲染器构建也计入。
+  let started = scope_started.val
   let runtime = @runtime.new_program_with_dimensions(
     program=@app.program_with_source(source),
     width=1280.0,

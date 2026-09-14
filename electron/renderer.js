@@ -282,8 +282,15 @@ async function runUiBenchmark(config, initializedAt) {
   // the interactive app requires before typing. Without this await the
   // open metric would report while Vditor's editor DOM (deferred behind a
   // double rAF in benchmark mode) does not even exist yet.
+  //
+  // 统一口径：first_interactive 从进程起点（主进程 main.js 首个 JS 时刻）
+  // 起算，Chromium 初始化、窗口创建与页面加载全部计入，与其他适配器的
+  // 全包含口径一致。config 缺失 epoch 时退回 renderer 内的旧口径。
   await editorReady;
-  const firstInteractiveMs = performance.now() - initializedAt;
+  const firstInteractiveMs =
+    config && config.process_start_epoch
+      ? Date.now() - config.process_start_epoch
+      : performance.now() - initializedAt;
   if (config.scenario === 'open') {
     window.benchmarkApi.report(
       summarize('open', [firstInteractiveMs], [], [], config, firstInteractiveMs),
