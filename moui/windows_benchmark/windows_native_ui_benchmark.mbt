@@ -2,8 +2,9 @@
 /// Native Windows path: a real Win32 window and native host surface. This is
 /// the unified-scope default (`native-window`) for the six MoUI/MoMark
 /// adapters on Windows, mirroring the macOS harness: framework-callback
-/// wall-clock diagnostics observed on an approximately 12 ms cadence after
-/// each action. The strict system-present xctrace path stays macOS-only and
+/// wall-clock diagnostics observed after each action on the pump cadence
+/// (~1 ms poll, so presented frames are bounded by frame work rather than
+/// the pump). The strict system-present xctrace path stays macOS-only and
 /// is refused in main.
 ///
 /// Unlike the macOS harness, which drives the actions from a concurrent
@@ -279,7 +280,11 @@ async fn native_window_pump(
     )
     .window_requests(requests.requests())
     .backend(@windows_backend.entry(options~))
-    .run_async_pump(frame_interval_ms=12)
+    // Poll the pump every ~1 ms so presented frames are bounded by frame
+    // work rather than the pump cadence. The backend raises the scheduler
+    // clock resolution to 1 ms; without it the default 15.625 ms system tick
+    // quantized the old 12 ms sleep to ~25-31 ms per frame.
+    .run_async_pump(frame_interval_ms=1)
   } else {
     @runtime.run_app(title, state.runtime)
     .render_all(
@@ -287,7 +292,7 @@ async fn native_window_pump(
     )
     .window_requests(requests.requests())
     .backend(@windows_backend.entry(options~))
-    .run_async_pump(frame_interval_ms=12)
+    .run_async_pump(frame_interval_ms=1)
   }
 }
 
