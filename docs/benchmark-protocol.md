@@ -89,10 +89,22 @@ rows, not compositor timestamps; the `display_timestamp_source` field reports
 `moui-native-frame-callback` instead of `macos-compositor-trace` to make that
 explicit. `first_interactive_ms` is the completion of the first window frame
 observed through the host frame clock and therefore includes AppKit window
-creation cost. The default remains the headless host surface, which keeps
-frame work and synchronous present costs comparable with every earlier
-capture in `results/`; compositor-grade cross-framework conclusions still
-require the strict mode above.
+creation cost.
+
+### Unified native-window default (macOS and Windows)
+
+The native-window mode above is the default on both platforms as of the
+2026-09-15 captures: the six MoUI/MoMark adapters run in a real platform
+window (AppKit on macOS, Win32 on Windows) with the same class of
+framework-callback diagnostics as the GPUI/Flutter/Electron rows. On Windows
+the benchmark actions are dispatched on the backend pump task itself
+(`WindowsHostAppOptions::pump_tick`) between pump iterations, and first
+presentation is timestamped by `on_frame_presented`; the observation cadence
+stays approximately 12 ms plus per-pump work. The legacy headless host-surface
+mode remains available on both platforms through `UI_BENCHMARK_HEADLESS=1`
+(no real window, frame work plus synchronous present costs, comparable with
+the pre-2026-09-15 captures); compositor-grade cross-framework conclusions
+still require the strict mode above, which stays macOS-only.
 
 Adapter wall-clock action timestamps only delimit the compositor trace window;
 they are not used as latency endpoints. Each native adapter also emits the

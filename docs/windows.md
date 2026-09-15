@@ -45,6 +45,19 @@ package, installs the Electron runtime and runs all four fixtures and three
 scenarios. Default settings are one discarded process warm-up and three
 recorded repetitions.
 
+Since the 2026-09-15 capture, the six MoUI/MoMark adapters default to the
+unified native-window mode: a real Win32 window via the vendored
+`backend/windows` host (`window_mode: "native-window"`, `surface_route:
+"win32-native-surface"`, framework-callback wall-clock diagnostics, no
+adapter-side device-present timing). The benchmark driver runs on the
+backend's async pump through `pump_tick`, so all runtime mutations stay on the
+pump thread. The strict `UI_BENCHMARK_SYSTEM_PRESENT` xctrace path stays
+macOS-only and is refused. The legacy headless host-surface route (synchronous
+present costs, comparable with the 2026-09-05/07 captures) remains available
+through `UI_BENCHMARK_HEADLESS=1`; the vendored
+`backend/windows`/`window` sources must then carry the matching
+`frame_clock`/`pump_tick` options introduced for the native mode.
+
 For a fast integration check first:
 
 ```sh

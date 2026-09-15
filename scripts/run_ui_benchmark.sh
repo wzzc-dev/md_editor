@@ -4,9 +4,10 @@
 # (the `momark` submodule); strict system-trace mode does not
 # support them and records them as errors there.
 #
-# By default the MoUI/MoMark adapters render on a headless host surface (no
-# window). Set UI_BENCHMARK_WINDOWED=1 to run them in a real AppKit window
-# like the GPUI/Flutter/Electron adapters; see docs/benchmark-protocol.md.
+# By default the MoUI/MoMark adapters render in a real platform window
+# (native-window on both AppKit and Win32), the same unified scope as the
+# GPUI/Flutter/Electron adapters. Set UI_BENCHMARK_HEADLESS=1 to restore the
+# legacy headless host surface; see docs/benchmark-protocol.md.
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)

@@ -13,6 +13,9 @@
 extern "C" fn now_ms() -> Double = "md_editor_benchmark_now_ms"
 
 ///|
+extern "C" fn epoch_ms() -> Double = "md_editor_benchmark_epoch_ms"
+
+///|
 fn percentile(values : Array[Double], ratio : Double) -> Double {
   let sorted = values.copy()
   sorted.sort()
@@ -153,7 +156,24 @@ fn split_blocks(source : String) -> Int {
 }
 
 ///|
-fn main {
+/// The real-window mode drives the benchmark through a real Win32 window and
+/// native host surface. This is the unified-scope default (same
+/// window/compositor conditions as the Flutter/Electron/GPUI adapters);
+/// the legacy headless host-surface mode stays reachable through
+/// UI_BENCHMARK_HEADLESS=1. The strict system-present trace remains
+/// macOS-only and is refused below.
+fn native_window_mode_requested() -> Bool {
+  @env.get_env_var("UI_BENCHMARK_HEADLESS").unwrap_or("") != "1"
+}
+
+///|
+/// 统一口径（进程起点 → 首帧可交互）：main 入口即打点，native-window
+/// 路径的 first_interactive 都从这一刻起算（含渲染器与窗口创建）。
+let scope_started : Ref[Double] = Ref::new(0.0)
+
+///|
+async fn main {
+  scope_started.val = now_ms()
   let args = @env.args()
   if args.length() >= 4 && args[1] == "--ui-benchmark" {
     if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
@@ -165,7 +185,11 @@ fn main {
         "MoUI Windows benchmark does not support UI_BENCHMARK_SYSTEM_PRESENT=1 (macOS-only xctrace path)",
       )
     }
-    run_ui_benchmark(args[2], args[3])
+    if native_window_mode_requested() {
+      run_windows_native_ui_benchmark(args[2], args[3])
+    } else {
+      run_ui_benchmark(args[2], args[3])
+    }
     return
   }
   if args.length() >= 4 && args[1] == "--ui-benchmark-example" {
@@ -177,7 +201,11 @@ fn main {
         "strict system-present tracing is not implemented for the official MoMark example adapters",
       )
     }
-    run_example_ui_benchmark(args[2], args[3])
+    if native_window_mode_requested() {
+      run_example_native_ui_benchmark(args[2], args[3])
+    } else {
+      run_example_ui_benchmark(args[2], args[3])
+    }
     return
   }
   if args.length() < 3 {

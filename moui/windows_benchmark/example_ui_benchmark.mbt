@@ -154,3 +154,48 @@ fn run_example_ui_benchmark(fixture : String, scenario : String) -> Unit {
     ),
   )
 }
+
+///|
+/// Windowed variant of the official-example benchmark (the unified-scope
+/// default): the app runs in a real Win32 window with the same renderer
+/// wiring as the platform GPU route, while the fixture delivery (the app's
+/// real `OpenRecentDocument` service path), actions and timing follow the
+/// shared native-window harness. Driving runs on the backend pump task via
+/// `pump_tick` (see `windows_native_ui_benchmark.mbt`).
+async fn run_example_native_ui_benchmark(
+  fixture : String,
+  scenario : String,
+) -> Unit {
+  let renderer = @env.get_env_var("MOUI_SKIA_RENDERER").unwrap_or("skia-raster")
+  let adapter = if renderer == "wgpu" {
+    "moui-md-wgpu"
+  } else if renderer == "skia-gpu" {
+    "moui-md-skia-gpu"
+  } else {
+    "moui-md-skia-raster"
+  }
+  let (runtime, document_load_ms) = example_ui_runtime(fixture)
+  // 统一口径：first_interactive 从进程起点（main 入口打点）起算。
+  let state : NativeBenchState = {
+    runtime,
+    scenario,
+    adapter,
+    editor_key: example_editor_key(),
+    started: scope_started.val,
+    document_load_ms,
+    samples: ui_samples(),
+    first_present_ms: Ref::new(0.0),
+    action_timestamps_epoch_ms: [],
+    step: 0,
+    action_index: 0,
+    action_started: 0.0,
+    previous_end: 0.0,
+    action_window_end_epoch_ms: 0.0,
+  }
+  native_window_pump(
+    "MoMark UI Benchmark",
+    state,
+    @window_lifecycle.WindowRequestQueue::new(),
+    renderer,
+  )
+}

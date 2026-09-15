@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #ifdef _WIN32
+#include <stdio.h>
 #include <windows.h>
 
 double md_editor_benchmark_now_ms(void) {
@@ -9,6 +10,21 @@ double md_editor_benchmark_now_ms(void) {
   QueryPerformanceCounter(&counter);
   QueryPerformanceFrequency(&frequency);
   return (double)counter.QuadPart * 1000.0 / (double)frequency.QuadPart;
+}
+
+/* The strict system-present trace is refused on Windows, so the signpost
+ * marker only exists to keep the native harness source symmetric with the
+ * macOS package; the delay/trace-tail helpers follow the POSIX fallback. */
+void md_editor_benchmark_signpost_event(int32_t action_id) {
+  (void)action_id;
+}
+
+void md_editor_benchmark_delay_ms(int32_t milliseconds) {
+  if (milliseconds > 0) Sleep((DWORD)milliseconds);
+}
+
+int32_t md_editor_benchmark_trace_tail_ms(void) {
+  return 15000;
 }
 #elif defined(__APPLE__)
 #include <mach/mach_time.h>
