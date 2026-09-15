@@ -5,8 +5,29 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+namespace {
+// Unified clock (process start -> first interactive frame): the earliest
+// user-code moment stamps the epoch for the Dart side, mirroring the macOS
+// runner's AppDelegate setenv. Without it Dart falls back to its own first
+// measurable instant, which is already after engine and window creation.
+void StampBenchmarkStartEpoch() {
+  FILETIME filetime;
+  ULARGE_INTEGER ticks;
+  ::GetSystemTimePreciseAsFileTime(&filetime);
+  ticks.LowPart = filetime.dwLowDateTime;
+  ticks.HighPart = filetime.dwHighDateTime;
+  const long long epoch_ms =
+      static_cast<long long>(ticks.QuadPart - 116444736000000000LL) / 10000;
+  wchar_t value[32];
+  if (::swprintf_s(value, L"%lld", epoch_ms) > 0) {
+    ::SetEnvironmentVariableW(L"MD_BENCHMARK_START_EPOCH", value);
+  }
+}
+}  // namespace
+
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  StampBenchmarkStartEpoch();
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger. Skip when stdio was
   // redirected (benchmark harnesses capture the engine log through pipes):
