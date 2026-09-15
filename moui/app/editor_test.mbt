@@ -32,13 +32,19 @@ test "markdown editor can initialize from a benchmark fixture" {
 }
 
 ///|
-test "block input updates the Markdown source" {
+test "block input updates the edited block and marks the document dirty" {
   let model = Model::with_source("# First\n\nSecond")
   let next = update(model, BlockInput(0, "# Changed"))
-  assert_eq(next.source, "# Changed\n\nSecond\n")
+  // The per-keystroke path must stay O(block): the source string is folded
+  // back lazily on save, not rebuilt on every input.
+  assert_true(next.dirty)
+  assert_eq(next.source, "# First\n\nSecond")
   assert_eq(next.blocks[0].markdown, "# Changed")
   assert_eq(next.blocks[1].markdown, "Second")
-  assert_eq(next.saved_source, "# First\n\nSecond")
+  assert_eq(
+    serialize_markdown_blocks(next.blocks),
+    "# Changed\n\nSecond\n",
+  )
 }
 
 ///|

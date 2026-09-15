@@ -9,6 +9,9 @@ pub struct Model {
   mut blocks : Array[MarkdownBlockItem]
   mut active_block : Int
   mut scroll : @geometry.Point
+  /// True when block edits have not been folded back into `source` yet.
+  /// Kept as a flag instead of diffing multi-MB strings on every frame.
+  mut dirty : Bool
 }
 
 ///|
@@ -42,6 +45,7 @@ pub fn Model::new() -> Model {
     blocks: parse_markdown_blocks(source),
     active_block: 0,
     scroll: @geometry.Point::new(x=0.0, y=0.0),
+    dirty: false,
   }
 }
 
@@ -57,6 +61,7 @@ pub fn Model::with_source(source : String) -> Model {
     blocks: parse_markdown_blocks(source),
     active_block: 0,
     scroll: @geometry.Point::new(x=0.0, y=0.0),
+    dirty: false,
   }
 }
 
@@ -69,8 +74,13 @@ pub fn update(model : Model, message : Msg) -> Model {
       model
     }
     BlockInput(index, value) => {
+      // Per-keystroke path: touch only the edited block and flag the
+      // document dirty. Re-serializing the full source (or diffing two
+      // multi-MB strings) on every keystroke is O(document) and turns each
+      // input into a visible stall on large fixtures; the source string is
+      // rebuilt once when the document is saved instead.
       update_markdown_block(model.blocks, index, value)
-      model.source = serialize_markdown_blocks(model.blocks)
+      model.dirty = true
       model
     }
     EditBlock(index) => {
@@ -86,6 +96,7 @@ pub fn update(model : Model, message : Msg) -> Model {
       model.saved_source = model.source
       model.path = ""
       model.blocks = parse_markdown_blocks(model.source)
+      model.dirty = false
       model.active_block = 0
       model.scroll = @geometry.Point::new(x=0.0, y=0.0)
       model
@@ -93,6 +104,7 @@ pub fn update(model : Model, message : Msg) -> Model {
     OpenDocument => model
     SaveDocument => {
       model.saved_source = model.source
+      model.dirty = false
       model
     }
     OpenPicked(_) | OpenLoaded(_, _) | SavePicked(_) | SaveWritten(_) => model
@@ -143,6 +155,7 @@ fn Model::update_with_services(
           model.saved_source = source
           model.path = path
           model.blocks = parse_markdown_blocks(source)
+          model.dirty = false
           model.active_block = 0
           model.scroll = @geometry.Point::new(x=0.0, y=0.0)
           { model, effect: @moui.Effect::none() }
@@ -173,7 +186,7 @@ fn Model::update_with_services(
           model,
           effect: services
           .files()
-          .write_text(model.path, model.source)
+          .write_text(model.path, serialize_markdown_blocks(model.blocks))
           .effect(map=result => SaveWritten(result)),
         }
       }
@@ -185,7 +198,7 @@ fn Model::update_with_services(
             model,
             effect: services
             .files()
-            .write_text(path, model.source)
+            .write_text(path, serialize_markdown_blocks(model.blocks))
             .effect(map=result => SaveWritten(result)),
           }
         }
@@ -198,7 +211,8 @@ fn Model::update_with_services(
     SaveWritten(result) =>
       match result {
         Success(_) => {
-          model.saved_source = model.source
+          model.saved_source = serialize_markdown_blocks(model.blocks)
+          model.dirty = false
           { model, effect: @moui.Effect::none() }
         }
         Failure(error) => {
@@ -253,7 +267,7 @@ fn block_editor_view(
 
 ///|
 pub fn view(model : Model) -> @moui.View[Msg] {
-  let clean = model.source == model.saved_source
+  let clean = !model.dirty
   let title = if model.path == "" { "Untitled.md" } else { model.path }
   let status = if clean { "Saved" } else { "Unsaved changes" }
   let active_block = model.active_block
