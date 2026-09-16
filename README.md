@@ -84,6 +84,30 @@ The reports intentionally show where the strict 2x screen passes and fails;
 frame clocks are framework-specific and are not compositor-equivalent.
 Reproduction on Windows is documented in [`docs/windows.md`](docs/windows.md).
 
+After the September MoMark input-path optimizations (binary-search block
+lookups with O(1) session-length clamps, memoized font-file typefaces, and the
+native glyph-mapping memo that removed an O(N^2) per-keystroke coverage pass),
+a focused re-measurement of the `moui-md-*` adapters is captured as the dated
+pair [`results/macos-arm64-ui-20260916-momark-inputfix.json`](results/macos-arm64-ui-20260916-momark-inputfix.json)
+with its rendered
+[`Markdown report`](results/macos-arm64-ui-20260916-momark-inputfix.md):
+180 measured records (the three MoMark renderers, the simplified MoUI raster
+control, and `gpmark` x four fixtures x three scenarios x three repetitions)
+on the same Apple M4 16 GiB host in native-window mode; the Flutter and
+Electron rows are `skipped` in this focused capture. MoMark stress input
+latency (frame interval mean/P95) improves from 38.13/48.32, 20.94/22.55 and
+24.65/27.38 ms (raster/GPU/wgpu, [`macos-arm64-ui-20260914-postfix`](results/macos-arm64-ui-20260914-postfix.md))
+to 34.87/36.29, 17.98/19.28 and 21.64/22.89 ms, with `gpmark` at 9.27/10.71 ms.
+A diagnostic headless probe (a temporary 2,000-keystroke loop run during
+development, outside the audited protocol and not preserved as a results
+capture) shows the long-typing growth pathology — per-keystroke coverage
+checks of the edited block were quadratic in its length — flattening from
+~44 ms at 1,000 typed keys and ~120 ms at 2,000 to ~15 ms and ~27 ms. The `moui-md-wgpu`
+`工作` column reads 0 in this capture because the native wgpu pump currently
+emits no frame-phase diagnostics (it was 4.2 ms in the 20260914-postfix
+capture); compare that adapter on the frame-interval and input-to-visible
+columns.
+
 For a protocol-only Flutter baseline (when Dart is installed), use
 `dart run flutter/tool/benchmark.dart {fixture} {scenario}`. This measures the
 same block preparation as the comparison widgets; desktop Flutter frame
