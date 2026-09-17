@@ -172,9 +172,18 @@ fn native_window_mode_requested() -> Bool {
 let scope_started : Ref[Double] = Ref::new(0.0)
 
 ///|
+extern "C" fn moui_skia_prewarm_d3d() -> Unit = "moui_skia_prewarm_d3d"
+
+///|
 async fn main {
   scope_started.val = now_ms()
   let args = @env.args()
+  // Overlap the Skia D3D12 cold start (device + context creation, ~220 ms)
+  // with document loading/parsing: the background thread fills the shared
+  // adapter/device/queue cache the renderer path consumes.
+  if @env.get_env_var("MOUI_SKIA_RENDERER").unwrap_or("") == "skia-gpu" {
+    moui_skia_prewarm_d3d()
+  }
   if args.length() >= 4 && args[1] == "--ui-benchmark" {
     if @env.get_env_var("UI_BENCHMARK_SYSTEM_PRESENT").unwrap_or("") == "1" {
       // The strict system-present path drives a real AppKit window through
