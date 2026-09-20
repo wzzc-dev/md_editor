@@ -41,10 +41,7 @@ test "block input updates the edited block and marks the document dirty" {
   assert_eq(next.source, "# First\n\nSecond")
   assert_eq(next.blocks[0].markdown, "# Changed")
   assert_eq(next.blocks[1].markdown, "Second")
-  assert_eq(
-    serialize_markdown_blocks(next.blocks),
-    "# Changed\n\nSecond\n",
-  )
+  assert_eq(serialize_markdown_blocks(next.blocks), "# Changed\n\nSecond\n")
 }
 
 ///|

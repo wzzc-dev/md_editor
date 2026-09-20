@@ -109,15 +109,9 @@ pub fn parse_markdown_blocks(source : String) -> Array[MarkdownBlockItem] {
       flush_paragraph()
     } else {
       let is_structural = chars[v_start] == '#' ||
-        (value_len >= 2 &&
-        chars[v_start] == '>' &&
-        chars[v_start + 1] == ' ') ||
-        (value_len >= 2 &&
-        chars[v_start] == '-' &&
-        chars[v_start + 1] == ' ') ||
-        (value_len >= 2 &&
-        chars[v_start] == '*' &&
-        chars[v_start + 1] == ' ')
+        (value_len >= 2 && chars[v_start] == '>' && chars[v_start + 1] == ' ') ||
+        (value_len >= 2 && chars[v_start] == '-' && chars[v_start + 1] == ' ') ||
+        (value_len >= 2 && chars[v_start] == '*' && chars[v_start + 1] == ' ')
       if is_structural {
         flush_paragraph()
         let structural_text = {

@@ -263,9 +263,7 @@ async fn native_window_pump(
         state.first_present_ms.val = now_ms()
       }
     }),
-    pump_tick=Some(async fn() -> Bool {
-      native_bench_tick(state)
-    }),
+    pump_tick=Some(async fn() -> Bool { native_bench_tick(state) }),
   )
   if renderer == "wgpu" {
     @runtime.run_app(title, state.runtime)
@@ -288,7 +286,9 @@ async fn native_window_pump(
   } else {
     @runtime.run_app(title, state.runtime)
     .render_all(
-      @skia_renderer.from_env(platform=@skia_renderer.NativeGpuPlatform::Windows),
+      @skia_renderer.from_env(
+        platform=@skia_renderer.NativeGpuPlatform::Windows,
+      ),
     )
     .window_requests(requests.requests())
     .backend(@windows_backend.entry(options~))
