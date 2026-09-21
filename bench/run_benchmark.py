@@ -40,6 +40,28 @@ XCTRACE_TMP_ROOT = ROOT / "results" / ".xctrace-tmp"
 SCRATCH_MAX_AGE_SECONDS = float(os.environ.get("UI_BENCHMARK_SCRATCH_MAX_AGE_SECONDS", str(6 * 3600)))
 
 
+def _force_utf8_output() -> None:
+    """Pin this script's output encoding to UTF-8 on every platform.
+
+    The harness prints `—` separators and Chinese help/argparse text, and the
+    default stdout encoding is not UTF-8 on every host we run on: a Windows
+    runner handed a pipe encodes as the ANSI code page, so the same `—` comes
+    back as byte `0x97` and any consumer that decodes UTF-8 — which is the
+    contract the tests here rely on — dies with `UnicodeDecodeError`. That is
+    what turned `test_retry_unmeasured_cases_reruns_only_transient_failures`
+    red on Windows CI while macOS and Linux stayed green.
+
+    Pinning here rather than in every caller keeps the contract in one place:
+    bytes on stdout are always UTF-8, so redirecting to a file
+    (`run_benchmark.py … > results/x.json`) is correct everywhere. Readers must
+    decode UTF-8 to match.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8")
+
+
 def directory_size_bytes(path: Path) -> int:
     total = 0
     for root, _, files in os.walk(path):
@@ -824,6 +846,13 @@ def _run_command_case(
                 cwd=ROOT,
                 env=command_env,
                 text=True,
+                # The adapter protocol is UTF-8 in both directions; `text=True`
+                # alone would decode a Windows pipe as cp1252, so one non-ASCII
+                # character in an adapter's diagnostic would raise
+                # UnicodeDecodeError here and take the whole run down instead of
+                # one case. Same tolerance as the trace reads below.
+                encoding="utf-8",
+                errors="replace",
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 start_new_session=os.name != "nt",
@@ -986,6 +1015,7 @@ def _run_command_case(
 
 
 def main() -> None:
+    _force_utf8_output()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--adapter", action="append", default=[], metavar="NAME=COMMAND")
     parser.add_argument("--fixture", action="append", choices=tuple(FIXTURES), dest="fixtures")

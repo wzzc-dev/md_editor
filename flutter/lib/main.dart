@@ -179,16 +179,14 @@ List<String> _documentBlocks(String source) {
 }
 
 class UiBenchmark {
-  UiBenchmark(this.scenario, this.documentLoadMs, this.scopeStartEpochMs)
-      : _benchmarkWatch = (Stopwatch()..start()) {
+  UiBenchmark(this.scenario, this.documentLoadMs, this.scopeStartEpochMs) {
     SchedulerBinding.instance.addTimingsCallback(_recordTimings);
   }
 
   final String scenario;
   final double documentLoadMs;
-  final Stopwatch _benchmarkWatch;
   // 统一口径起点：进程启动的 epoch（runner 打点）。first_interactive 用
-  // 系统时钟相对它计算；帧间隔/延迟仍用单调 watch。
+  // 系统时钟相对它计算；帧间隔来自 vsync 时间戳，输入延迟用每动作单调 watch。
   final int scopeStartEpochMs;
   final List<double> _frameWork = [];
   final List<double> _deviceRaster = [];
