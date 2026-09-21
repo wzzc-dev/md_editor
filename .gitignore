@@ -23,3 +23,4 @@ gpui2/dist/
 .workbuddy/*
 .freebuff/*
 .gh-cache/*
+.box-agent/*

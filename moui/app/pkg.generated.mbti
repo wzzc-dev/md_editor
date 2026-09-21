@@ -35,6 +35,7 @@ pub struct Model {
   mut blocks : Array[MarkdownBlockItem]
   mut active_block : Int
   mut scroll : @core.Point
+  mut dirty : Bool
 }
 pub fn Model::new() -> Self
 pub fn Model::with_source(String) -> Self
