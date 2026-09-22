@@ -24,3 +24,4 @@ gpui2/dist/
 .freebuff/*
 .gh-cache/*
 .box-agent/*
+.box-agent-scratch/*
